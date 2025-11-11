@@ -17,9 +17,10 @@ except Exception:
 
 app = FastAPI(title="Mindrium API", version="0.1.0")
 
+# 개발 환경: 모든 origin 허용
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=["*"],  # 모든 origin 허용 (개발용)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

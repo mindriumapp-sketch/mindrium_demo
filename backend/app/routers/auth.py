@@ -26,11 +26,11 @@ async def signup(payload: SignupRequest, db=Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    # 코드 검증 (codes 컬렉션: _id=code, valid=true)
-    if payload.code:
-        code_doc = await db["codes"].find_one({"_id": payload.code, "valid": True})
-        if not code_doc:
-            raise HTTPException(status_code=400, detail="Invalid or expired code")
+    # 코드 검증 임시 비활성화 (개발용)
+    # if payload.code:
+    #     code_doc = await db["codes"].find_one({"_id": payload.code, "valid": True})
+    #     if not code_doc:
+    #         raise HTTPException(status_code=400, detail="Invalid or expired code")
 
     user_id = f"user_{uuid.uuid4().hex[:8]}"
     doc = {

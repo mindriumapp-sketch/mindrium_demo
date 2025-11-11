@@ -11,7 +11,11 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Firebase 제거 - MongoDB 백엔드 사용
+  # Firebase (임시 유지 - 로그인/회원가입은 MongoDB 사용)
+  firebase_core: ^3.8.1
+  cloud_firestore: ^5.6.0
+  firebase_auth: ^5.3.4
+  firebase_storage: ^12.3.8
 
   flutter_secure_storage: ^9.0.0
   dio: ^5.4.0

@@ -13,11 +13,13 @@ class AuthApi {
     required String password,
     required String name,
     String? code,
+    String gender = 'male',  // 기본값 추가
   }) async {
     final body = {
       'email': email,
       'password': password,
       'name': name,
+      'gender': gender,  // gender 필드 추가
       if (code != null && code.isNotEmpty) 'code': code,
     };
     await _client.dio.post('/auth/signup', data: body);

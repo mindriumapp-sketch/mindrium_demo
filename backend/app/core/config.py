@@ -15,7 +15,7 @@ class Settings(BaseModel):
     email_verification_expire_minutes: int = int(os.getenv("EMAIL_VERIFICATION_EXPIRE_MINUTES", "30"))
     reset_token_expire_minutes: int = int(os.getenv("RESET_TOKEN_EXPIRE_MINUTES", "30"))
     api_port: int = int(os.getenv("API_PORT", "8050"))
-    cors_origins: list[str] = os.getenv("CORS_ORIGINS", "http://localhost:56000,http://127.0.0.1:56000").split(",")
+    cors_origins: list[str] = os.getenv("CORS_ORIGINS", "http://localhost:56000,http://127.0.0.1:56000,http://localhost:*").split(",")
 
     smtp_host: str | None = os.getenv("SMTP_HOST")
     smtp_port: int | None = int(os.getenv("SMTP_PORT", "0")) if os.getenv("SMTP_PORT") else None

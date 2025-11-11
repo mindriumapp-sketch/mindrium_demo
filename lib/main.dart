@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rive/rive.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 import 'package:gad_app_team/data/user_provider.dart';
 import 'package:gad_app_team/data/daycounter.dart';
@@ -10,6 +12,11 @@ import 'package:gad_app_team/app.dart'; // Mindrium 전체 라우팅 포함
 /// 🌊 Mindrium 앱 시작점 (Provider 초기화)
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ✅ Firebase 초기화 (임시 - 데이터는 Firebase 사용, 로그인은 MongoDB)
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   // ✅ Rive 초기화
   await RiveNative.init();
