@@ -38,7 +38,7 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   // ⚠️ Demo API key — replace with proxy/server injection in production
-  static const _apiKey = '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';
+  static const _apiKey = '';
 
   // ===== Emotion Decision Parameters =====
   static const double kSwitchStrong = 0.92; // spike accept threshold
