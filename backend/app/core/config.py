@@ -7,7 +7,11 @@ load_dotenv()
 
 class Settings(BaseModel):
     mongo_uri: str = os.getenv("MONGO_URI", "mongodb://115.145.134.180:9013/")
+<<<<<<< HEAD
     mongo_db: str = os.getenv("DB_NAME", "dtx_program")
+=======
+    mongo_db: str = os.getenv("DB_NAME", "flutter_test")
+>>>>>>> 1d1d1c1 (fix: before_survey & logout)
     jwt_secret: str = os.getenv("JWT_SECRET", "CHANGE_ME_SECRET")
     jwt_refresh_secret: str = os.getenv("JWT_REFRESH_SECRET", "CHANGE_ME_REFRESH")
     access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))

@@ -1,7 +1,13 @@
 from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
 from passlib.context import CryptContext
+<<<<<<< HEAD
 from core.config import get_settings
+=======
+from fastapi import Depends, Header, HTTPException
+from core.config import get_settings
+from db.mongo import get_db
+>>>>>>> 1d1d1c1 (fix: before_survey & logout)
 import uuid
 import hashlib
 
@@ -48,3 +54,27 @@ def hash_refresh_token(token: str) -> str:
 
 def verify_refresh_token(raw_token: str, stored_hash: str) -> bool:
     return hash_refresh_token(raw_token) == stored_hash
+<<<<<<< HEAD
+=======
+
+async def get_current_user(
+    authorization: str | None = Header(default=None),
+    db=Depends(get_db),
+):
+    """
+    FastAPI dependency that validates the Bearer token and returns the Mongo user document.
+    """
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Missing bearer token")
+    token = authorization.split(" ", 1)[1].strip()
+    payload = decode_token(token)
+    if not payload or payload.get("type") != "access":
+        raise HTTPException(status_code=401, detail="Invalid access token")
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Token missing subject")
+    user = await db["users"].find_one({"_id": user_id})
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+>>>>>>> 1d1d1c1 (fix: before_survey & logout)

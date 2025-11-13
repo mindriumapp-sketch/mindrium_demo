@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/common/constants.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/survey_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 /// --------- 스타일 ---------
 class _SColors {
@@ -261,6 +262,10 @@ class Gad7SurveyScreen extends StatefulWidget {
 class _Gad7SurveyScreenState extends State<Gad7SurveyScreen> {
   final List<int?> _gadAnswers = List<int?>.filled(7, null);
   bool _saving = false;
+  late final TokenStorage _tokenStorage = TokenStorage();
+  late final ApiClient _apiClient = ApiClient(tokens: _tokenStorage);
+  // 2025-11-13 MongoDB 저장 전환용 API 래퍼
+  late final SurveyApi _surveyApi = SurveyApi(_apiClient);
 
   final List<String> _gadQuestions = const [
     "1. 지난 2주 동안, 너무 긴장하거나 불안하거나 초조한 느낌이 들었습니까?",
@@ -281,8 +286,9 @@ class _Gad7SurveyScreenState extends State<Gad7SurveyScreen> {
     }
     if (_saving) return;
 
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) {
+    final accessToken = await _tokenStorage.access;
+    if (accessToken == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("로그인이 필요합니다.")));
@@ -293,17 +299,21 @@ class _Gad7SurveyScreenState extends State<Gad7SurveyScreen> {
     setState(() => _saving = true);
 
     try {
-      final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
-
-      await userRef.set({
-        'before_survey_completed': true,
-      }, SetOptions(merge: true));
-
-      await userRef.collection('before_survey').add({
-        'createdAt': FieldValue.serverTimestamp(),
+      // 2025-11-13 MongoDB로 설문 응답을 저장하도록 전환
+      final answersPayload = {
         'phq9_answers': widget.phq9,
         'gad7_answers': gad7,
-      });
+        'phq9_score': widget.phq9.fold<int>(0, (sum, v) => sum + v),
+        'gad7_score': gad7.fold<int>(0, (sum, v) => sum + v),
+      };
+
+      await _surveyApi.submitSurvey(
+        surveyId: 'before_survey',
+        title: '사전 설문 (PHQ-9 & GAD-7)',
+        description: 'pre-test',
+        answers: answersPayload,
+      );
+      await _surveyApi.setSurveyCompleted('pre');
 
       if (!mounted) return;
       ScaffoldMessenger.of(

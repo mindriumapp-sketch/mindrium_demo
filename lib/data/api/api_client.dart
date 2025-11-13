@@ -9,8 +9,8 @@ class ApiClient {
   ApiClient({
     required this.tokens,
     String? baseUrl,
-  })  : baseUrl = baseUrl ?? 'http://localhost:8050',
-        dio = Dio(BaseOptions(baseUrl: baseUrl ?? 'http://localhost:8050')) {
+  })  : baseUrl = baseUrl ?? 'http://10.0.2.2:8080',
+        dio = Dio(BaseOptions(baseUrl: baseUrl ?? 'http://10.0.2.2:8080')) {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {

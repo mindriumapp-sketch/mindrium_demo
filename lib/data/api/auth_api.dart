@@ -64,4 +64,28 @@ class AuthApi {
   Future<void> logout() async {
     await _tokens.clear();
   }
+
+  Future<String?> requestPasswordResetToken(String email) async {
+    final res = await _client.dio.post('/auth/password/reset/start', data: {
+      'email': email,
+    });
+    final data = res.data;
+    if (data is Map<String, dynamic>) {
+      return data['token_debug'] as String?;
+    }
+    throw DioException(
+      requestOptions: res.requestOptions,
+      message: 'Invalid password reset start response',
+    );
+  }
+
+  Future<void> resetPasswordWithToken({
+    required String token,
+    required String newPassword,
+  }) async {
+    await _client.dio.post('/auth/password/reset/finish', data: {
+      'token': token,
+      'new_password': newPassword,
+    });
+  }
 }

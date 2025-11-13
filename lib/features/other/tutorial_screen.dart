@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/common/constants.dart';
-import 'package:gad_app_team/data/user_pretest.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/users_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 import 'package:gad_app_team/widgets/primary_action_button.dart';
 
 /// 앱 사용법을 안내하는 튜토리얼 화면
@@ -14,6 +16,9 @@ class TutorialScreen extends StatefulWidget {
 class _TutorialScreenState extends State<TutorialScreen> {
   final PageController _controller = PageController();
   int _currentIndex = 0;
+  final TokenStorage _tokens = TokenStorage();
+  late final ApiClient _apiClient = ApiClient(tokens: _tokens);
+  late final UsersApi _usersApi = UsersApi(_apiClient);
 
   final List<_IntroData> pages = const [
     _IntroData(
@@ -41,7 +46,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
       );
       return;
     }
-    final hasSurvey = await UserDatabase.hasCompletedSurvey();
+    final hasSurvey = await _hasCompletedSurvey();
     if (!mounted) return;
     Navigator.pushReplacementNamed(
       context,
@@ -50,12 +55,25 @@ class _TutorialScreenState extends State<TutorialScreen> {
   }
 
   Future<void> _skipTutorial() async {
-    final hasSurvey = await UserDatabase.hasCompletedSurvey();
+    final hasSurvey = await _hasCompletedSurvey();
     if (!mounted) return;
     Navigator.pushReplacementNamed(
       context,
       hasSurvey ? '/home' : '/before_survey',
     );
+  }
+
+  Future<bool> _hasCompletedSurvey() async {
+    // 2025-11-13 MongoDB 사용자 정보에서 설문 완료 여부 확인
+    final access = await _tokens.access;
+    if (access == null) return false;
+    try {
+      final me = await _usersApi.me();
+      return me['survey_completed'] == true;
+    } catch (e) {
+      debugPrint('설문 완료 여부 확인 실패: $e');
+      return false;
+    }
   }
 
   @override

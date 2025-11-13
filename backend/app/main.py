@@ -5,6 +5,10 @@ from core.config import get_settings
 from routers.auth import router as auth_router
 from routers.users import router as users_router
 from routers.diaries import router as diaries_router
+<<<<<<< HEAD
+=======
+from routers.user_data import router as user_data_router
+>>>>>>> 1d1d1c1 (fix: before_survey & logout)
 
 settings = get_settings()
 
@@ -33,3 +37,8 @@ async def health():
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(diaries_router)
+<<<<<<< HEAD
+=======
+# 2025-11-13 사용자 데이터 라우터 등록 (설문 저장 등)
+app.include_router(user_data_router)
+>>>>>>> 1d1d1c1 (fix: before_survey & logout)

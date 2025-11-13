@@ -32,20 +32,14 @@ class CoreValueResponse(BaseModel):
 
 class SurveyCreate(BaseModel):
     """설문 추가 요청"""
-    survey_id: str = Field(..., description="설문 고유 ID")
     title: str = Field(..., description="설문 제목")
-    description: Optional[str] = Field(None, description="설문 설명")
-    score: Optional[int] = Field(None, ge=0, le=100, description="설문 점수 (0-100)")
     answers: Optional[Dict[str, Any]] = Field(None, description="설문 응답 데이터")
 
 
 class SurveyResponse(BaseModel):
     """설문 응답"""
-    survey_id: str
     title: str
     date: str
-    description: Optional[str] = None
-    score: Optional[int] = None
     answers: Optional[Dict[str, Any]] = None
 
 

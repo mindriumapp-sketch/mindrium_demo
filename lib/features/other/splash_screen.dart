@@ -1,37 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/common/constants.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 앱 실행 시 처음 보여지는 스플래시 화면
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
-  Future<bool> checkLoginStatus() async {
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  final TokenStorage _tokens = TokenStorage();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAndNavigate();
+  }
+
+  Future<void> _checkAndNavigate() async {
     final prefs = await SharedPreferences.getInstance();
-    final result = prefs.getBool('isLoggedIn');
-    return result == true;
+    final storedFlag = prefs.getBool('isLoggedIn') ?? false;
+    final accessToken = await _tokens.access;
+    final isLoggedIn = storedFlag && accessToken != null && accessToken.isNotEmpty;
+
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(
+      context,
+      isLoggedIn ? '/home' : '/login',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: checkLoginStatus(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return _buildSplashUI();
-        }
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final isLoggedIn = snapshot.data ?? false;
-          Navigator.pushReplacementNamed(
-            context,
-            isLoggedIn ? '/home' : '/login',
-          );
-        });
-
-        return _buildSplashUI();
-      },
-    );
+    return _buildSplashUI();
   }
 
   Widget _buildSplashUI() {
