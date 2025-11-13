@@ -50,6 +50,11 @@ dependencies:
   google_fonts: ^6.2.1
   lottie: ^3.3.1
 
+  # [추가/확인] TTS (Text-to-Speech) 패키지
+  flutter_tts: ^4.0.0
+  # [추가/확인] STT (Speech-to-Text) 패키지
+  speech_to_text: ^7.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -209,6 +214,10 @@ flutter:
 
     - assets/image/alternative thoughts.png
     - assets/image/imagination.png
+
+    # chatbot assets
+    - assets/images/
+    - assets/data/
 
 flutter_native_splash:
   color: "#F9F5F9"

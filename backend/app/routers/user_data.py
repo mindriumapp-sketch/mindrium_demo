@@ -32,14 +32,15 @@ class CoreValueResponse(BaseModel):
 
 class SurveyCreate(BaseModel):
     """설문 추가 요청"""
-    title: str = Field(..., description="설문 제목")
+    survey_id: str = Field(..., description="설문 고유 ID")
+    description: Optional[str] = Field(None, description="설문 설명 (DB에는 저장되지 않음)")
     answers: Optional[Dict[str, Any]] = Field(None, description="설문 응답 데이터")
 
 
 class SurveyResponse(BaseModel):
     """설문 응답"""
-    title: str
-    date: str
+    survey_id: str
+    completed_at: str
     answers: Optional[Dict[str, Any]] = None
 
 
@@ -168,8 +169,8 @@ async def get_surveys(
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
     
     surveys = user.get("surveys", [])
-    # 최신순 정렬
-    surveys.sort(key=lambda x: x.get("date", ""), reverse=True)
+    # 최신순 정렬 (completed_at 기준, 과거 데이터 호환)
+    surveys.sort(key=lambda x: x.get("completed_at") or x.get("date", ""), reverse=True)
     
     return surveys
 
@@ -193,11 +194,8 @@ async def add_survey(
     
     survey_doc = {
         "survey_id": survey.survey_id,
-        "title": survey.title,
-        "date": now.isoformat(),
-        "description": survey.description,
-        "score": survey.score,
-        "answers": survey.answers
+        "completed_at": now.isoformat(),
+        "answers": survey.answers,
     }
     
     # 중복 체크: 동일한 survey_id가 이미 있으면 업데이트
