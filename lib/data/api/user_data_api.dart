@@ -32,4 +32,14 @@ class UserDataApi {
   Future<void> deleteCoreValue() async {
     await _client.dio.delete('/users/me/core-value');
   }
+
+  Future<Map<String, dynamic>> getProgress() async {
+    final res = await _client.dio.get('/users/me/progress');
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    throw DioException(
+      requestOptions: res.requestOptions,
+      message: 'Invalid /users/me/progress response',
+    );
+  }
 }

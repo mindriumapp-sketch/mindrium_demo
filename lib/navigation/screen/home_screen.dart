@@ -1,8 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -10,6 +8,9 @@ import 'package:gad_app_team/features/menu/archive/sea_archive_page.dart';
 import 'package:gad_app_team/navigation/navigation.dart';
 import 'package:gad_app_team/data/daycounter.dart';
 import 'package:gad_app_team/data/user_provider.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/user_data_api.dart';
 import 'treatment_screen.dart';
 import 'myinfo_screen.dart';
 
@@ -25,6 +26,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<int>? _completedWeeksFuture;
   bool _permissionsChecked = false;
   Position? _currentPosition;
+  final TokenStorage _tokens = TokenStorage();
+  late final ApiClient _apiClient = ApiClient(tokens: _tokens);
+  late final UserDataApi _userDataApi = UserDataApi(_apiClient);
 
   @override
   void initState() {
@@ -103,11 +107,25 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<int> _loadCompletedWeeks() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return 0;
-    final snap =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    return (snap.data()?['completed_education'] ?? 0) as int;
+    // 2025-11-13 MongoDB 진행도 API로 교체
+    final access = await _tokens.access;
+    if (access == null) return 0;
+    try {
+      final progress = await _userDataApi.getProgress();
+      final weekProgress = progress['week_progress'];
+      if (weekProgress is List) {
+        return weekProgress
+            .where(
+              (w) =>
+                  w is Map<String, dynamic> && (w['completed'] as bool? ?? false),
+            )
+            .length;
+      }
+      return 0;
+    } catch (e) {
+      debugPrint('교육 주차 로드 실패: $e');
+      return 0;
+    }
   }
 
   Future<void> _ensureCorePermissions() async {
@@ -173,7 +191,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHeader() {
     final user = context.watch<UserProvider>();
-    final dayCounter = context.watch<UserDayCounter>();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

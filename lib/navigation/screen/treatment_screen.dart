@@ -1,10 +1,9 @@
 // 🌊 Mindrium TreatmentScreen — 로직 담당 (AppBar 없이 TreatmentDesign 호환)
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:provider/provider.dart';
 
-import 'package:gad_app_team/data/daycounter.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/user_data_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 import 'package:gad_app_team/features/1st_treatment/week1_screen.dart';
 import 'package:gad_app_team/features/2nd_treatment/week2_screen.dart';
 import 'package:gad_app_team/features/3rd_treatment/week3_screen.dart';
@@ -19,24 +18,21 @@ import 'package:gad_app_team/widgets/tap_design_treatment.dart'; // ✅ 새 구�
 class TreatmentScreen extends StatelessWidget {
   const TreatmentScreen({super.key});
 
-  /// 🔹 Firestore + Provider 데이터 로드
-  Future<Map<String, int>> _loadUserProgress(BuildContext context) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return {'completed': 0, 'weekByDays': 0};
+  /// 🔹 MongoDB 진행도 프리로드 (UI에서는 결과 사용 X)
+  Future<void> _loadUserProgress() async {
+    final tokens = TokenStorage();
+    final apiClient = ApiClient(tokens: tokens);
+    final userDataApi = UserDataApi(apiClient);
 
-    final snap =
-    await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    final completed = (snap.data()?['completed_education'] ?? 0) as int;
-    final userDayCounter = context.read<UserDayCounter>();
-    final weekByDays = userDayCounter.daysSinceJoin ~/ 7;
-
-    return {'completed': completed, 'weekByDays': weekByDays};
+    try {
+      await userDataApi.getProgress();
+    } catch (e) {
+      debugPrint('사용자 진행도 로드 실패: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final userDayCounter = context.watch<UserDayCounter>();
-
     /// 🌊 주차별 텍스트와 라우팅 (한글/영어 순서로 변경)
     final List<Map<String, String>> weekContents = [
       {'title': '1주차', 'subtitle': 'Progressive Relaxation / 불안에 대한 교육'},
@@ -62,10 +58,10 @@ class TreatmentScreen extends StatelessWidget {
     ];
 
     /// 🔹 로딩 처리 유지
-    return FutureBuilder<Map<String, int>>(
-      future: _loadUserProgress(context),
+    return FutureBuilder<void>(
+      future: _loadUserProgress(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData || !userDayCounter.isUserLoaded) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             backgroundColor: Colors.white,
             body: Center(
