@@ -42,4 +42,20 @@ class UserDataApi {
       message: 'Invalid /users/me/progress response',
     );
   }
+
+  Future<List<Map<String, dynamic>>> getArchivedGroups() async {
+    final res = await _client.dio.get('/users/me/worry-groups/archived');
+    final data = res.data;
+    if (data is List) {
+      final mapped = data
+          .whereType<Map>()
+          .map((raw) => raw.map((key, value) => MapEntry(key.toString(), value)))
+          .toList();
+      return mapped.cast<Map<String, dynamic>>();
+    }
+    throw DioException(
+      requestOptions: res.requestOptions,
+      message: 'Invalid /users/me/worry-groups/archived response',
+    );
+  }
 }

@@ -3,8 +3,9 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/user_data_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 class SeaArchivePage extends StatefulWidget {
   const SeaArchivePage({super.key});
@@ -18,6 +19,10 @@ class _SeaArchivePageState extends State<SeaArchivePage>
   late final AnimationController _controller;
   FishFieldController? _fieldController;
   int _lastCount = 0;
+  late Future<List<Map<String, dynamic>>> _groupsFuture;
+  final TokenStorage _tokens = TokenStorage();
+  late final ApiClient _apiClient = ApiClient(tokens: _tokens);
+  late final UserDataApi _userDataApi = UserDataApi(_apiClient);
 
   int? _currentMessageIndex;
   String? _currentMessage;
@@ -40,6 +45,7 @@ class _SeaArchivePageState extends State<SeaArchivePage>
       vsync: this,
       duration: const Duration(seconds: 30),
     )..repeat();
+    _groupsFuture = _fetchArchivedGroups();
     _startComfortMessageLoop();
   }
 
@@ -69,164 +75,198 @@ class _SeaArchivePageState extends State<SeaArchivePage>
     super.dispose();
   }
 
-  Query<Map<String, dynamic>> _archiveGroupsQuery(String uid) {
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('abc_group')
-        .where('archived', isEqualTo: true);
+  Future<List<Map<String, dynamic>>> _fetchArchivedGroups() async {
+    final access = await _tokens.access;
+    if (access == null) {
+      throw Exception('로그인이 필요합니다.');
+    }
+    final groups = await _userDataApi.getArchivedGroups();
+    return groups;
   }
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) {
-      return const Scaffold(body: Center(child: Text('로그인이 필요합니다')));
-    }
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // 🌊 배경
-          Positioned.fill(
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (_, __) {
-                final shift = sin(_controller.value * 2 * pi) * 8;
-                return Transform.translate(
-                  offset: Offset(shift, 0),
-                  child: Image.asset(
-                    'assets/image/sea_bg_3d.png',
-                    fit: BoxFit.cover,
-                    width: size.width * 1.1,
-                    height: size.height * 1.1,
-                  ),
-                );
-              },
-            ),
-          ),
-          Positioned.fill(child: _LightRays(controller: _controller)),
-          Positioned.fill(child: _PlanktonLayer(controller: _controller)),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _groupsFuture,
+        builder: (context, snapshot) {
+          final groups = snapshot.data ?? [];
+          final waiting = snapshot.connectionState == ConnectionState.waiting;
+          return Stack(
+            children: [
+              // 🌊 배경
+              Positioned.fill(
+                child: AnimatedBuilder(
+                  animation: _controller,
+                  builder: (_, __) {
+                    final shift = sin(_controller.value * 2 * pi) * 8;
+                    return Transform.translate(
+                      offset: Offset(shift, 0),
+                      child: Image.asset(
+                        'assets/image/sea_bg_3d.png',
+                        fit: BoxFit.cover,
+                        width: size.width * 1.1,
+                        height: size.height * 1.1,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Positioned.fill(child: _LightRays(controller: _controller)),
+              Positioned.fill(child: _PlanktonLayer(controller: _controller)),
 
-          // 🐠 물고기 필드
-          StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            stream: _archiveGroupsQuery(uid).snapshots(),
-            builder: (context, snap) {
-              final docs = snap.data?.docs ?? [];
-              _fieldController ??= FishFieldController(count: docs.length);
-              if (_lastCount != docs.length) {
-                _fieldController = FishFieldController(count: docs.length);
-                _lastCount = docs.length;
-              }
-
-              return Stack(
-                children: [
-                  for (int i = 0; i < docs.length; i++)
-                    _SmoothFish(
-                      index: i,
-                      doc: docs[i],
-                      area: size,
-                      field: _fieldController!,
-                      onTap: (img, title, desc, createdAt) {
-                        showDialog(
-                          context: context,
-                          builder: (_) => _FishInfoPopup(
-                            title: title,
-                            desc: desc,
-                            image: img,
-                          ),
-                        );
-                      },
+              if (snapshot.hasError)
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(16),
                     ),
-
-                  // 💬 안내 문구
-                  Positioned(
-                    top: 60,
-                    left: 20,
-                    right: 20,
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 10,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Text(
-                          '물고기를 클릭하면 내 불안을 확인할 수 있어요.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: 'Pretendard',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF004A6E),
-                          ),
+                    child: Text(
+                      '아카이브를 불러오지 못했어요.\n${snapshot.error}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                )
+              else if (groups.isEmpty && !waiting)
+                Builder(
+                  builder: (_) {
+                    _fieldController = null;
+                    _lastCount = 0;
+                    return const Center(
+                      child: Text(
+                        '아카이브된 물고기가 없어요.',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
+                )
+              else if (groups.isNotEmpty)
+                _buildFishField(groups, size),
 
-                  // 🐚 위로 말풍선 (물고기를 따라다님) + 화면 밖 넘침 방지
-                  if (_currentMessage != null &&
-                      _currentMessageIndex != null &&
-                      _fieldController!.getBounds(_currentMessageIndex!) != null)
-                    Builder(
-                      builder: (_) {
-                        final rect = _fieldController!.getBounds(_currentMessageIndex!)!;
-                        const bubbleW = 220.0;
-                        const bubbleH = 56.0;
-                        // 기본 위치: 물고기 오른쪽 위
-                        double left = rect.right + 8;
-                        double top = rect.top - 8;
+              // 🌊 하단 유리 내비게이션 바
+              const Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: _GlassNavigationBar(),
+              ),
 
-                        // 오른쪽/아래 넘치면 조정
-                        if (left + bubbleW > size.width) {
-                          left = max(8, rect.left - bubbleW - 8);
-                        }
-                        if (top + bubbleH > size.height - 80) {
-                          top = size.height - 80 - bubbleH;
-                        }
-                        if (top < 20) top = 20;
+              if (waiting)
+                const Center(
+                  child: CircularProgressIndicator(color: Colors.cyanAccent),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 
-                        final facingLeft = left < rect.left; // 꼬리 방향
+  Widget _buildFishField(List<Map<String, dynamic>> groups, Size size) {
+    _fieldController ??= FishFieldController(count: groups.length);
+    if (_lastCount != groups.length) {
+      _fieldController = FishFieldController(count: groups.length);
+      _lastCount = groups.length;
+    }
 
-                        return Positioned(
-                          left: left,
-                          top: top,
-                          width: bubbleW,
-                          child: _SpeechBubble(
-                            message: _currentMessage!,
-                            facingLeft: facingLeft,
-                          ),
-                        );
-                      },
-                    ),
-                ],
+    return Stack(
+      children: [
+        for (int i = 0; i < groups.length; i++)
+          _SmoothFish(
+            index: i,
+            data: groups[i],
+            area: size,
+            field: _fieldController!,
+            onTap: (img, title, desc, createdAt) {
+              showDialog(
+                context: context,
+                builder: (_) => _FishInfoPopup(
+                  title: title,
+                  desc: desc,
+                  image: img,
+                ),
               );
             },
           ),
-
-          // 🌊 하단 유리 내비게이션 바
-          const Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: _GlassNavigationBar(),
+        // 💬 안내 문구
+        Positioned(
+          top: 60,
+          left: 20,
+          right: 20,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Text(
+                '물고기를 클릭하면 내 불안을 확인할 수 있어요.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Pretendard',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF004A6E),
+                ),
+              ),
+            ),
           ),
-        ],
-      ),
+        ),
+
+        // 🐚 위로 말풍선 (물고기를 따라다님) + 화면 밖 넘침 방지
+        if (_currentMessage != null &&
+            _currentMessageIndex != null &&
+            _fieldController != null &&
+            _fieldController!.getBounds(_currentMessageIndex!) != null)
+          Builder(
+            builder: (_) {
+              final rect = _fieldController!.getBounds(_currentMessageIndex!)!;
+              const bubbleW = 220.0;
+              const bubbleH = 56.0;
+              double left = rect.right + 8;
+              double top = rect.top - 8;
+
+              if (left + bubbleW > size.width) {
+                left = max(8, rect.left - bubbleW - 8);
+              }
+              if (top + bubbleH > size.height - 80) {
+                top = size.height - 80 - bubbleH;
+              }
+              if (top < 20) top = 20;
+
+              final facingLeft = left < rect.left;
+
+              return Positioned(
+                left: left,
+                top: top,
+                width: bubbleW,
+                child: _SpeechBubble(
+                  message: _currentMessage!,
+                  facingLeft: facingLeft,
+                ),
+              );
+            },
+          ),
+      ],
     );
   }
 }
@@ -323,14 +363,14 @@ class FishFieldController {
 /// 🐠 부드럽게 유영하는 물고기
 class _SmoothFish extends StatefulWidget {
   final int index;
-  final QueryDocumentSnapshot<Map<String, dynamic>> doc;
+  final Map<String, dynamic> data;
   final Size area;
   final FishFieldController field;
-  final void Function(ImageProvider, String, String, Timestamp?) onTap;
+  final void Function(ImageProvider, String, String, DateTime?) onTap;
 
   const _SmoothFish({
     required this.index,
-    required this.doc,
+    required this.data,
     required this.area,
     required this.field,
     required this.onTap,
@@ -402,12 +442,19 @@ class _SmoothFishState extends State<_SmoothFish>
 
   @override
   Widget build(BuildContext context) {
-    final data = widget.doc.data();
-    final img = AssetImage('assets/image/character${data['group_id'] ?? 1}.png');
-    final title = (data['group_title'] ?? '이름 없는 캐릭터').toString();
-    final desc = (data['group_contents'] ?? '').toString();
-    final createdAt =
-        data.containsKey('created_at') ? data['created_at'] as Timestamp? : null;
+    final data = widget.data;
+    final characterRaw = (data['character_id'] ?? data['group_id'] ?? '1').toString();
+    final characterDigits = RegExp(r'\d+').stringMatch(characterRaw) ?? '1';
+    final characterId = int.tryParse(characterDigits) ?? 1;
+    final img = AssetImage('assets/image/character$characterId.png');
+    final title =
+        (data['group_title'] ?? data['group_name'] ?? '이름 없는 캐릭터').toString();
+    final desc = (data['group_contents'] ?? data['description'] ?? '').toString();
+    DateTime? createdAt;
+    final rawCreated = data['created_at'];
+    if (rawCreated is String) {
+      createdAt = DateTime.tryParse(rawCreated);
+    }
 
     return Positioned(
       left: _pos.dx,
