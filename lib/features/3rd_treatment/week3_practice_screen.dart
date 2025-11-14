@@ -12,7 +12,7 @@ class Week3PracticeScreen extends StatelessWidget {
       cardTitle: '한번 연습해볼까요?',
       onBack: () => Navigator.pop(context),
       onNext: () {
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           PageRouteBuilder(
             pageBuilder: (_, __, ___) => const Week3ClassificationScreen(),
@@ -22,24 +22,44 @@ class Week3PracticeScreen extends StatelessWidget {
         );
       },
 
-      /// 🧩 기능쪽에서만 본문 정의
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: const [
-          Icon(Icons.edit_note_rounded, size: 72, color: Color(0xFF3F51B5)),
-          SizedBox(height: 32),
+      /// 💬 카드 내부 내용 (Week5 형식 참고)
+      child: const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(height: 12),
           Text(
             '방금 본 여성의 예시 상황에 몰입해 보면서\n'
-            '도움이 되는 생각과 도움이 되지 않는 생각을 구분하는 연습을 해볼 거예요.',
-            style: TextStyle(
-              fontFamily: 'Noto Sans KR',
-              fontSize: 18,
-              height: 1.6,
-              color: Color(0xFF333333),
-              fontWeight: FontWeight.w400,
-            ),
+                '도움이 되는 생각과\n'
+                '도움이 되지 않는 생각을\n'
+                '구분하는 연습을 해볼 거예요.',
             textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              height: 1.6,
+              color: Color(0xFF232323),
+              fontFamily: 'Noto Sans KR',
+            ),
+          ),
+          SizedBox(height: 12),
+
+          // 💧 감정 포인트 시각 보조선
+          Divider(
+            height: 32,
+            thickness: 1.2,
+            indent: 20,
+            endIndent: 20,
+            color: Color(0xFFE0E7F1),
+          ),
+
+          Text(
+            '이제 생각의 방향을\n구체적으로 살펴볼까요?',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF3D4C6C),
+              fontFamily: 'Noto Sans KR',
+            ),
           ),
         ],
       ),

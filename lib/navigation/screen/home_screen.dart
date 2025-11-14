@@ -1,21 +1,20 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'package:gad_app_team/features/menu/archive/sea_archive_page.dart';
 import 'package:gad_app_team/navigation/navigation.dart';
 import 'package:gad_app_team/data/daycounter.dart';
 import 'package:gad_app_team/data/user_provider.dart';
-import 'package:gad_app_team/data/storage/token_storage.dart';
-import 'package:gad_app_team/data/api/api_client.dart';
-import 'package:gad_app_team/data/api/user_data_api.dart';
 import 'treatment_screen.dart';
 import 'myinfo_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.initialIndex = 0});
+  final int initialIndex;
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -25,23 +24,89 @@ class _HomeScreenState extends State<HomeScreen> {
   static const int _kTotalWeeks = 8;
   Future<int>? _completedWeeksFuture;
   bool _permissionsChecked = false;
-  Position? _currentPosition;
-  final TokenStorage _tokens = TokenStorage();
-  late final ApiClient _apiClient = ApiClient(tokens: _tokens);
-  late final UserDataApi _userDataApi = UserDataApi(_apiClient);
+
+  DateTime? _createdAt;
 
   @override
   void initState() {
     super.initState();
+    _selectedIndex = widget.initialIndex;
     Future.microtask(() async {
       await _ensureCorePermissions();
       if (!mounted) return;
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final dayCounter = Provider.of<UserDayCounter>(context, listen: false);
       userProvider.loadUserData(dayCounter: dayCounter);
-      _completedWeeksFuture ??= _loadCompletedWeeks();
-      await _fetchCurrentPosition();
+      _completedWeeksFuture ??= _loadCompletedCount();
+      await _ensureCreatedAt(); // ← 추가
+      if (mounted) setState(() {});
     });
+  }
+
+  Future<int> _loadCompletedCount() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return 0;
+
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final data = doc.data() ?? {};
+
+    int fromMap = 0;
+    final rawCW = data['completed_weeks'];
+    if (rawCW is Map) {
+      fromMap =
+          rawCW.entries
+              .where((e) => e.value == true)
+              .map((e) => int.tryParse(e.key.toString()) ?? 0)
+              .where((n) => n > 0 && n <= _kTotalWeeks)
+              .length;
+    }
+
+    return fromMap;
+  }
+
+  Future<void> _ensureCreatedAt() async {
+    if (_createdAt != null) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      final provider =
+          Provider.of<UserProvider>(context, listen: false).createdAt;
+      if (provider != null) {
+        _createdAt = provider;
+      }
+      return;
+    }
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final ts = doc.data()?['createdAt'];
+    if (ts is Timestamp) {
+      _createdAt = ts.toDate();
+    } else {
+      // 폴백: Auth 생성일로 D+를 계산하되, 가능하면 MyInfoScreen처럼 최초 저장도 해두는 걸 추천
+      _createdAt = FirebaseAuth.instance.currentUser?.metadata.creationTime;
+      if (_createdAt == null) {
+        final provider =
+            Provider.of<UserProvider>(context, listen: false).createdAt;
+        if (provider != null) {
+          _createdAt = provider;
+        }
+      }
+    }
+  }
+
+  String joinDaysText() {
+    final base =
+        _createdAt ??
+        Provider.of<UserProvider>(context, listen: false).createdAt;
+    if (base == null) return '가입 정보 없음';
+    final d = daysBetween(DateTime.now(), base);
+    return '가입한 지 ${d}일째';
+  }
+
+  int daysBetween(DateTime a, DateTime b) {
+    final da = DateTime(a.year, a.month, a.day);
+    final db = DateTime(b.year, b.month, b.day);
+    return da.difference(db).inDays;
   }
 
   void _onDestinationSelected(int index) =>
@@ -53,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
       extendBody: true,
       body: Stack(
         children: [
-          // ✅ 배경: eduhome.png + 반투명 오버레이 (터치 방해 없음)
+          // 배경: eduhome.png + 반투명 오버레이
           Positioned.fill(
             child: IgnorePointer(
               ignoring: true,
@@ -75,10 +140,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // ✅ 실제 내용
+          // 실제 내용
           SafeArea(child: _buildBody()),
 
-          // ✅ 네비게이션 바
+          // 네비게이션 바
           Align(
             alignment: Alignment.bottomCenter,
             child: CustomNavigationBar(
@@ -106,28 +171,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<int> _loadCompletedWeeks() async {
-    // 2025-11-13 MongoDB 진행도 API로 교체
-    final access = await _tokens.access;
-    if (access == null) return 0;
-    try {
-      final progress = await _userDataApi.getProgress();
-      final weekProgress = progress['week_progress'];
-      if (weekProgress is List) {
-        return weekProgress
-            .where(
-              (w) =>
-                  w is Map<String, dynamic> && (w['completed'] as bool? ?? false),
-            )
-            .length;
-      }
-      return 0;
-    } catch (e) {
-      debugPrint('교육 주차 로드 실패: $e');
-      return 0;
-    }
-  }
-
   Future<void> _ensureCorePermissions() async {
     if (_permissionsChecked) return;
     final perms = <Permission>[
@@ -146,32 +189,17 @@ class _HomeScreenState extends State<HomeScreen> {
     _permissionsChecked = true;
   }
 
-  Future<void> _fetchCurrentPosition() async {
-    try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        permission = await Geolocator.requestPermission();
-      }
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-      );
-      setState(() => _currentPosition = pos);
-    } catch (e) {
-      debugPrint("위치 정보 가져오기 실패: $e");
-    }
-  }
-
   Widget _homePage() {
     final completedWeeksFuture =
-        _completedWeeksFuture ??= _loadCompletedWeeks();
+        _completedWeeksFuture ??= _loadCompletedCount();
 
     return FutureBuilder<int>(
       future: completedWeeksFuture,
       builder: (context, snapshot) {
-        final completed = snapshot.data ?? 0;
-        final progress = completed / _kTotalWeeks;
-        final percentLabel = '${(progress * 100).round()}%';
+        final doneCount = snapshot.data ?? 0;
+        final progress = doneCount / _kTotalWeeks;
+        debugPrint("doneCount: $doneCount, progress: $progress"); // 0.0 ~ 1.0
+        final percentLabel = '${(progress * 100).round()}%'; // "12%", "25%" 등
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
@@ -191,6 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHeader() {
     final user = context.watch<UserProvider>();
+    final dayCounter = context.watch<UserDayCounter>();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -222,19 +251,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   softWrap: false, // 🚫 자동 줄바꿈 방지
                 ),
 
-                /// 📍 위치 표시
-                if (_currentPosition != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      '📍 ${_currentPosition!.latitude.toStringAsFixed(3)}, ${_currentPosition!.longitude.toStringAsFixed(3)}',
-                      style: const TextStyle(
-                        color: Colors.black54,
-                        fontSize: 13,
-                        fontFamily: 'Noto Sans KR',
-                      ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    dayCounter.isUserLoaded
+                        ? '가입한 지 ${dayCounter.daysSinceJoin}일째'
+                        : joinDaysText(),
+                    style: const TextStyle(
+                      color: Colors.black54,
+                      fontSize: 13,
+                      fontFamily: 'Noto Sans KR',
                     ),
                   ),
+                ),
               ],
             ),
           ),
@@ -397,16 +426,8 @@ class _HomeScreenState extends State<HomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _trainingCard(
-          title: '훈련하기',
-          description: '프로그램에서 배운 내용을 연습해요',
-          color: const Color(0xFFFFC9D3),
-          imagePath: 'assets/image/pink1.png',
-          onTap: () => Navigator.pushNamed(context, '/training'),
-        ),
-        const SizedBox(height: 12),
-        _trainingCard(
-          title: '적용하기',
-          description: '실제 상황에 맞춘 불안 관리를 적용해요',
+          title: '불안 해결하기',
+          description: '오늘 불안하신 상황이 있으셨나요? 지금 눌러서 오늘의 활동을 시작해봐요.',
           color: const Color(0xFFFFE2E8),
           imagePath: 'assets/image/pink2.png',
           onTap:

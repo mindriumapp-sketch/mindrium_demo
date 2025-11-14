@@ -1,6 +1,7 @@
 // File: features/8th_treatment/week8_roadmap_screen.dart
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/data/user_data_storage.dart';
+import 'package:gad_app_team/widgets/blue_banner.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart';
 import 'package:gad_app_team/features/8th_treatment/week8_user_journey_screen.dart';
 
@@ -74,13 +75,7 @@ class _Week8RoadmapScreenState extends State<Week8RoadmapScreen> {
 
   /// 상단 헤더
   Widget _buildHeaderSection() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEBF8FF).withOpacity(0.6),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
+    return Column(
         children: [
           Text(
             _userName.isNotEmpty ? '$_userName님의 8주간 여정' : '8주간의 여정',
@@ -91,21 +86,10 @@ class _Week8RoadmapScreenState extends State<Week8RoadmapScreen> {
               color: Color(0xFF1B3A57),
             ),
           ),
-          const SizedBox(height: 6),
-          const Text(
-            '지난 7주간의 Mindrium 훈련을 함께 되돌아봅시다 🌊',
-            style: TextStyle(
-              fontFamily: 'NotoSansKR',
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: Color(0xFF356D91),
-              height: 1.4,
-            ),
-            textAlign: TextAlign.center,
-          ),
+          const SizedBox(height: 16),
+          JellyfishBanner(message: '지난 7주간의 Mindrium 훈련을 \n함께 되돌아봅시다 🌊'),
         ],
-      ),
-    );
+      );
   }
 
   /// 주차별 카드 디자인 (ApplyDesign 내부에서 쓸 수 있는 수준의 경량 디자인)

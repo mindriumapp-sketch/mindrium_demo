@@ -49,19 +49,25 @@ class ThoughtBubbleStyle {
 /// 피그마 스타일 말풍선 단일 아이템
 class ThoughtBubble extends StatelessWidget {
   final String text;
-  final ThoughtType type;
+  final ThoughtType? type;
+  final Color? color;
   final VoidCallback? onTap;
   final ThoughtBubbleStyle style;
 
   const ThoughtBubble({
     super.key,
     required this.text,
-    required this.type,
+    this.type,
+    this.color,
     this.onTap,
     this.style = const ThoughtBubbleStyle(),
   });
 
+  // color가 들어오면 아이콘 박스를 숨기자
+  bool get _showIconBox => color == null;
+
   Color get _backgroundColor {
+    if (color != null) return color!;
     return type == ThoughtType.helpful
         ? ThoughtColors.helpfulBackground
         : ThoughtColors.unhelpfulBackground;
@@ -107,8 +113,8 @@ class ThoughtBubble extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _buildIconBox(),
-                  SizedBox(width: style.gap),
+                  if (_showIconBox) _buildIconBox(),
+                  if (_showIconBox) SizedBox(width: style.gap),
                   _buildText(),
                 ],
               ),
@@ -124,7 +130,8 @@ class ThoughtBubble extends StatelessWidget {
       width: style.iconBoxSize,
       height: style.iconBoxSize,
       decoration: BoxDecoration(
-        color: ThoughtColors.iconBoxBackground.withOpacity(style.iconBoxOpacity),
+        color: ThoughtColors.iconBoxBackground
+            .withOpacity(style.iconBoxOpacity),
         borderRadius: BorderRadius.circular(style.iconBoxSize / 2),
       ),
       alignment: Alignment.center,

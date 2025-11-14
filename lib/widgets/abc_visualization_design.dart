@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../widgets/memo_sheet_design.dart'; // ✅ 그대로 사용
+import '../widgets/memo_sheet_design.dart'; // ✅ 기존 유지
 
 class DesignPalette {
   static const Color blue = Color(0xFF87CEEB);
@@ -39,7 +39,7 @@ class AbcVisualizationDesign extends StatelessWidget {
     final titleText = '2주차 - ABC 모델';
     final content = showFeedback ? feedbackWidget : visualizationWidget;
 
-    /// ✅ 중앙 전체를 MemoFullDesign으로 감싸기
+    // ✅ 배경은 그대로 메모시트 유지
     return MemoFullDesign(
       appBarTitle: titleText,
       onBack: onBack,
@@ -50,7 +50,7 @@ class AbcVisualizationDesign extends StatelessWidget {
     );
   }
 
-  /// 🌈 걱정일기 그려보기 (비율 고정 + 정렬 안정화)
+  /// 🌈 걱정일기 그려보기
   static Widget buildVisualizationLayout({
     required String situationLabel,
     required String beliefLabel,
@@ -62,8 +62,8 @@ class AbcVisualizationDesign extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final memoWidth = width * 0.55;
-        final baseMemoMinHeight = memoWidth * 0.45; // ✅ 메모 최소 높이(3줄 정도 기준)
+        final memoWidth = width * 0.65;
+        final baseMemoMinHeight = memoWidth * 0.45;
 
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -81,7 +81,7 @@ class AbcVisualizationDesign extends StatelessWidget {
             const SizedBox(height: 4),
             Container(
               width: 200,
-              height: 1,
+              height: 2,
               decoration: BoxDecoration(
                 color: Colors.black26.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(2),
@@ -89,7 +89,7 @@ class AbcVisualizationDesign extends StatelessWidget {
             ),
             const SizedBox(height: 48),
 
-            // ✅ Row의 "가장 키 큰 자식" 높이에 맞춰 왼쪽 기둥이 자동으로 늘어남
+            // ✅ 시각화 구성
             IntrinsicHeight(
               child: Center(
                 child: SingleChildScrollView(
@@ -118,14 +118,10 @@ class AbcVisualizationDesign extends StatelessWidget {
     );
   }
 
-  /// 🩵 왼쪽 컬럼 (물방울) — 높이 전달 제거, Row 높이에 맞춰 자동 확장
-  static Widget _buildGradientColumn({
-    required List<String> labels,
-  }) {
+  /// 🩵 왼쪽 컬럼 (그라데이션 물방울)
+  static Widget _buildGradientColumn({required List<String> labels}) {
     return Container(
-      width: 80,
-      // Row의 crossAxisAlignment.stretch + IntrinsicHeight로 세로로 가득 채움
-      margin: EdgeInsets.zero,
+      width: 75,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(40),
         boxShadow: [
@@ -141,7 +137,11 @@ class AbcVisualizationDesign extends StatelessWidget {
         child: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [DesignPalette.blue, DesignPalette.pink, DesignPalette.mint],
+              colors: [
+                DesignPalette.blue,
+                DesignPalette.pink,
+                DesignPalette.mint,
+              ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -181,7 +181,7 @@ class AbcVisualizationDesign extends StatelessWidget {
     );
   }
 
-  /// 📝 오른쪽 메모 세트 — 내용에 따라 유동 높이(최소 높이만 보장)
+  /// 📝 오른쪽 메모 세트 — 흰색 박스 버전 (memo.png 제거)
   static Widget _buildMemoColumn({
     required List<String> texts,
     required double memoWidth,
@@ -206,15 +206,12 @@ class AbcVisualizationDesign extends StatelessWidget {
                   constraints: BoxConstraints(
                     minWidth: memoWidth,
                     maxWidth: memoWidth,
-                    minHeight: minMemoHeight, // ✅ 최소 높이만 보장
+                    minHeight: minMemoHeight,
                   ),
                   child: Container(
-                    // 높이 지정 ❌ → 텍스트가 길면 자연스럽게 커짐
+                    // ✅ memo.png → 흰색 카드로 변경
                     decoration: BoxDecoration(
-                      image: const DecorationImage(
-                        image: AssetImage('assets/image/memo.png'),
-                        fit: BoxFit.cover,
-                      ),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: const [
                         BoxShadow(
@@ -223,6 +220,7 @@ class AbcVisualizationDesign extends StatelessWidget {
                           offset: Offset(0, 3),
                         ),
                       ],
+                      border: Border.all(color: Colors.black12, width: 1),
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/blue_white_card.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
+import 'package:gad_app_team/widgets/ruled_paragraph.dart';
 
 /// 🌊 Mindrium 스타일 “적용하기” 화면 공용 위젯 (로그인 구조 기반)
 /// - 배경: eduhome.png
@@ -13,6 +14,7 @@ class ApplyDesign extends StatelessWidget {
   final Widget child; // 카드 내부 내용
   final VoidCallback? onBack;
   final VoidCallback? onNext;
+  final String rightLabel;
 
   const ApplyDesign({
     super.key,
@@ -21,6 +23,7 @@ class ApplyDesign extends StatelessWidget {
     required this.child,
     required this.onBack,
     required this.onNext,
+    this.rightLabel = '다음',
   });
 
   @override
@@ -35,55 +38,61 @@ class ApplyDesign extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           /// 🌊 배경 이미지
-          Opacity(opacity: 0.65,
+          Opacity(opacity: 0.35,
             child: Image.asset(
               'assets/image/eduhome.png',
               fit: BoxFit.cover,
               filterQuality: FilterQuality.high,
             ),),
 
-          /// 💠 본문 (로그인 스타일 구조)
-          SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 34,
-                  vertical: 24,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    /// 🧾 중앙 카드
-                    BlueWhiteCard(
-                      maxWidth: maxCardWidth,
-                      title: cardTitle,
-                      titleStyle: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF263C69),
-                      ),
-                      outerColor: Colors.transparent,
-                      outerRadius: 22,
-                      outerExpand: EdgeInsets.zero,
-                      innerColor: Colors.white,
-                      innerRadius: 20,
-                      innerPadding: const EdgeInsets.fromLTRB(28, 26, 28, 26),
-                      dividerColor: const Color(0xFFE8EDF4),
-                      dividerWidth: 240,
-                      titleTopGap: 10,
-                      child: child,
+      /// 💠 본문 (로그인 스타일 구조)
+      SafeArea(
+        child: Column(
+          children: [
+            // 위쪽: 남은 공간 전부 차지
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 34,
+                    vertical: 24,
+                  ),
+                  child: BlueWhiteCard(
+                    maxWidth: maxCardWidth,
+                    title: cardTitle,
+                    titleStyle: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF263C69),
                     ),
-
-                    const SizedBox(height: 40),
-
-                    /// ⛵ 네비게이션 버튼
-                    NavigationButtons(onBack: onBack, onNext: onNext),
-                  ],
+                    outerColor: Colors.transparent,
+                    outerRadius: 22,
+                    outerExpand: EdgeInsets.zero,
+                    innerColor: Colors.white,
+                    innerRadius: 20,
+                    innerPadding: const EdgeInsets.fromLTRB(28, 26, 28, 26),
+                    dividerColor: const Color(0xFFE8EDF4),
+                    dividerWidth: 240,
+                    titleTopGap: 10,
+                    child: child,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+
+            // 아래: 항상 바닥에 붙는 네비게이션
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+              child: NavigationButtons(
+                onBack: onBack,
+                onNext: onNext,
+                rightLabel: rightLabel,
+              ),
+            ),
+          ],
+        ),
+      ),
+      ],
       ),
     );
   }
@@ -101,62 +110,52 @@ Widget buildRelieveResultCard({
   return Column(
     mainAxisSize: MainAxisSize.min,
     children: [
-      // 🧜 이름 표시
-      Text(
-        '$userName님',
-        style: const TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w700,
-          color: Color(0xFF5B3EFF),
-          fontFamily: 'Noto Sans KR',
-        ),
+      const SizedBox(height: 8,),
+      Image.asset(
+        'assets/image/think_blue.png',
+        height: 160,
+        filterQuality: FilterQuality.high,
       ),
       const SizedBox(height: 20),
-
-      // 💠 포인트 구분선
-      Container(
-        width: 48,
-        height: 4,
-        decoration: BoxDecoration(
-          color: const Color(0xFF5B3EFF).withOpacity(0.2),
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-      const SizedBox(height: 40),
 
       // ✨ 전환되는 안내문
       AnimatedSwitcher(
         duration: const Duration(milliseconds: 400),
-        child: Text(
-          showMainText ? mainText : subText,
+        child: RuledParagraph(
           key: ValueKey(showMainText),
+          text: showMainText ? userName + '님, ' + mainText : subText,
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w500,
             color: Colors.black87,
-            height: 1.6,
-            letterSpacing: 0.1,
+            height: 1.8,
+            letterSpacing: 0.4,
             fontFamily: 'Noto Sans KR',
           ),
           textAlign: TextAlign.center,
+          lineWidth: 220,
+          lineColor: const Color(0xFFE1E8F0),
+          lineThickness: 1.2,
+          lineGapBelow: 8,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
         ),
       ),
       const SizedBox(height: 48),
 
-      // 🪸 시각 포인트 아이콘
-      Container(
-        width: 72,
-        height: 72,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: const Color(0xFF5B3EFF).withOpacity(0.1),
-        ),
-        child: const Icon(
-          Icons.psychology_alt_rounded,
-          size: 40,
-          color: Color(0xFF5B3EFF),
-        ),
-      ),
+      // // 🪸 시각 포인트 아이콘
+      // Container(
+      //   width: 72,
+      //   height: 72,
+      //   decoration: BoxDecoration(
+      //     shape: BoxShape.circle,
+      //     color: const Color(0xFF5B3EFF).withOpacity(0.1),
+      //   ),
+      //   child: const Icon(
+      //     Icons.psychology_alt_rounded,
+      //     size: 40,
+      //     color: Color(0xFF5B3EFF),
+      //   ),
+      // ),
     ],
   );
 }

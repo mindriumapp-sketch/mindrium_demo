@@ -6,6 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/features/2nd_treatment/notification_selection_screen.dart';
+import 'package:gad_app_team/widgets/custom_popup_design.dart';
+import 'package:gad_app_team/features/menu/menu_screen.dart'; // 또는 실제 경로
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -46,7 +48,7 @@ class AbcModel {
   }
 }
 
-/// ✅ SUD 점수 바
+/// ✅ SUD 점수 바 (깔끔하게 개선)
 class _SudScoreBar extends StatelessWidget {
   final String uid;
   final String modelId;
@@ -65,7 +67,13 @@ class _SudScoreBar extends StatelessWidget {
       stream: col.snapshots(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
-          return const LinearProgressIndicator(minHeight: 8);
+          return const SizedBox(
+            height: 8,
+            child: LinearProgressIndicator(
+              backgroundColor: Color(0xFFE3F2FD),
+              valueColor: AlwaysStoppedAnimation(Color(0xFF5B9FD3)),
+            ),
+          );
         }
 
         int after = 0;
@@ -76,38 +84,73 @@ class _SudScoreBar extends StatelessWidget {
         }
         after = after.clamp(0, 10);
         final ratio = after / 10.0;
-        final color = Color.lerp(Colors.green, Colors.red, ratio)!;
+        final color = Color.lerp(
+          const Color(0xFF4CAF50),
+          const Color(0xFFF44336),
+          ratio,
+        )!;
 
-        return Row(
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FBFF),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE3F2FD)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '주관적 불안점수',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF0E2C48),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: color.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      '$after / 10',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
                 child: LinearProgressIndicator(
-                  minHeight: 8,
+                  minHeight: 10,
                   value: ratio,
-                  backgroundColor: Colors.white.withOpacity(0.2),
+                  backgroundColor: Colors.grey.shade200,
                   valueColor: AlwaysStoppedAnimation(color),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '$after/10',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
   }
 }
 
-/// ✅ 일기 + 알림 목록
+/// ✅ 일기 + 알림 목록 (가독성 개선)
 class AbcStreamList extends StatelessWidget {
   final String uid;
   final String? selectedGroupId;
@@ -116,28 +159,25 @@ class AbcStreamList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream:
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .collection('abc_models')
-              .orderBy('createdAt', descending: true)
-              .snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('abc_models')
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Center(
-            child: CircularProgressIndicator(color: Colors.white),
+            child: CircularProgressIndicator(color: Color(0xFF5B9FD3)),
           );
         }
 
-        final items =
-            (snap.data?.docs ?? [])
-                .map(AbcModel.fromDoc)
-                .where(
-                  (m) =>
-                      selectedGroupId == null || m.groupId == selectedGroupId,
-                )
-                .toList();
+        final items = (snap.data?.docs ?? [])
+            .map(AbcModel.fromDoc)
+            .where(
+              (m) => selectedGroupId == null || m.groupId == selectedGroupId,
+        )
+            .toList();
 
         return ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -147,93 +187,80 @@ class AbcStreamList extends StatelessWidget {
             final assetPath = 'assets/image/character${model.groupId}.png';
 
             return Container(
-              margin: const EdgeInsets.only(bottom: 16),
+              margin: const EdgeInsets.only(bottom: 14),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.25),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.3)),
+                border: Border.all(color: const Color(0xFFE3F2FD), width: 1.2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
+                    color: Colors.black.withOpacity(0.05),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: ExpansionTile(
-                backgroundColor: Colors.transparent,
-                leading: CircleAvatar(
-                  radius: 24,
-                  backgroundColor: Colors.white.withOpacity(0.5),
-                  backgroundImage: AssetImage(assetPath),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  dividerColor: Colors.transparent,
                 ),
-                title: Text(
-                  model.activatingEvent,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                child: ExpansionTile(
+                  tilePadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  leading: CircleAvatar(
+                    radius: 26,
+                    backgroundColor: const Color(0xFFB8DAF5),
+                    backgroundImage: AssetImage(assetPath),
                   ),
-                ),
-                childrenPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 6,
-                ),
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        DateFormat(
-                          'yyyy.MM.dd HH:mm',
-                        ).format(model.createdAt.toDate()),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const Text(
-                        '주관적 불안점수',
-                        style: TextStyle(color: Colors.white, fontSize: 14),
-                      ),
-                    ],
+                  title: Text(
+                    model.activatingEvent,
+                    style: const TextStyle(
+                      color: Color(0xFF0E2C48),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                    ),
                   ),
-                  const SizedBox(height: 6),
-                  _SudScoreBar(uid: uid, modelId: model.id),
-                  const SizedBox(height: 10),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      DateFormat('yyyy.MM.dd HH:mm')
+                          .format(model.createdAt.toDate()),
+                      style: const TextStyle(
+                        color: Color(0xFF1B405C),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  children: [
+                    /// SUD 점수 표시
+                    _SudScoreBar(uid: uid, modelId: model.id),
+                    const SizedBox(height: 12),
 
-                  /// 🔔 알림 펼쳐보기
-                  ExpansionTile(
-                    collapsedIconColor: Colors.white70,
-                    iconColor: Colors.white,
-                    leading: const Icon(
-                      Icons.notifications,
-                      color: Colors.white,
-                    ),
-                    title: const Text(
-                      '알림 펼쳐보기',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    children: [
-                      StreamBuilder<QuerySnapshot>(
-                        stream:
-                            FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(uid)
-                                .collection('abc_models')
-                                .doc(model.id)
-                                .collection('notification_settings')
-                                .snapshots(),
+                    /// 🔔 알림 펼쳐보기 (테두리 두껍게)
+                    _buildSubSection(
+                      context: context,
+                      icon: Icons.notifications_outlined,
+                      title: '알림 설정',
+                      borderWidth: 1.8, // 테두리 두껍게
+                      child: StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(uid)
+                            .collection('abc_models')
+                            .doc(model.id)
+                            .collection('notification_settings')
+                            .snapshots(),
                         builder: (context, notifSnap) {
                           if (notifSnap.connectionState ==
                               ConnectionState.waiting) {
                             return const Padding(
-                              padding: EdgeInsets.all(8),
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
+                              padding: EdgeInsets.all(12),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFF5B9FD3),
+                                ),
                               ),
                             );
                           }
@@ -241,123 +268,150 @@ class AbcStreamList extends StatelessWidget {
                           final notifs = notifSnap.data?.docs ?? [];
                           if (notifs.isEmpty) {
                             return const Padding(
-                              padding: EdgeInsets.all(8),
-                              child: Text(
-                                '설정된 알림이 없습니다.',
-                                style: TextStyle(color: Colors.white70),
+                              padding: EdgeInsets.all(16),
+                              child: Center(
+                                child: Text(
+                                  '설정된 알림이 없습니다',
+                                  style: TextStyle(
+                                    color: Color(0xFF1B405C),
+                                    fontSize: 13,
+                                  ),
+                                ),
                               ),
                             );
                           }
 
-                          return ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: notifs.length,
-                            separatorBuilder:
-                                (_, __) => const Divider(color: Colors.white30),
-                            itemBuilder: (c, idx) {
+                          return Column(
+                            children: notifs.asMap().entries.map((entry) {
+                              final idx = entry.key;
+                              final notifDoc = entry.value;
                               final data =
-                                  notifs[idx].data() as Map<String, dynamic>;
+                              notifDoc.data() as Map<String, dynamic>;
                               final location = data['location'] ?? '-';
-                              final notifyEnter = data['notifyEnter'] ?? false;
+                              final notifyEnter =
+                                  data['notifyEnter'] ?? false;
                               final notifyExit = data['notifyExit'] ?? false;
-                              final condition =
-                                  notifyEnter && notifyExit
-                                      ? '입장/퇴장'
-                                      : notifyEnter
-                                      ? '입장 시'
-                                      : notifyExit
-                                      ? '퇴장 시'
-                                      : '매일 반복';
+                              final condition = notifyEnter && notifyExit
+                                  ? '입장/퇴장'
+                                  : notifyEnter
+                                  ? '입장 시'
+                                  : notifyExit
+                                  ? '퇴장 시'
+                                  : '매일 반복';
                               final time = data['time'] ?? '-';
                               final rm = data['reminderMinutes'];
                               int? reminderMinutes;
                               if (rm is num) reminderMinutes = rm.toInt();
-                              final reminderText =
-                                  reminderMinutes == null
-                                      ? '반복 없음'
-                                      : '반복 ($reminderMinutes분)';
 
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '위치: $location',
-                                    style: const TextStyle(color: Colors.white),
+                              return Container(
+                                margin: EdgeInsets.only(
+                                  top: idx > 0 ? 8 : 0,
+                                  bottom: 8,
+                                ),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF8FBFF),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: const Color(0xFF4A8CCB),
                                   ),
-                                  Text(
-                                    '조건: $condition',
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                  Text(
-                                    '시간: $time',
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                  Text(
-                                    reminderText,
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: TextButton.icon(
-                                      icon: const Icon(
-                                        Icons.edit,
-                                        size: 18,
-                                        color: Colors.white,
-                                      ),
-                                      label: const Text(
-                                        '수정',
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                                      onPressed: () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder:
-                                                (_) =>
-                                                    NotificationSelectionScreen(
-                                                      origin: 'edit',
-                                                      abcId: model.id,
-                                                      label:
-                                                          model.activatingEvent,
-                                                    ),
-                                          ),
-                                        );
-                                      },
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _infoRow(
+                                      Icons.location_on_outlined,
+                                      '위치',
+                                      location,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 6),
+                                    _infoRow(
+                                      Icons.notifications_active_outlined,
+                                      '조건',
+                                      condition,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    _infoRow(
+                                      Icons.access_time_outlined,
+                                      '시간',
+                                      time,
+                                    ),
+                                    if (reminderMinutes != null) ...[
+                                      const SizedBox(height: 6),
+                                      _infoRow(
+                                        Icons.replay_outlined,
+                                        '반복',
+                                        '$reminderMinutes분',
+                                      ),
+                                    ],
+                                    const SizedBox(height: 8),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: TextButton.icon(
+                                        icon: const Icon(
+                                          Icons.edit_outlined,
+                                          size: 16,
+                                          color: Color(0xFF5B9FD3),
+                                        ),
+                                        label: const Text(
+                                          '수정',
+                                          style: TextStyle(
+                                            color: Color(0xFF5B9FD3),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  NotificationSelectionScreen(
+                                                    origin: 'edit',
+                                                    abcId: model.id,
+                                                    label:
+                                                    model.activatingEvent,
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               );
-                            },
+                            }).toList(),
                           );
                         },
                       ),
-                    ],
-                  ),
+                    ),
 
-                  /// 📖 일기 펼쳐보기
-                  if (model.diaryDetail != null)
-                    ExpansionTile(
-                      collapsedIconColor: Colors.white70,
-                      iconColor: Colors.white,
-                      leading: const Icon(Icons.book, color: Colors.white),
-                      title: const Text(
-                        '일기 펼쳐보기',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      children: [
-                        Padding(
+                    /// 📖 일기 펼쳐보기
+                    if (model.diaryDetail != null) ...[
+                      const SizedBox(height: 12),
+                      _buildSubSection(
+                        context: context,
+                        icon: Icons.book_outlined,
+                        title: '일기 내용',
+                        child: Container(
+                          width: double.infinity,
                           padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FBFF),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFE3F2FD)),
+                          ),
                           child: Text(
                             model.diaryDetail!,
-                            style: const TextStyle(color: Colors.white),
+                            style: const TextStyle(
+                              color: Color(0xFF0E2C48),
+                              fontSize: 14,
+                              height: 1.5,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                ],
+                      ),
+                    ],
+                  ],
+                ),
               ),
             );
           },
@@ -367,9 +421,71 @@ class AbcStreamList extends StatelessWidget {
   }
 }
 
+/// 서브 섹션 위젯
+Widget _buildSubSection({
+  required BuildContext context,
+  required IconData icon,
+  required String title,
+  required Widget child,
+  double borderWidth = 1.2,
+}) {
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFF90CAF9), width: borderWidth), // 👈 색깔 변경!
+    ),
+    child: Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        leading: Icon(icon, color: const Color(0xFF5B9FD3), size: 22),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF0E2C48),
+            fontSize: 14,
+          ),
+        ),
+        children: [child],
+      ),
+    ),
+  );
+}
+
+/// 정보 행 위젯
+Widget _infoRow(IconData icon, String label, String value) {
+  return Row(
+    children: [
+      Icon(icon, size: 16, color: const Color(0xFF5B9FD3)),
+      const SizedBox(width: 6),
+      Text(
+        '$label: ',
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF0E2C48),
+        ),
+      ),
+      Expanded(
+        child: Text(
+          value,
+          style: const TextStyle(
+            fontSize: 13,
+            color: Color(0xFF1B405C),
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
 /// ✅ NotificationDirectoryScreen 본문
 class NotificationDirectoryScreen extends StatefulWidget {
   const NotificationDirectoryScreen({super.key});
+
   @override
   State<NotificationDirectoryScreen> createState() =>
       _NotificationDirectoryScreenState();
@@ -399,21 +515,20 @@ class _NotificationDirectoryScreenState
         .collection('abc_group')
         .snapshots()
         .listen((snap) {
-          final newGroups =
-              snap.docs.map((d) {
-                final data = d.data();
-                final gid = (data['group_id'] ?? '').toString();
-                final title = (data['group_title'] ?? gid).toString();
-                return {'id': gid, 'title': title};
-              }).toList();
+      final newGroups = snap.docs.map((d) {
+        final data = d.data();
+        final gid = (data['group_id'] ?? '').toString();
+        final title = (data['group_title'] ?? gid).toString();
+        return {'id': gid, 'title': title};
+      }).toList();
 
-          if (mounted) {
-            setState(() {
-              _groups = newGroups;
-              _groupsLoading = false;
-            });
-          }
+      if (mounted) {
+        setState(() {
+          _groups = newGroups;
+          _groupsLoading = false;
         });
+      }
+    });
   }
 
   @override
@@ -440,94 +555,36 @@ class _NotificationDirectoryScreenState
         showHome: true,
         confirmOnHome: false,
         confirmOnBack: false,
-        onBack: () async {
-          final shouldExit = await showDialog<bool>(
-            context: context,
-            builder:
-                (_) => AlertDialog(
-                  backgroundColor: Colors.white.withOpacity(0.95),
-                  title: const Text('종료하시겠습니까?'),
-                  content: const Text('이 화면을 종료하고 이전 화면으로 돌아갑니다.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('취소'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text('나가기'),
-                    ),
-                  ],
-                ),
+        onBack: () {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const ContentScreen()),
+                (route) => false,
           );
-
-          if (shouldExit == true) {
-            // ✅ 검은화면 방지용 임시 오버레이 추가
-            final overlayContext = navigatorKey.currentState?.overlay?.context;
-            if (overlayContext != null) {
-              showGeneralDialog(
-                context: overlayContext,
-                barrierColor: Colors.transparent,
-                barrierDismissible: false,
-                transitionDuration: Duration.zero,
-                pageBuilder: (_, __, ___) => const SizedBox.shrink(),
-              );
-            }
-
-            // ✅ 실제 뒤로가기
-            if (mounted) {
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
-              } else {
-                Navigator.pushReplacementNamed(context, '/menu');
-              }
-            }
-
-            // ✅ 오버레이 제거 (한 프레임 뒤 닫기)
-            await Future.delayed(const Duration(milliseconds: 100));
-            if (Navigator.canPop(context)) Navigator.pop(context);
-          }
         },
       ),
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF003B5C),
-                  Color(0xFF4EB4E5),
-                  Color(0xFFBFF4FF),
-                ],
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-              ),
-            ),
-          ),
-          IgnorePointer(
-            child: Image.asset(
-              'assets/image/eduhome.png',
-              fit: BoxFit.cover,
-              opacity: const AlwaysStoppedAnimation(0.35),
-            ),
-          ),
-          IgnorePointer(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: Container(
-                height: 240,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.white.withOpacity(0.25),
-                      Colors.transparent,
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+          /// 🌊 배경 (HomeScreen과 동일)
+          Positioned.fill(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  'assets/image/eduhome.png',
+                  fit: BoxFit.cover,
+                ),
+                Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xAAFFFFFF), Color(0x66FFFFFF)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
           SafeArea(
@@ -535,81 +592,200 @@ class _NotificationDirectoryScreenState
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: Column(
                 children: [
-                  /// 🪸 그룹 선택 드롭다운
+                  /// 🪸 그룹 선택 섹션 (다른 섹션과 비슷한 스타일)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.25),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.4)),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value:
-                            _selectedGroupId.isEmpty ? null : _selectedGroupId,
-                        hint: const Row(
-                          children: [
-                            Icon(Icons.group, color: Colors.white),
-                            SizedBox(width: 8),
-                            Text(
-                              '전체 그룹',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ],
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFFE3F2FD),
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
                         ),
-                        dropdownColor: Colors.white,
-                        isExpanded: true,
-                        items: [
-                          const DropdownMenuItem(
-                            value: '',
-                            child: Row(
-                              children: [
-                                Icon(Icons.group, color: Colors.black),
-                                SizedBox(width: 8),
-                                Text(
-                                  '전체 그룹',
-                                  style: TextStyle(fontWeight: FontWeight.w500),
-                                ),
-                              ],
+                      ],
+                    ),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                      ),
+                      child: ExpansionTile(
+                        tilePadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                        leading: const Icon(
+                          Icons.group_outlined,
+                          color: Color(0xFF5B9FD3),
+                          size: 22,
+                        ),
+                        title: Text(
+                          _selectedGroupId.isEmpty
+                              ? '전체 그룹'
+                              : _groups
+                              .firstWhere(
+                                (g) => g['id'] == _selectedGroupId,
+                            orElse: () => {'title': '전체 그룹'},
+                          )['title']!,
+                          style: const TextStyle(
+                            color: Color(0xFF0E2C48),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        subtitle: const Padding(
+                          padding: EdgeInsets.only(top: 4),
+                          child: Text(
+                            '그룹을 선택하여 필터링',
+                            style: TextStyle(
+                              color: Color(0xFF1B405C),
+                              fontSize: 13,
                             ),
                           ),
-                          ..._groups.map(
-                            (g) => DropdownMenuItem<String>(
-                              value: g['id']!,
-                              child: Row(
+                        ),
+                        children: [
+                          Container(
+                            constraints: const BoxConstraints(
+                              maxHeight: 300, // 스크롤 가능한 최대 높이
+                            ),
+                            child: SingleChildScrollView(
+                              child: Column(
                                 children: [
-                                  CircleAvatar(
-                                    radius: 12,
-                                    backgroundImage: AssetImage(
-                                      'assets/image/character${g['id']}.png',
+                                  // 전체 그룹 옵션
+                                  InkWell(
+                                    onTap: () {
+                                      setState(() => _selectedGroupId = '');
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      decoration: BoxDecoration(
+                                        color: _selectedGroupId.isEmpty
+                                            ? const Color(0xFFE3F2FD)
+                                            : const Color(0xFFF8FBFF),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: _selectedGroupId.isEmpty
+                                              ? const Color(0xFF5B9FD3)
+                                              : const Color(0xFFE3F2FD),
+                                          width: _selectedGroupId.isEmpty ? 1.5 : 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.group_outlined,
+                                            color: _selectedGroupId.isEmpty
+                                                ? const Color(0xFF5B9FD3)
+                                                : const Color(0xFF1B405C),
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            '전체 그룹',
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: _selectedGroupId.isEmpty
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w600,
+                                              color: _selectedGroupId.isEmpty
+                                                  ? const Color(0xFF0E2C48)
+                                                  : const Color(0xFF1B405C),
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          if (_selectedGroupId.isEmpty)
+                                            const Icon(
+                                              Icons.check_circle,
+                                              color: Color(0xFF5B9FD3),
+                                              size: 20,
+                                            ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    g['title']!,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
+                                  // 각 그룹 옵션
+                                  ..._groups.map((g) {
+                                    final isSelected = _selectedGroupId == g['id'];
+                                    return InkWell(
+                                      onTap: () {
+                                        setState(() => _selectedGroupId = g['id']!);
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(12),
+                                        margin: const EdgeInsets.only(bottom: 8),
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? const Color(0xFFE3F2FD)
+                                              : const Color(0xFFF8FBFF),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? const Color(0xFF5B9FD3)
+                                                : const Color(0xFFE3F2FD),
+                                            width: isSelected ? 1.5 : 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 16,
+                                              backgroundColor:
+                                              const Color(0xFFB8DAF5),
+                                              backgroundImage: AssetImage(
+                                                'assets/image/character${g['id']}.png',
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Text(
+                                                g['title']!,
+                                                style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: isSelected
+                                                      ? FontWeight.w700
+                                                      : FontWeight.w600,
+                                                  color: isSelected
+                                                      ? const Color(0xFF0E2C48)
+                                                      : const Color(0xFF1B405C),
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            if (isSelected)
+                                              const Icon(
+                                                Icons.check_circle,
+                                                color: Color(0xFF5B9FD3),
+                                                size: 20,
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
                                 ],
                               ),
                             ),
                           ),
                         ],
-                        onChanged:
-                            (val) =>
-                                setState(() => _selectedGroupId = val ?? ''),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+
+                  const SizedBox(height: 16),
 
                   /// 🪸 일기/알림 리스트
                   Expanded(
                     child: AbcStreamList(
                       uid: uid,
                       selectedGroupId:
-                          _selectedGroupId.isEmpty ? null : _selectedGroupId,
+                      _selectedGroupId.isEmpty ? null : _selectedGroupId,
                     ),
                   ),
                 ],

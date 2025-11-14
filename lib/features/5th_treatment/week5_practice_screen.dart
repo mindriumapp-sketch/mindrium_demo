@@ -27,11 +27,11 @@ class Week5PracticeScreen extends StatelessWidget {
       child: const Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 12,),
+          const SizedBox(height: 12),
           Text(
-            '방금 본 여성의 예시 상황에 몰입해 보면서\n'
-            '불안을 직면하는 행동(불안을 점차 감소시킬 수 있는 행동)과\n'
-            '불안을 회피하는 행동(지속 시 불안을 증가시킬 수 있는 행동)을\n'
+            '방금 본 여성의 예시 상황에 몰입해 보면서 '
+            '불안을 직면하는 행동(불안을 점차 감소시킬 수 있는 행동)과 '
+            '불안을 회피하는 행동(지속 시 불안을 증가시킬 수 있는 행동)을 '
             '구분하는 연습을 해볼 거예요.',
             textAlign: TextAlign.center,
             style: TextStyle(

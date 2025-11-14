@@ -93,98 +93,105 @@ class _Week8MatrixScreenState extends State<Week8MatrixScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: const CustomAppBar(title: '8주차 - 캘린더 요약'),
-
         body: SafeArea(
-          child:
-              _isLoading
-                  ? const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(_bluePrimary),
-                    ),
-                  )
-                  : _savedEvents.isEmpty
-                  ? _buildEmptyState()
-                  : SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(0, 20, 0, 24),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: _sidePad),
-
-                        CalendarSheet(
-                          title: '캘린더 요약',
-                          whitePadding: const EdgeInsets.fromLTRB(
-                            24,
-                            28,
-                            24,
-                            24,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Align(
-                                alignment: Alignment.center,
-                                child: Padding(
-                                  padding: EdgeInsets.only(bottom: 30),
-                                  child: Text(
-                                    '지난 한 주 동안 유지한 습관과 기간을 한눈에 살펴보세요',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontFamily: 'NotoSansKR',
-                                      fontSize: 15,
-                                      color: Color(0xFF718096),
-                                      fontWeight: FontWeight.w500,
-                                    ),
+          child: _isLoading
+              ? const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(_bluePrimary),
+            ),
+          )
+              : Column(
+            children: [
+              // 위쪽: 스크롤 영역
+              Expanded(
+                child: _savedEvents.isEmpty
+                    ? _buildEmptyState()
+                    : SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(0, 20, 0, 24),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: _sidePad),
+                      CalendarSheet(
+                        title: '캘린더 요약',
+                        whitePadding: const EdgeInsets.fromLTRB(
+                          24,
+                          28,
+                          24,
+                          24,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Align(
+                              alignment: Alignment.center,
+                              child: Padding(
+                                padding: EdgeInsets.only(bottom: 30),
+                                child: Text(
+                                  '지난 한 주 동안 유지한 습관과 기간을 한눈에 살펴보세요',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: 'NotoSansKR',
+                                    fontSize: 15,
+                                    color: Color(0xFF718096),
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 8,
-                                  right: 8,
-                                  bottom: 20,
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Expanded(
-                                      child: Text(
-                                        '유지한 행동 매트릭스',
-                                        style: TextStyle(
-                                          fontFamily: 'NotoSansKR',
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: Color(0xFF2D3748),
-                                        ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                left: 8,
+                                right: 8,
+                                bottom: 20,
+                              ),
+                              child: Row(
+                                children: [
+                                  const Expanded(
+                                    child: Text(
+                                      '유지한 행동 매트릭스',
+                                      style: TextStyle(
+                                        fontFamily: 'NotoSansKR',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF2D3748),
                                       ),
                                     ),
-                                    _countPill(
-                                      '${_keptBehaviors().length}개 행동',
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                  _countPill(
+                                    '${_keptBehaviors().length}개 행동',
+                                  ),
+                                ],
                               ),
-                              // 행동 카드 리스트
-                              ..._buildBehaviorCards(),
-                            ],
-                          ),
+                            ),
+                            // 행동 카드 리스트
+                            ..._buildBehaviorCards(),
+                          ],
                         ),
-                        const SizedBox(height: 100),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
                   ),
-        ),
+                ),
+              ),
 
-        bottomNavigationBar: Padding(
-          padding: const EdgeInsets.fromLTRB(_sidePad, 8, _sidePad, 24),
-          child: NavigationButtons(
-            leftLabel: '이전',
-            rightLabel: '다음',
-            onBack: () => Navigator.pop(context),
-            onNext: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const Week8RoadmapScreen()),
-              );
-            },
+              // 아래: 항상 바닥에 붙는 네비게이션
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                child: NavigationButtons(
+                  leftLabel: '이전',
+                  rightLabel: '다음',
+                  onBack: () => Navigator.pop(context),
+                  onNext: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const Week8RoadmapScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),

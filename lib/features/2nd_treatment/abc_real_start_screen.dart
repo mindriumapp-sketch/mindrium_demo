@@ -23,9 +23,11 @@ class AbcRealStartScreen extends StatelessWidget {
           ),
         );
       },
+      rightLabel: '작성하기',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          const SizedBox(height: 14),
           const Icon(Icons.edit_note, size: 68, color: AppColors.indigo),
           const SizedBox(height: 24),
           const Text(
@@ -50,39 +52,6 @@ class AbcRealStartScreen extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 36),
-
-          /// 🪶 작성하기 버튼
-          SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AbcInputScreen(showGuide: false),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.indigo,
-                foregroundColor: Colors.white,
-                textStyle: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Noto Sans KR',
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 3,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              child: const Text('작성하기'),
-            ),
-          ),
-
-          const SizedBox(height: 20),
 
           /// 💡 안내문
           Container(

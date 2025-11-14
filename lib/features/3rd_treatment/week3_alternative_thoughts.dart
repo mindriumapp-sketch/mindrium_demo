@@ -1,11 +1,17 @@
-import 'package:flutter/material.dart';
+// lib/features/3rd_treatment/week3_alternative_thoughts.dart
 
-import 'package:gad_app_team/widgets/top_btm_card.dart';        // ApplyDoubleCard, PanelHeader
-import 'package:gad_app_team/widgets/chips_editor.dart';        // ✅ 칩 입력 위젯
+import 'package:flutter/material.dart';
+import 'package:gad_app_team/widgets/custom_appbar.dart';
+import 'package:gad_app_team/widgets/chips_editor.dart';
+import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/features/3rd_treatment/week3_visual_screen.dart';
 
+// ⭐ 5주차에서 썼던 더블 카드 레이아웃
+import 'package:gad_app_team/widgets/top_btm_card.dart';
+
 class Week3AlternativeThoughtsScreen extends StatefulWidget {
-  final List<String> previousChips; // 앞 화면에서 넘어온 불안 문구들
+  final List<String> previousChips;
+
   const Week3AlternativeThoughtsScreen({
     super.key,
     required this.previousChips,
@@ -18,66 +24,72 @@ class Week3AlternativeThoughtsScreen extends StatefulWidget {
 
 class _Week3AlternativeThoughtsScreenState
     extends State<Week3AlternativeThoughtsScreen> {
-  // ChipsEditor 제어용 Key
   final GlobalKey<ChipsEditorState> _chipsKey = GlobalKey<ChipsEditorState>();
+  List<String> _chips = [];
 
   void _onChipsChanged(List<String> v) {
     setState(() => _chips = v);
   }
-  List<String> _chips = [];
 
-  // 상단 큰 이미지 카드
-  Widget _buildTopCard(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const PanelHeader(
-          subtitle: '도움이 되는 생각으로 바꿔보세요 🌿',
-          showDivider: false,
-        ),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF2962F6).withOpacity(0.12),
-                  blurRadius: 10,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+  // ───────── 상단 카드 내용 ─────────
+  Widget _buildTopPanel() {
+    return SizedBox(
+      height: 150, // 위쪽 카드 높이 통일
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          Text(
+            '도움이 되는 생각으로 바꿔보세요',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF263C69),
+              fontFamily: 'Noto Sans KR',
             ),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Image.asset(
-                'assets/image/alternative thoughts.png',
-                fit: BoxFit.cover,
-                filterQuality: FilterQuality.high,
-                width: w,
-              ),
-            ),
+            textAlign: TextAlign.center,
           ),
-        ),
-      ],
+          SizedBox(height: 12),
+          Text(
+            '앞에서 떠올린 불안한 생각들을 기반으로,\n도움이 되는 생각을 자유롭게 적어보세요.',
+            style: TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w200,
+              height: 1.45,
+              color: Colors.black87,
+              fontFamily: 'Noto Sans KR',
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 
-  // 하단 입력 패널
-  Widget _buildBottomCard(BuildContext context) {
+  // ───────── 하단 카드 내용 ─────────
+  Widget _buildBottomPanel() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ChipsEditor(
           key: _chipsKey,
-          initial: const [],      // 초기 칩이 있다면 전달
+          initial: const [],
           onChanged: _onChipsChanged,
           minHeight: 150,
           maxWidthFactor: 0.78,
+          emptyIcon: const Icon(
+            Icons.edit_note_rounded,
+            size: 64,
+            color: Colors.black45,
+          ),
           emptyText: const Text(
             '여기에 입력한 내용이 표시됩니다',
-            style: TextStyle(fontSize: 15, color: Colors.grey, fontWeight: FontWeight.w400),
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.grey,
+              fontWeight: FontWeight.w400,
+              fontFamily: 'Noto Sans KR',
+            ),
           ),
         ),
         const SizedBox(height: 8),
@@ -85,11 +97,14 @@ class _Week3AlternativeThoughtsScreenState
     );
   }
 
-  void _goNext(BuildContext context) {
-    // 혹시 편집 중이면 먼저 확정
+  // ───────── 다음 화면 이동 (로직 그대로) ─────────
+  void _goNext() {
     _chipsKey.currentState?.unfocusAndCommit();
+    final values = _chipsKey.currentState?.values ?? _chips;
 
-    final values = _chipsKey.currentState?.values ?? const <String>[];
+    // ✅ 이번 화면도 아무것도 안 적었으면 넘어가지 않게
+    if (values.isEmpty) return;
+
     Navigator.push(
       context,
       PageRouteBuilder(
@@ -105,29 +120,19 @@ class _Week3AlternativeThoughtsScreenState
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        // 바깥 탭 → 편집칩 확정 + 포커스 해제
-        _chipsKey.currentState?.unfocusAndCommit();
-      },
-      child: ApplyDoubleCard(
-        appBarTitle: '3주차 - Self Talk',
-        topChild: _buildTopCard(context),
-        bottomChild: _buildBottomCard(context),
-        middleNoticeText: '아래 영역을 탭하면 항목이 추가돼요!\n엔터 또는 바깥 터치로 확정됩니다',
-        onBack: () => Navigator.pop(context),
-        onNext: () => _goNext(context),
+    return ApplyDoubleCard(
+      appBarTitle: '3주차 - Self Talk',
+      topChild: _buildTopPanel(),
+      middleBannerText:
+      '아래 영역을 탭하면 항목이 추가돼요!\n엔터 또는 바깥 터치로 확정됩니다',
+      bottomChild: _buildBottomPanel(),
+      onBack: () => Navigator.pop(context),
 
-        // 스타일 옵션
-        pagePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        panelsGap: 24,
-        panelPadding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-        panelRadius: 18,
-        maxWidth: 960,
-        topcardColor: Colors.white.withOpacity(0.96),
-        btmcardColor: const Color(0xFF7DD9E8).withOpacity(0.35),
-      ),
+      // ✅ 칩이 없으면 다음 버튼 비활성화
+      onNext: _chips.isNotEmpty ? _goNext : null,
+
+      // 3주차 느낌 맞춰서 하단 패널만 살짝 민트
+      btmcardColor: const Color(0xFF7DD9E8).withOpacity(0.25),
     );
   }
 }

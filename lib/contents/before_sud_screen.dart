@@ -1,3 +1,7 @@
+// 🔹 SUD(불안 정도) 입력 및 저장 화면
+// 사용자가 0~10 점수 선택 → Firestore 저장 → 점수에 따라 다음 화면 이동
+// Mindrium 공통 ApplyDesign 사용 (튜토리얼 카드형 레이아웃)
+
 // ─────────────────────────  FLUTTER  ─────────────────────────
 import 'package:flutter/material.dart';
 
@@ -42,13 +46,13 @@ class _BeforeSudRatingScreenState extends State<BeforeSudRatingScreen> {
         .doc(abcId)
         .collection('sud_score')
         .add({
-      'before_sud': _sud,
-      'after_sud': _sud,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-      if (pos != null) 'latitude': pos.latitude,
-      if (pos != null) 'longitude': pos.longitude,
-    });
+          'before_sud': _sud,
+          'after_sud': _sud,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+          if (pos != null) 'latitude': pos.latitude,
+          if (pos != null) 'longitude': pos.longitude,
+        });
   }
 
   /// 현재 위치 가져오기 (권한 거부 시 null)
@@ -61,8 +65,9 @@ class _BeforeSudRatingScreenState extends State<BeforeSudRatingScreen> {
       if (perm == LocationPermission.always ||
           perm == LocationPermission.whileInUse) {
         return Geolocator.getCurrentPosition(
-          locationSettings:
-          const LocationSettings(accuracy: LocationAccuracy.low),
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.low,
+          ),
         );
       }
     } catch (_) {}
@@ -71,12 +76,13 @@ class _BeforeSudRatingScreenState extends State<BeforeSudRatingScreen> {
 
   Future<String> _loadGroupId(String uid, String abcId) async {
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('abc_models')
-          .doc(abcId)
-          .get();
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .collection('abc_models')
+              .doc(abcId)
+              .get();
       final data = doc.data();
       if (data == null) return '';
       final dynamic raw = data['group_id'] ?? data['groupId'];
@@ -112,7 +118,7 @@ class _BeforeSudRatingScreenState extends State<BeforeSudRatingScreen> {
   Widget build(BuildContext context) {
     final Object? rawArgs = ModalRoute.of(context)?.settings.arguments;
     final Map<String, dynamic> args =
-    rawArgs is Map ? rawArgs.cast<String, dynamic>() : <String, dynamic>{};
+        rawArgs is Map ? rawArgs.cast<String, dynamic>() : <String, dynamic>{};
 
     final String? origin = args['origin'] as String?;
     final dynamic diary = args['diary'];
@@ -144,17 +150,15 @@ class _BeforeSudRatingScreenState extends State<BeforeSudRatingScreen> {
 
         final user = FirebaseAuth.instance.currentUser;
         if (user == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('로그인 정보가 없습니다.')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('로그인 정보가 없습니다.')));
           return;
         }
 
         if (!hasAbcId) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('기록 정보를 찾을 수 없습니다. 다시 시도해 주세요.'),
-            ),
+            const SnackBar(content: Text('기록 정보를 찾을 수 없습니다. 다시 시도해 주세요.')),
           );
           return;
         }
@@ -167,11 +171,7 @@ class _BeforeSudRatingScreenState extends State<BeforeSudRatingScreen> {
           Navigator.pushReplacementNamed(
             context,
             '/similar_activation',
-            arguments: {
-              'abcId': ensuredAbcId,
-              'groupId': groupId,
-              'sud': _sud,
-            },
+            arguments: {'abcId': ensuredAbcId, 'groupId': groupId, 'sud': _sud},
           );
         } else {
           Navigator.pushReplacementNamed(

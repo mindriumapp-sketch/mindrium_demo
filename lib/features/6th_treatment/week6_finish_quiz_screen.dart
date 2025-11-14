@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:gad_app_team/widgets/custom_appbar.dart';
+import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:provider/provider.dart';
+import 'package:gad_app_team/data/user_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'package:gad_app_team/widgets/custom_appbar.dart';
-import 'package:gad_app_team/widgets/navigation_button.dart';
+// 💙 공용 UI 위젯
 import 'package:gad_app_team/widgets/quiz_card.dart';
 import 'package:gad_app_team/widgets/jellyfish_notice.dart';
 import 'package:gad_app_team/widgets/choice_card_button.dart';
-import 'package:gad_app_team/data/user_provider.dart';
 
-// ✅ 결과 화면
+// ✅ 시각화 화면
 import 'week6_visual_screen.dart';
 
 class Week6FinishQuizScreen extends StatefulWidget {
@@ -25,9 +26,11 @@ class Week6FinishQuizScreen extends StatefulWidget {
 
 class _Week6FinishQuizScreenState extends State<Week6FinishQuizScreen> {
   int _currentIdx = 0;
-  final Map<int, String> _answers = {}; // 'face' | 'avoid'
+  // 인덱스별 사용자가 고른 답: 'face' | 'avoid'
+  final Map<int, String> _answers = {};
+
   Map<String, dynamic>? _abcModel;
-  String? _abcModelId;
+  String? _abcModelId; // 가장 최근 ABC 모델 문서 ID
   bool _isLoading = true;
   String? _error;
 
@@ -40,6 +43,7 @@ class _Week6FinishQuizScreenState extends State<Week6FinishQuizScreen> {
     _fetchLatestAbcModel();
   }
 
+  // 🔹 abc_models에서 최신 한 개만 읽어와서 행동 리스트 만들기
   Future<void> _fetchLatestAbcModel() async {
     setState(() {
       _isLoading = true;
@@ -60,8 +64,6 @@ class _Week6FinishQuizScreenState extends State<Week6FinishQuizScreen> {
       if (snapshot.docs.isEmpty) {
         setState(() {
           _abcModel = null;
-          _behaviorList = [];
-          _currentBehavior = '';
           _isLoading = false;
         });
         return;
@@ -70,9 +72,11 @@ class _Week6FinishQuizScreenState extends State<Week6FinishQuizScreen> {
       final data = snapshot.docs.first.data();
       final docId = snapshot.docs.first.id;
 
-      final consequenceBehavior = (data['consequence_behavior'] ?? '').toString();
+      // 원래 코드대로 ', ' 로 split
+      final consequenceBehavior =
+      (data['consequence_behavior'] ?? '').toString();
       final list = consequenceBehavior
-          .split(',')
+          .split(', ')
           .map((e) => e.trim())
           .where((e) => e.isNotEmpty)
           .toList();
@@ -92,177 +96,230 @@ class _Week6FinishQuizScreenState extends State<Week6FinishQuizScreen> {
     }
   }
 
-  /// 🔹 모든 답변이 끝났을 때 결과 화면으로 이동
-  void _goToVisualScreen() {
-    // 회피/직면으로 나누어 테이블에 표시할 리스트 생성
-    final List<String> avoidList = [];
-    final List<String> faceList = [];
+  // 🔹 저장만 하는 함수로 변경 (네비게이션 X)
+  Future<void> _saveBehaviorClassifications() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw Exception('로그인 정보 없음');
+
+    // 인덱스 → 행동명 → '직면'/'회피'
+    final Map<String, String> behaviorClassifications = {};
 
     for (int i = 0; i < _behaviorList.length; i++) {
-      final ans = _answers[i];
-      if (ans == 'avoid') {
-        avoidList.add(_behaviorList[i]);
-      } else if (ans == 'face') {
-        faceList.add(_behaviorList[i]);
+      if (_answers.containsKey(i)) {
+        final behavior = _behaviorList[i];
+        final classification = _answers[i] == 'face' ? '직면' : '회피';
+        behaviorClassifications[behavior] = classification;
       }
     }
 
-    // Week6VisualScreen으로 이동 (팝업 없이)
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) => Week6VisualScreen(
-          previousChips: avoidList,        // ← 불안을 회피하는 행동
-          alternativeChips: faceList,      // ← 불안을 직면하는 행동
-        ),
-        transitionDuration: Duration.zero,
-        reverseTransitionDuration: Duration.zero,
-      ),
-    );
-  }
-
-  /// 다음 문항으로 이동하거나, 마지막이면 결과 화면으로 이동
-  void _nextBehavior() {
-    if (_currentIdx < _behaviorList.length - 1) {
-      setState(() {
-        _currentIdx++;
-        _currentBehavior = _behaviorList[_currentIdx];
-      });
-    } else {
-      // 🔚 마지막 문제를 답한 뒤에는 저장 대신 결과 화면으로
-      _goToVisualScreen();
-    }
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('abc_models')
+        .doc(_abcModelId)
+        .update({
+      'behavior_classifications': behaviorClassifications,
+      'week6_completed': true,
+      'week6_completed_at': FieldValue.serverTimestamp(),
+    });
   }
 
   bool get _hasBehavior => _currentBehavior.isNotEmpty;
-  bool get _canAnswer => _hasBehavior && _answers[_currentIdx] == null;
-
-  /// 비활성화처럼 보이게 하는 시각/터치 래퍼
-  Widget _wrapDisabled({required bool enabled, required Widget child}) {
-    return enabled
-        ? child
-        : Opacity(opacity: 0.5, child: IgnorePointer(ignoring: true, child: child));
-  }
 
   @override
   Widget build(BuildContext context) {
+    const double sidePadding = 20.0;
     final userName = Provider.of<UserProvider>(context, listen: false).userName;
+    final bool hasBehavior = _hasBehavior;
+    final bool isLast =
+    hasBehavior ? _currentIdx == _behaviorList.length - 1 : true;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: const CustomAppBar(title: '6주차 - 마무리 퀴즈'),
+      extendBody: true,
+      backgroundColor: Colors.white,
       body: Stack(
-        fit: StackFit.expand,
         children: [
-          // 🌊 배경 (원본 이미지 + 밝은 오버레이)
-          Image.asset('assets/image/eduhome.png', fit: BoxFit.cover),
-          Container(color: Colors.white.withOpacity(0.35)),
+          // 🌊 배경 이미지 (Week3랑 동일 구조)
+          Opacity(
+            opacity: 0.35,
+            child: Image.asset(
+              'assets/image/eduhome.png',
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              filterQuality: FilterQuality.high,
+            ),
+          ),
 
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator())
-          else if (_error != null)
-            Center(
-              child: Text(
-                _error!,
-                style: const TextStyle(
-                  color: Colors.redAccent,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            )
-          else if (!_hasBehavior)
-              const Center(
-                child: Text(
-                  '최근에 작성한 ABC모델이 없습니다.',
-                  style: TextStyle(fontSize: 16),
-                  textAlign: TextAlign.center,
-                ),
-              )
-            else
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  child: Column(
-                    children: [
-                      // 🧠 상단 퀴즈 카드
-                      Expanded(
-                        flex: 4,
-                        child: QuizCard(
-                          quizText: '$userName님이 작성한 행동: $_currentBehavior',
+          // 실제 콘텐츠
+          SafeArea(
+            child: Column(
+              children: [
+                const CustomAppBar(title: '6주차 - 마무리 퀴즈'),
+
+                // 위쪽 콘텐츠 영역
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: sidePadding,
+                      vertical: 12,
+                    ),
+                    child: _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : (_error != null)
+                        ? Center(
+                      child: Text(
+                        _error!,
+                        style:
+                        const TextStyle(color: Colors.redAccent),
+                      ),
+                    )
+                        : (!hasBehavior)
+                        ? const Center(
+                      child: Text(
+                        '최근에 작성한 ABC모델이 없습니다.',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    )
+                        : Column(
+                      crossAxisAlignment:
+                      CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 60),
+
+                        // 🔹 문제 카드 (사용자 행동)
+                        QuizCard(
+                          noticeText: '$userName님이 작성한 행동',
+                          quizText: _currentBehavior,
                           currentIndex: _currentIdx + 1,
-                          totalCount: _behaviorList.length, // 1/n 표시
+                          totalCount: _behaviorList.length,
                         ),
-                      ),
-                      const SizedBox(height: 12),
+                        const SizedBox(height: 15),
 
-                      // 💬 피드백 (선택 전/후 메시지)
-                      JellyfishNotice(
-                        feedback: _answers[_currentIdx] == null
-                            ? '이 행동은 불안을 직면하는 쪽일까요, 회피하는 쪽일까요?'
-                            : _answers[_currentIdx] == 'face'
-                            ? '불안을 직면하는 행동이라고 선택하셨습니다.'
-                            : '불안을 회피하는 행동이라고 선택하셨습니다.',
-                        feedbackColor: _answers[_currentIdx] == null
-                            ? Colors.indigo
-                            : _answers[_currentIdx] == 'face'
-                            ? const Color(0xFF40C79A) // 민트
-                            : const Color(0xFFEB6A67), // 코랄
-                      ),
-                      const SizedBox(height: 20),
+                        // 🔹 해파리 말풍선
+                        JellyfishNotice(
+                          feedback: _answers[_currentIdx] == null
+                              ? '이 행동은 불안을 직면하는 쪽일까요, \n회피하는 쪽일까요?'
+                              : _answers[_currentIdx] == 'face'
+                              ? '불안을 직면하는 행동이라고 \n선택하셨습니다.'
+                              : '불안을 회피하는 행동이라고 \n선택하셨습니다.',
+                          feedbackColor:
+                          _answers[_currentIdx] == null
+                              ? Colors.indigo
+                              : _answers[_currentIdx] ==
+                              'face'
+                              ? const Color(0xFF40C79A)
+                              : const Color(0xFFEB6A67),
+                        ),
+                        const SizedBox(height: 20),
 
-                      // 🎯 선택 버튼 (Mindrium 공통 위젯)
-                      SizedBox(
-                        height: 180,
-                        child: Column(
+                        // 🔹 선택 버튼
+                        Column(
                           children: [
-                            Expanded(
-                              child: _wrapDisabled(
-                                enabled: _canAnswer,
-                                child: ChoiceCardButton(
-                                  type: ChoiceType.healthy,
-                                  onPressed: () {
-                                    if (!_canAnswer) return;
-                                    setState(() => _answers[_currentIdx] = 'face');
-                                  },
-                                ),
-                              ),
+                            ChoiceCardButton(
+                              height: 54,
+                              type: ChoiceType.healthy,
+                              onPressed: () {
+                                setState(() {
+                                  _answers[_currentIdx] = 'face';
+                                });
+                              },
                             ),
-                            const SizedBox(height: 12),
-                            Expanded(
-                              child: _wrapDisabled(
-                                enabled: _canAnswer,
-                                child: ChoiceCardButton(
-                                  type: ChoiceType.anxious,
-                                  onPressed: () {
-                                    if (!_canAnswer) return;
-                                    setState(() => _answers[_currentIdx] = 'avoid');
-                                  },
-                                ),
-                              ),
+                            const SizedBox(height: 10),
+                            ChoiceCardButton(
+                              height: 54,
+                              type: ChoiceType.anxious,
+                              onPressed: () {
+                                setState(() {
+                                  _answers[_currentIdx] = 'avoid';
+                                });
+                              },
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 20),
 
-                      // ⛵ 네비게이션 버튼 (다음은 답변 후에만 활성)
-                      NavigationButtons(
-                        onBack: _currentIdx > 0
-                            ? () {
-                          setState(() {
-                            _currentIdx--;
-                            _currentBehavior = _behaviorList[_currentIdx];
-                          });
-                        }
-                            : () => Navigator.pop(context),
-                        onNext: (_answers[_currentIdx] != null) ? _nextBehavior : null,
-                      ),
-                    ],
+                        const Spacer(),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+
+                // 아래 네비게이션 (항상 바닥)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  child: NavigationButtons(
+                    leftLabel: '이전',
+                    rightLabel: '다음',
+                    onBack: () {
+                      if (_isLoading) return;
+                      if (_error != null) {
+                        Navigator.pop(context);
+                        return;
+                      }
+                      if (!hasBehavior) {
+                        Navigator.pop(context);
+                        return;
+                      }
+
+                      if (_currentIdx > 0) {
+                        setState(() {
+                          _currentIdx--;
+                          _currentBehavior = _behaviorList[_currentIdx];
+                        });
+                      } else {
+                        Navigator.pop(context);
+                      }
+                    },
+                    onNext: (!_isLoading &&
+                        _error == null &&
+                        hasBehavior &&
+                        _answers[_currentIdx] != null)
+                        ? () async {
+                      if (!isLast) {
+                        // 다음 행동으로
+                        setState(() {
+                          _currentIdx++;
+                          _currentBehavior =
+                          _behaviorList[_currentIdx];
+                        });
+                      } else {
+                        // 🔥 마지막일 때만 저장하고 → 시각화 화면으로 이동
+                        await _saveBehaviorClassifications();
+
+                        // 시각화용 리스트 만들기
+                        final List<String> avoidList = [];
+                        final List<String> faceList = [];
+                        for (int i = 0; i < _behaviorList.length; i++) {
+                          final ans = _answers[i];
+                          if (ans == 'avoid') {
+                            avoidList.add(_behaviorList[i]);
+                          } else if (ans == 'face') {
+                            faceList.add(_behaviorList[i]);
+                          }
+                        }
+
+                        if (!mounted) return;
+
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder: (_, __, ___) =>
+                                Week6VisualScreen(
+                                  previousChips: avoidList,
+                                  alternativeChips: faceList,
+                                ),
+                            transitionDuration: Duration.zero,
+                            reverseTransitionDuration: Duration.zero,
+                          ),
+                        );
+                      }
+                    }
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

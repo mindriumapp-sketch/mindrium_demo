@@ -106,12 +106,17 @@ class Week4SkipChoiceScreen extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           // 🌊 배경
-          Opacity(opacity: 0.65,
-          child: Image.asset(
-            'assets/image/eduhome.png',
-            fit: BoxFit.cover,
-            filterQuality: FilterQuality.high,
-          ),),
+          Container(
+            color: Colors.white, // 흰 배경 유지
+            child: Opacity(
+              opacity: 0.35, // ApplyDesign과 동일한 투명도
+              child: Image.asset(
+                'assets/image/eduhome.png',
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.high,
+              ),
+            ),
+          ),
 
           // 본문
           SafeArea(
@@ -128,6 +133,7 @@ class Week4SkipChoiceScreen extends StatelessWidget {
                       // =========================
                       QuizCard(
                         quizText: description,
+                        quizSize: 18,
                         currentIndex: 1,
                         // totalCount
                       ),
@@ -139,7 +145,7 @@ class Week4SkipChoiceScreen extends StatelessWidget {
                       // =========================
                       JellyfishNotice(
                         feedback:
-                        '만약 지금은 부담스러우시다면,\n걱정일기에 가볍게 적어두고 다음에 이어가도 좋아요.',
+                        '만약 지금은 부담스러우시다면,\n걱정일기에 가볍게 적어두고 다음에 \n이어가도 좋아요.',
                       ),
 
                       const SizedBox(height: 20),
@@ -153,7 +159,7 @@ class Week4SkipChoiceScreen extends StatelessWidget {
                         type: ChoiceType.other, // 파란색: 주 버튼
                         onPressed: onPrimary,
                         othText: '도움이 되는 생각을 찾아볼게요!',
-                        height: 75,
+                        height: 54,
                       ),
                       if (!isFromAfterSud) ...[
                         const SizedBox(height: 10),
@@ -161,44 +167,27 @@ class Week4SkipChoiceScreen extends StatelessWidget {
                           type: ChoiceType.another, // 분홍색: 보조 버튼
                           onPressed: onSecondary,
                           anoText: '또 다른 생각으로 진행할게요',
-                          height: 75,
+                          height: 54,
                         ),
                       ],
 
                       // (선택) 4주차 마무리하기 — loopCount >= 2일 때 노출
                       if (loopCount >= 2) ...[
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          height: 56,
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const Week4FinishScreen(),
-                                ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF5B3EFF),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                        const SizedBox(height: 10),
+                        ChoiceCardButton(
+                          type: ChoiceType.another, // 분홍/보조 스타일
+                          height: 54,
+                          anoText: '4주차 마무리하기',
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const Week4FinishScreen(),
                               ),
-                              elevation: 0,
-                            ),
-                            child: const Text(
-                              '4주차 마무리하기',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Noto Sans KR',
-                              ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
-                      ],
+                      ]
                     ],
                   ),
                 ),

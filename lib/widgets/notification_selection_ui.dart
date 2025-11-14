@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/widgets/primary_action_button.dart';
 import '../../data/notification_provider.dart'; // NotificationSetting, RepeatOption
+import 'package:gad_app_team/utils/edu_progress.dart';
 
 class NotificationSelectionUI extends StatelessWidget {
   final String? label;
@@ -20,7 +21,7 @@ class NotificationSelectionUI extends StatelessWidget {
   // 도움말 버튼
   final VoidCallback? onHelp;
 
-  // ✅ 추가: 위치 ‘들어갈 때/나올 때’ 토글 콜백
+  // 위치 ‘들어갈 때/나올 때’ 토글 콜백
   final ValueChanged<bool>? onToggleEnter;
   final ValueChanged<bool>? onToggleExit;
 
@@ -55,275 +56,302 @@ class NotificationSelectionUI extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ⏱ 위치+시간 동시 설정 시(또는 시간만 설정)엔 입장/퇴장 체크 비활성화
+    // 위치+시간 동시 설정 시(또는 시간만 설정)엔 입장/퇴장 체크 비활성화
     final bool hasTime = (draftTime?.time ?? draftLocation?.time) != null;
 
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 제목 + 도움말
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        "원하는 알림 방식을 설정해 주세요",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 22,
-                          height: 1.4,
-                          color: deepNavy,
+    return SafeArea(
+      child: Column(
+        children: [
+          // 위쪽: 스크롤되는 본문
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 제목 + 도움말
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          "원하는 알림 방식을 설정해 주세요",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 22,
+                            height: 1.4,
+                            color: deepNavy,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      onPressed: onHelp,
-                      icon: const Icon(Icons.help_outline, size: 22, color: deepNavy),
-                      splashRadius: 20,
-                      padding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 30),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        onPressed: onHelp,
+                        icon: const Icon(Icons.help_outline,
+                            size: 22, color: deepNavy),
+                        splashRadius: 20,
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
 
-                // 선택된 라벨
-                if (label != null && label!.trim().isNotEmpty)
+                  // 선택된 라벨
+                  if (label != null && label!.trim().isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: shadowColor.withOpacity(0.08),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const SizedBox(width: 10),
+                          const Icon(Icons.label_important_outline,
+                              color: oceanBlue, size: 22),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  '불안의 원인/상황',
+                                  style: TextStyle(
+                                    fontSize: 16.5,
+                                    fontWeight: FontWeight.w500,
+                                    color: deepNavy,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  label!,
+                                  style: const TextStyle(
+                                    fontSize: 14.5,
+                                    color: subText,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+
+                  const SizedBox(height: 26),
+
+                  // ===== [1] 위치 + 시간 =====
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: noNotification ? disableGrey : borderBlue,
+                        width: 1.1,
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: shadowColor.withOpacity(0.08),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
+                          color: shadowColor.withOpacity(0.05),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                    child: Column(
                       children: [
-                        const SizedBox(width: 10),
-                        const Icon(Icons.label_important_outline, color: oceanBlue, size: 22),
-                        const SizedBox(width: 20),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                '불안의 원인/상황',
-                                style: TextStyle(
-                                  fontSize: 16.5,
-                                  fontWeight: FontWeight.w500,
-                                  color: deepNavy,
+                        // 위치 행
+                        _rowItem(
+                          title: "위치",
+                          subtitle: _getLocationText(),
+                          icon: Icons.place_outlined,
+                          onTap: noNotification ? null : onTapLocation,
+                          isFirst: true,
+                        ),
+
+                        // 위치 있을 때만 입장/퇴장 보이기
+                        if (draftLocation != null)
+                          Padding(
+                            padding:
+                            const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: CheckboxListTile(
+                                    dense: true,
+                                    visualDensity: VisualDensity.compact,
+                                    title: const Text('들어갈 때'),
+                                    value: draftLocation!.notifyEnter,
+                                    onChanged: (noNotification || hasTime)
+                                        ? null
+                                        : (v) =>
+                                        onToggleEnter?.call(v ?? false),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                label!,
-                                style: const TextStyle(
-                                  fontSize: 14.5,
-                                  color: subText,
-                                  height: 1.3,
+                                Container(
+                                    width: 1,
+                                    height: 28,
+                                    color: Colors.grey.shade300),
+                                Expanded(
+                                  child: CheckboxListTile(
+                                    dense: true,
+                                    visualDensity: VisualDensity.compact,
+                                    title: const Text('나올 때'),
+                                    value: draftLocation!.notifyExit,
+                                    onChanged: (noNotification || hasTime)
+                                        ? null
+                                        : (v) =>
+                                        onToggleExit?.call(v ?? false),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        )
+
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(70, 0, 20, 0),
+                          child: Divider(
+                              height: 1, color: Color(0xFFE8EDF5)),
+                        ),
+
+                        // 시간 행
+                        _rowItem(
+                          title: "시간",
+                          subtitle: _getTimeText(context),
+                          icon: Icons.access_time_outlined,
+                          onTap: noNotification ? null : onTapTime,
+                        ),
                       ],
                     ),
                   ),
 
-                const SizedBox(height: 26),
+                  const SizedBox(height: 14),
 
-                // ===== [1] 위치 + 시간 (Divider) =====
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: noNotification ? disableGrey : borderBlue,
-                      width: 1.1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: shadowColor.withOpacity(0.05),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
+                  // ===== [2] 반복 + 다시 알림 =====
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: noNotification ? disableGrey : borderBlue,
+                        width: 1.1,
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // 위치 행
-                      _rowItem(
-                        title: "위치",
-                        subtitle: _getLocationText(),
-                        icon: Icons.place_outlined,
-                        onTap: noNotification ? null : onTapLocation,
-                        isFirst: true,
-                      ),
-
-                      // ▶ ‘들어갈 때/나올 때’ 체크: 위치가 있을 때만 노출
-                      if (draftLocation != null)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: CheckboxListTile(
-                                  dense: true,
-                                  visualDensity: VisualDensity.compact,
-                                  title: const Text('들어갈 때'),
-                                  value: draftLocation!.notifyEnter,
-                                  onChanged: (noNotification || hasTime)
-                                      ? null
-                                      : (v) => onToggleEnter?.call(v ?? false),
-                                ),
-                              ),
-                              Container(width: 1, height: 28, color: Colors.grey.shade300),
-                              Expanded(
-                                child: CheckboxListTile(
-                                  dense: true,
-                                  visualDensity: VisualDensity.compact,
-                                  title: const Text('나올 때'),
-                                  value: draftLocation!.notifyExit,
-                                  onChanged: (noNotification || hasTime)
-                                      ? null
-                                      : (v) => onToggleExit?.call(v ?? false),
-                                ),
-                              ),
-                            ],
-                          ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: shadowColor.withOpacity(0.05),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
                         ),
-
-                      // 위치/체크와 시간 사이 구분선 (아이콘 정렬 보정)
-                      const Padding(
-                        padding: EdgeInsets.fromLTRB(70, 0, 20, 0),
-                        child: Divider(height: 1, color: Color(0xFFE8EDF5)),
-                      ),
-
-                      // 시간 행
-                      _rowItem(
-                        title: "시간",
-                        subtitle: _getTimeText(context),
-                        icon: Icons.access_time_outlined,
-                        onTap: noNotification ? null : onTapTime,
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 14),
-
-                // ===== [2] 반복 + 다시 알림 (Divider) =====
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: noNotification ? disableGrey : borderBlue,
-                      width: 1.1,
+                      ],
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: shadowColor.withOpacity(0.05),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      _rowItem(
-                        title: "반복",
-                        subtitle: _getRepeatText(),
-                        icon: Icons.repeat_rounded,
-                        onTap: noNotification ? null : onTapRepeat,
-                        isFirst: true,
-                      ),
-                      const Padding(
-                        padding: EdgeInsets.fromLTRB(70, 0, 20, 0),
-                        child: Divider(height: 1, color: Color(0xFFE8EDF5)),
-                      ),
-                      _rowItem(
-                        title: "다시 알림",
-                        subtitle: _getReminderText(),
-                        icon: Icons.notifications_active_outlined,
-                        onTap: noNotification ? null : onTapReminder,
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 14),
-
-                // 알림 없음
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: noNotification ? oceanBlue : const Color(0xFFE0E6F0),
-                      width: 1.3,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: shadowColor.withOpacity(0.03),
-                        blurRadius: 2,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: ListTile(
-                    leading: Transform.scale(
-                      scale: 1.2,
-                      child: Checkbox(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                        activeColor: oceanBlue,
-                        value: noNotification,
-                        onChanged: (v) => onToggleNone(v ?? false),
-                      ),
-                    ),
-                    title: const Text(
-                      "알림을 설정하지 않을래요",
-                      style: TextStyle(fontSize: 16, color: deepNavy, fontWeight: FontWeight.w500),
+                    child: Column(
+                      children: [
+                        _rowItem(
+                          title: "반복",
+                          subtitle: _getRepeatText(),
+                          icon: Icons.repeat_rounded,
+                          onTap: noNotification ? null : onTapRepeat,
+                          isFirst: true,
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(70, 0, 20, 0),
+                          child: Divider(
+                              height: 1, color: Color(0xFFE8EDF5)),
+                        ),
+                        _rowItem(
+                          title: "다시 알림",
+                          subtitle: _getReminderText(),
+                          icon: Icons.notifications_active_outlined,
+                          onTap: noNotification ? null : onTapReminder,
+                        ),
+                      ],
                     ),
                   ),
-                ),
 
-                const SizedBox(height: 30),
+                  const SizedBox(height: 14),
 
-                // 저장 버튼(작은 그림자)
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0x12000000),
-                        blurRadius: 4,
-                        spreadRadius: 0,
-                        offset: const Offset(0, -1.5),
+                  // 알림 없음 체크
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: noNotification
+                            ? oceanBlue
+                            : const Color(0xFFE0E6F0),
+                        width: 1.3,
                       ),
-                    ],
+                      boxShadow: [
+                        BoxShadow(
+                          color: shadowColor.withOpacity(0.03),
+                          blurRadius: 2,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: ListTile(
+                      leading: Transform.scale(
+                        scale: 1.2,
+                        child: Checkbox(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(5)),
+                          activeColor: oceanBlue,
+                          value: noNotification,
+                          onChanged: (v) => onToggleNone(v ?? false),
+                        ),
+                      ),
+                      title: const Text(
+                        "알림을 설정하지 않을래요",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: deepNavy,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                   ),
-                  child: PrimaryActionButton(text: "저장하기", onPressed: onSave),
-                ),
-              ],
+
+                  const SizedBox(height: 12),
+                  // 여기까지가 스크롤 본문
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: PrimaryActionButton(
+              text: "저장하기",
+              onPressed: () async {
+                try {
+                  // 1️⃣ 기존 저장 로직
+                  //await EduProgress.markWeekDone(2);
+                  onSave();
+
+                  // 4️⃣ 홈으로 복귀 (진행도 및 잠금 상태 자동 갱신)
+                  if (context.mounted) {
+                    Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+                  }
+                } catch (e) {
+                  debugPrint("❌ 저장 실패: $e");
+                }
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -342,7 +370,9 @@ class NotificationSelectionUI extends StatelessWidget {
     if (repeatOption == RepeatOption.daily) return "매일";
     const week = ['일', '월', '화', '수', '목', '금', '토'];
     final sorted = [...selectedWeekdays]..sort();
-    return sorted.isEmpty ? "반복 안 함" : '매주 ${sorted.map((d) => week[(d - 1) % 7]).join(", ")}';
+    return sorted.isEmpty
+        ? "반복 안 함"
+        : '매주 ${sorted.map((d) => week[(d - 1) % 7]).join(", ")}';
   }
 
   String _getReminderText() {
@@ -383,10 +413,7 @@ class NotificationSelectionUI extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    ' ',
-                    style: TextStyle(fontSize: 0), // (semantic spacing 보정용)
-                  ),
+                  const Text(' ', style: TextStyle(fontSize: 0)),
                   Text(
                     title,
                     style: const TextStyle(
@@ -408,7 +435,8 @@ class NotificationSelectionUI extends StatelessWidget {
               ),
             ),
             if (!disabled)
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFF9EA9B8), size: 24),
+              const Icon(Icons.chevron_right_rounded,
+                  color: Color(0xFF9EA9B8), size: 24),
           ],
         ),
       ),

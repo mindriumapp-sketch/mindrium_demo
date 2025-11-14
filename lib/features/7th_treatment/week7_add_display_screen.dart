@@ -1,8 +1,5 @@
 // File: lib/features/7th_treatment/week7_add_display_screen.dart
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/common/constants.dart';
-import 'package:gad_app_team/widgets/custom_appbar.dart';
-import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/features/7th_treatment/week7_reason_input_screen.dart';
 import 'package:gad_app_team/features/7th_treatment/week7_planning_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -12,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:gad_app_team/widgets/blue_banner.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart';
+import 'package:gad_app_team/widgets/custom_popup_design.dart';
 
 class Week7AddDisplayScreen extends StatefulWidget {
   final String? initialBehavior;
@@ -296,10 +294,10 @@ class _Week7AddDisplayScreenState extends State<Week7AddDisplayScreen>
       context: context,
       barrierColor: Colors.black.withOpacity(0.35),
       builder: (context) {
-        return BehaviorConfirmDialog(
-          titleText: '행동 추가',
+        return CustomPopupDesign(
+          title: '건강한 생활 습관 추가',
           highlightText: '[$behavior]',
-          messageText: '정말로 추가할까요?',
+          message: '이 불안 회피 행동을 건강한 생활 습관에 \n추가하시겠습니까?',
           negativeText: '취소',
           positiveText: '추가',
           onNegativePressed: () => Navigator.of(context).pop(),
@@ -325,10 +323,10 @@ class _Week7AddDisplayScreenState extends State<Week7AddDisplayScreen>
       context: context,
       barrierColor: Colors.black.withOpacity(0.35),
       builder: (context) {
-        return BehaviorConfirmDialog(
-          titleText: '행동 제거',
+        return CustomPopupDesign(
+          title: '생활 습관 제거',
           highlightText: '[${behavior}]',
-          messageText: '건강한 생활 습관에서 제거하시겠습니까?',
+          message: '이 행동을 건강한 생활 습관에서 제거하시겠습니까?',
           negativeText: '취소',
           positiveText: '제거',
           onNegativePressed: () => Navigator.of(context).pop(),
@@ -358,10 +356,10 @@ class _Week7AddDisplayScreenState extends State<Week7AddDisplayScreen>
       context: context,
       barrierColor: Colors.black.withOpacity(0.35),
       builder: (context) {
-        return BehaviorConfirmDialog(
-          titleText: '건강한 생활 습관 추가',
+        return CustomPopupDesign(
+          title: '건강한 생활 습관 추가',
           highlightText: '[$behavior]', // 메모 띠 안의 행동 표시
-          messageText: '이 행동을 건강한 생활 습관에 추가하시겠습니까??',
+          message: '이 불안 직면 행동을 건강한 생활 습관에 추가하시겠습니까??',
           negativeText: '취소',
           positiveText: '추가',
           onNegativePressed: () => Navigator.of(context).pop(),
@@ -426,7 +424,7 @@ class _Week7AddDisplayScreenState extends State<Week7AddDisplayScreen>
           // 상단 분류 스트립
           Container(
             width: double.infinity,
-            height: 31,
+            height: 30,
             decoration: BoxDecoration(color: stripColor),
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -551,14 +549,16 @@ class _Week7AddDisplayScreenState extends State<Week7AddDisplayScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const SizedBox(height: 20,),
           // 중앙 정렬 안내 문구 (텍스트만)
           const Text(
             '6주차에서 분류한 행동들을 확인해보세요!',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 14,
+              wordSpacing: 1.6,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF263C69),
+              color: Color(0xFF626262),
             ),
           ),
           const SizedBox(height: 40),

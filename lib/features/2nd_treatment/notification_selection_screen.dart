@@ -73,21 +73,23 @@ class _NotificationSelectionScreenState
     DocumentSnapshot<Map<String, dynamic>>? abcDoc;
 
     if (widget.abcId?.isNotEmpty ?? false) {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('abc_models')
-          .doc(widget.abcId!)
-          .get();
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .collection('abc_models')
+              .doc(widget.abcId!)
+              .get();
       if (doc.exists) abcDoc = doc;
     } else if (widget.label?.isNotEmpty ?? false) {
-      final qs = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('abc_models')
-          .where('activatingEvent', isEqualTo: widget.label)
-          .limit(1)
-          .get();
+      final qs =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .collection('abc_models')
+              .where('activatingEvent', isEqualTo: widget.label)
+              .limit(1)
+              .get();
       if (qs.docs.isNotEmpty) abcDoc = qs.docs.first;
     }
     if (abcDoc == null) return;
@@ -97,14 +99,15 @@ class _NotificationSelectionScreenState
     List<DocumentSnapshot<Map<String, dynamic>>> notifDocs = [];
 
     if (widget.notificationId != null && widget.notificationId!.isNotEmpty) {
-      final single = await abcDoc.reference
-          .collection('notification_settings')
-          .doc(widget.notificationId!)
-          .get();
+      final single =
+          await abcDoc.reference
+              .collection('notification_settings')
+              .doc(widget.notificationId!)
+              .get();
       if (single.exists) notifDocs = [single];
     } else {
       final qs =
-      await abcDoc.reference.collection('notification_settings').get();
+          await abcDoc.reference.collection('notification_settings').get();
       notifDocs = qs.docs;
     }
 
@@ -162,74 +165,79 @@ class _NotificationSelectionScreenState
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => Padding(
-        padding: MediaQuery.of(ctx).viewInsets,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              height: 248,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: CupertinoPicker(
-                        scrollController:
-                        FixedExtentScrollController(initialItem: selHour),
-                        itemExtent: 40,
-                        onSelectedItemChanged: (v) => selHour = v,
-                        children: List.generate(
-                          24,
+      builder:
+          (ctx) => Padding(
+            padding: MediaQuery.of(ctx).viewInsets,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 248,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: CupertinoPicker(
+                            scrollController: FixedExtentScrollController(
+                              initialItem: selHour,
+                            ),
+                            itemExtent: 40,
+                            onSelectedItemChanged: (v) => selHour = v,
+                            children: List.generate(
+                              24,
                               (i) => Center(child: Text('$i시')),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    Expanded(
-                      child: CupertinoPicker(
-                        scrollController: FixedExtentScrollController(
-                            initialItem: selMin == 0 ? 0 : selMin),
-                        itemExtent: 40,
-                        onSelectedItemChanged: (v) => selMin = v,
-                        children: List.generate(
-                          60,
+                        Expanded(
+                          child: CupertinoPicker(
+                            scrollController: FixedExtentScrollController(
+                              initialItem: selMin == 0 ? 0 : selMin,
+                            ),
+                            itemExtent: 40,
+                            onSelectedItemChanged: (v) => selMin = v,
+                            children: List.generate(
+                              60,
                               (i) => Center(child: Text('$i분')),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-              child: NavigationButtons(
-                leftLabel: '닫기',
-                rightLabel: '완료',
-                onBack: () => Navigator.pop(ctx),
-                onNext: () {
-                  setState(() {
-                    _reminderDuration =
-                        Duration(hours: selHour, minutes: selMin);
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                  child: NavigationButtons(
+                    leftLabel: '닫기',
+                    rightLabel: '완료',
+                    onBack: () => Navigator.pop(ctx),
+                    onNext: () {
+                      setState(() {
+                        _reminderDuration = Duration(
+                          hours: selHour,
+                          minutes: selMin,
+                        );
 
-                    if (_draftTime != null) {
-                      _draftTime = _draftTime!.copyWith(
-                        reminderMinutes: _reminderDuration.inMinutes,
-                      );
-                    }
-                    if (_draftLocation != null) {
-                      _draftLocation = _draftLocation!.copyWith(
-                        reminderMinutes: _reminderDuration.inMinutes,
-                      );
-                    }
-                  });
-                  Navigator.pop(ctx);
-                },
-              ),
+                        if (_draftTime != null) {
+                          _draftTime = _draftTime!.copyWith(
+                            reminderMinutes: _reminderDuration.inMinutes,
+                          );
+                        }
+                        if (_draftLocation != null) {
+                          _draftLocation = _draftLocation!.copyWith(
+                            reminderMinutes: _reminderDuration.inMinutes,
+                          );
+                        }
+                      });
+                      Navigator.pop(ctx);
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
     if (mounted) setState(() {});
     // BlueBanner.show(context, '저장이 완료되었습니다.');
@@ -245,106 +253,127 @@ class _NotificationSelectionScreenState
       ),
       builder: (ctx) {
         return StatefulBuilder(
-          builder: (ctx2, setLocal) => Container(
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: 124,
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: ListTile(
-                          title: const Text('반복'),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _repeatOption == RepeatOption.daily ? '매일' : '매주',
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(Icons.chevron_right,
-                                  size: 20, color: Colors.black54),
-                            ],
-                          ),
-                          onTap: () async {
-                            final opt = await showDialog<RepeatOption>(
-                              context: ctx,
-                              builder: (dctx) => SimpleDialog(
-                                title: const Text('반복 설정'),
+          builder:
+              (ctx2, setLocal) => Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      height: 124,
+                      child: ListView(
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ListTile(
+                              title: const Text('반복'),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  SimpleDialogOption(
-                                    onPressed: () =>
-                                        Navigator.pop(dctx, RepeatOption.daily),
-                                    child: const Text('매일'),
+                                  Text(
+                                    _repeatOption == RepeatOption.daily
+                                        ? '매일'
+                                        : '매주',
+                                    style: const TextStyle(fontSize: 16),
                                   ),
-                                  SimpleDialogOption(
-                                    onPressed: () =>
-                                        Navigator.pop(dctx, RepeatOption.weekly),
-                                    child: const Text('매주'),
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.chevron_right,
+                                    size: 20,
+                                    color: Colors.black54,
                                   ),
                                 ],
                               ),
-                            );
-                            if (opt != null) setLocal(() => _repeatOption = opt);
-                          },
-                        ),
-                      ),
-                      if (_repeatOption == RepeatOption.weekly) ...[
-                        const SizedBox(height: 4),
-                        Center(
-                          child: Wrap(
-                            spacing: 4,
-                            children: List.generate(7, (i) {
-                              final day = i + 1;
-                              final selected = _selectedWeekdays.contains(day);
-                              return FilterChip(
-                                showCheckmark: false,
-                                backgroundColor: Colors.white,
-                                selectedColor: AppColors.indigo,
-                                label: Text(
-                                  ['일', '월', '화', '수', '목', '금', '토'][i],
-                                  style: TextStyle(
-                                      color: selected
-                                          ? Colors.white
-                                          : Colors.black),
-                                ),
-                                selected: selected,
-                                onSelected: (_) => setLocal(() {
-                                  selected
-                                      ? _selectedWeekdays.remove(day)
-                                      : _selectedWeekdays.add(day);
-                                }),
-                              );
-                            }),
+                              onTap: () async {
+                                final opt = await showDialog<RepeatOption>(
+                                  context: ctx,
+                                  builder:
+                                      (dctx) => SimpleDialog(
+                                        title: const Text('반복 설정'),
+                                        children: [
+                                          SimpleDialogOption(
+                                            onPressed:
+                                                () => Navigator.pop(
+                                                  dctx,
+                                                  RepeatOption.daily,
+                                                ),
+                                            child: const Text('매일'),
+                                          ),
+                                          SimpleDialogOption(
+                                            onPressed:
+                                                () => Navigator.pop(
+                                                  dctx,
+                                                  RepeatOption.weekly,
+                                                ),
+                                            child: const Text('매주'),
+                                          ),
+                                        ],
+                                      ),
+                                );
+                                if (opt != null)
+                                  setLocal(() => _repeatOption = opt);
+                              },
+                            ),
                           ),
-                        )
-                      ],
-                    ],
-                  ),
+                          if (_repeatOption == RepeatOption.weekly) ...[
+                            const SizedBox(height: 4),
+                            Center(
+                              child: Wrap(
+                                spacing: 4,
+                                children: List.generate(7, (i) {
+                                  final day = i + 1;
+                                  final selected = _selectedWeekdays.contains(
+                                    day,
+                                  );
+                                  return FilterChip(
+                                    showCheckmark: false,
+                                    backgroundColor: Colors.white,
+                                    selectedColor: AppColors.indigo,
+                                    label: Text(
+                                      ['일', '월', '화', '수', '목', '금', '토'][i],
+                                      style: TextStyle(
+                                        color:
+                                            selected
+                                                ? Colors.white
+                                                : Colors.black,
+                                      ),
+                                    ),
+                                    selected: selected,
+                                    onSelected:
+                                        (_) => setLocal(() {
+                                          selected
+                                              ? _selectedWeekdays.remove(day)
+                                              : _selectedWeekdays.add(day);
+                                        }),
+                                  );
+                                }),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                      child: NavigationButtons(
+                        leftLabel: '닫기',
+                        rightLabel: '완료',
+                        onBack: () => Navigator.pop(ctx),
+                        onNext: () => Navigator.pop(ctx),
+                      ),
+                    ),
+                  ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-                  child: NavigationButtons(
-                    leftLabel: '닫기',
-                    rightLabel: '완료',
-                    onBack: () => Navigator.pop(ctx),
-                    onNext: () => Navigator.pop(ctx),
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
         );
       },
     );
@@ -354,12 +383,12 @@ class _NotificationSelectionScreenState
   Future<void> _showTimeSheet() async {
     TimeOfDay pickedTime =
         (_draftTime?.time ?? _draftLocation?.time) ??
-            const TimeOfDay(hour: 9, minute: 0);
+        const TimeOfDay(hour: 9, minute: 0);
 
-    _repeatOption = (_draftTime ?? _draftLocation)?.repeatOption ==
-        RepeatOption.weekly
-        ? RepeatOption.weekly
-        : RepeatOption.daily;
+    _repeatOption =
+        (_draftTime ?? _draftLocation)?.repeatOption == RepeatOption.weekly
+            ? RepeatOption.weekly
+            : RepeatOption.daily;
     _selectedWeekdays
       ..clear()
       ..addAll((_draftTime ?? _draftLocation)?.weekdays ?? const []);
@@ -374,69 +403,80 @@ class _NotificationSelectionScreenState
       builder: (ctx) {
         TimeOfDay pickedTimeLocal = pickedTime;
         return StatefulBuilder(
-          builder: (ctx2, setLocal) => Padding(
-            padding: MediaQuery.of(ctx).viewInsets,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 248,
-                  child: CupertinoDatePicker(
-                    mode: CupertinoDatePickerMode.time,
-                    use24hFormat: false,
-                    initialDateTime: DateTime(
-                        0, 0, 0, pickedTimeLocal.hour, pickedTimeLocal.minute),
-                    onDateTimeChanged: (dt) =>
-                    pickedTimeLocal = TimeOfDay.fromDateTime(dt),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-                  child: NavigationButtons(
-                    leftLabel: '닫기',
-                    rightLabel: '완료',
-                    onBack: () => Navigator.pop(ctx),
-                    onNext: () {
-                      Navigator.pop(
-                        ctx,
-                        NotificationSetting(
-                          id: _origin == 'edit'
-                              ? (_draftTime?.id ?? widget.notificationId)
-                              : null,
-                          time: pickedTimeLocal,
-                          cause: widget.label,
-                          repeatOption: _repeatOption,
-                          weekdays: _selectedWeekdays.toList(),
-                          reminderMinutes: _draftTime?.reminderMinutes,
-                          notifyEnter: false,
-                          notifyExit: false,
+          builder:
+              (ctx2, setLocal) => Padding(
+                padding: MediaQuery.of(ctx).viewInsets,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 248,
+                      child: CupertinoDatePicker(
+                        mode: CupertinoDatePickerMode.time,
+                        use24hFormat: false,
+                        initialDateTime: DateTime(
+                          0,
+                          0,
+                          0,
+                          pickedTimeLocal.hour,
+                          pickedTimeLocal.minute,
                         ),
-                      );
-                    },
-                  ),
+                        onDateTimeChanged:
+                            (dt) =>
+                                pickedTimeLocal = TimeOfDay.fromDateTime(dt),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                      child: NavigationButtons(
+                        leftLabel: '닫기',
+                        rightLabel: '완료',
+                        onBack: () => Navigator.pop(ctx),
+                        onNext: () {
+                          Navigator.pop(
+                            ctx,
+                            NotificationSetting(
+                              id:
+                                  _origin == 'edit'
+                                      ? (_draftTime?.id ??
+                                          widget.notificationId)
+                                      : null,
+                              time: pickedTimeLocal,
+                              cause: widget.label,
+                              repeatOption: _repeatOption,
+                              weekdays: _selectedWeekdays.toList(),
+                              reminderMinutes: _draftTime?.reminderMinutes,
+                              notifyEnter: false,
+                              notifyExit: false,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
         );
       },
     );
 
     if (setting != null && mounted) {
-      final withId = (_draftTime?.id != null && _origin == 'edit')
-          ? setting.copyWith(id: _draftTime!.id)
-          : setting;
+      final withId =
+          (_draftTime?.id != null && _origin == 'edit')
+              ? setting.copyWith(id: _draftTime!.id)
+              : setting;
       setState(() => _draftTime = withId);
     }
   }
 
   Future<void> _showLocationSheet() async {
     LatLng? initialLatLng;
-    if (_draftLocation?.latitude != null &&
-        _draftLocation?.longitude != null) {
-      initialLatLng =
-          LatLng(_draftLocation!.latitude!, _draftLocation!.longitude!);
+    if (_draftLocation?.latitude != null && _draftLocation?.longitude != null) {
+      initialLatLng = LatLng(
+        _draftLocation!.latitude!,
+        _draftLocation!.longitude!,
+      );
     }
 
     final setting = await showModalBottomSheet<NotificationSetting>(
@@ -445,10 +485,11 @@ class _NotificationSelectionScreenState
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => SizedBox(
-        height: MediaQuery.of(ctx).size.height,
-        child: MapPicker(initial: initialLatLng),
-      ),
+      builder:
+          (ctx) => SizedBox(
+            height: MediaQuery.of(ctx).size.height,
+            child: MapPicker(initial: initialLatLng),
+          ),
     );
 
     if (setting != null && mounted) {
@@ -458,18 +499,19 @@ class _NotificationSelectionScreenState
       );
 
       final withId = withRepeat.copyWith(
-        id: _origin == 'edit'
-            ? (_draftLocation?.id ?? widget.notificationId)
-            : null,
+        id:
+            _origin == 'edit'
+                ? (_draftLocation?.id ?? widget.notificationId)
+                : null,
         cause: widget.label,
         reminderMinutes: _draftLocation?.reminderMinutes,
       );
 
       final bool isNewLocation = _draftLocation == null;
       final NotificationSetting withDefault =
-      isNewLocation && !(withId.notifyEnter || withId.notifyExit)
-          ? withId.copyWith(notifyEnter: true)
-          : withId;
+          isNewLocation && !(withId.notifyEnter || withId.notifyExit)
+              ? withId.copyWith(notifyEnter: true)
+              : withId;
 
       setState(() => _draftLocation = withDefault);
     }
@@ -478,66 +520,98 @@ class _NotificationSelectionScreenState
   void _showHelpDialog() {
     showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text(
-          '도움말',
-          style: TextStyle(fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
-        ),
-        backgroundColor: Colors.grey.shade100,
-        insetPadding: const EdgeInsets.all(20),
-        contentPadding: const EdgeInsets.all(AppSizes.padding),
-        content: const SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text(
+              '도움말',
+              style: TextStyle(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            backgroundColor: Colors.grey.shade100,
+            insetPadding: const EdgeInsets.all(20),
+            contentPadding: const EdgeInsets.all(AppSizes.padding),
+            content: const SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    '알림은 걱정 일기에서 작성한 불안의 원인에 집중해 볼 '
-                        '위치와 시간을 원하는 방식으로 설정할 수 있어요.',
-                    style: TextStyle(fontSize: 18),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '알림은 걱정 일기에서 작성한 불안의 원인에 집중해 볼 '
+                          '위치와 시간을 원하는 방식으로 설정할 수 있어요.',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          '• 위치 또는 시간 중 최소 하나를 선택해야 해요.',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          '• 다시 알림은 선택 사항이에요.',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          '• 하단의 “알림을 설정하지 않을래요.”를 체크하면 알림을 끌 수 있어요.',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        SizedBox(height: 24),
+                        Text(
+                          '위치',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          '설정한 장소에 들어가거나 나올 때 알림이 울려요.',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          '시간',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          '지정한 시간과 반복 주기로 알림이 울려요.',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          '위치 + 시간',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          '지정한 시간에 설정한 장소에 도착하거나 머물러 있을 때 알림이 울려요.',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ],
+                    ),
                   ),
-                  SizedBox(height: 16),
-                  Text('• 위치 또는 시간 중 최소 하나를 선택해야 해요.',
-                      style: TextStyle(fontSize: 16)),
-                  SizedBox(height: 2,),
-                  Text('• 다시 알림은 선택 사항이에요.',
-                      style: TextStyle(fontSize: 16)),
-                  SizedBox(height: 2,),
-                  Text('• 하단의 “알림을 설정하지 않을래요.”를 체크하면 알림을 끌 수 있어요.',
-                      style: TextStyle(fontSize: 16)),
-                  SizedBox(height: 24),
-                  Text('위치',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 4),
-                  Text('설정한 장소에 들어가거나 나올 때 알림이 울려요.',
-                      style: TextStyle(fontSize: 16)),
-                  SizedBox(height: 16),
-                  Text('시간',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 4),
-                  Text('지정한 시간과 반복 주기로 알림이 울려요.',
-                      style: TextStyle(fontSize: 16)),
-                  SizedBox(height: 16),
-                  Text('위치 + 시간',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 4),
-                  Text('지정한 시간에 설정한 장소에 도착하거나 머물러 있을 때 알림이 울려요.',
-                      style: TextStyle(fontSize: 16)),
                 ],
               ),
-              )
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('닫기'),
+              ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('닫기')),
-        ],
-      ),
     );
   }
 
@@ -581,8 +655,9 @@ class _NotificationSelectionScreenState
       if (_noNotification) {
         final uid = FirebaseAuth.instance.currentUser!.uid;
         if (_abcId == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('ABC 모델을 찾을 수 없습니다.')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('ABC 모델을 찾을 수 없습니다.')));
           return;
         }
 
@@ -599,11 +674,13 @@ class _NotificationSelectionScreenState
               .doc(widget.notificationId);
           await notifRef.delete();
           await provider.cancelSchedule(
-              id: widget.notificationId!, abcId: _abcId!);
+            id: widget.notificationId!,
+            abcId: _abcId!,
+          );
         } else {
           final batch = FirebaseFirestore.instance.batch();
           final snapshot =
-          await abcRef.collection('notification_settings').get();
+              await abcRef.collection('notification_settings').get();
           for (final d in snapshot.docs) {
             batch.delete(d.reference);
           }
@@ -629,8 +706,9 @@ class _NotificationSelectionScreenState
         if (perm == LocationPermission.always ||
             perm == LocationPermission.whileInUse) {
           currentPos = await Geolocator.getCurrentPosition(
-            locationSettings:
-            const LocationSettings(accuracy: LocationAccuracy.low),
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.low,
+            ),
           );
         }
       } catch (_) {}
@@ -639,8 +717,9 @@ class _NotificationSelectionScreenState
       final uid = FirebaseAuth.instance.currentUser!.uid;
       if (_abcId == null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('ABC 모델을 찾을 수 없습니다.')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('ABC 모델을 찾을 수 없습니다.')));
         return;
       }
 
@@ -652,7 +731,7 @@ class _NotificationSelectionScreenState
           repeatOption: _draftTime!.repeatOption,
           weekdays: _draftTime!.weekdays,
           reminderMinutes:
-          _draftLocation!.reminderMinutes ?? _draftTime!.reminderMinutes,
+              _draftLocation!.reminderMinutes ?? _draftTime!.reminderMinutes,
           notifyEnter: false,
           notifyExit: false,
         );
@@ -686,9 +765,10 @@ class _NotificationSelectionScreenState
           docId = widget.notificationId;
         }
 
-        final ref = (_origin == 'edit' && docId != null && docId.isNotEmpty)
-            ? col.doc(docId)
-            : col.doc();
+        final ref =
+            (_origin == 'edit' && docId != null && docId.isNotEmpty)
+                ? col.doc(docId)
+                : col.doc();
 
         final Map<String, dynamic> data = s.toMap();
 
@@ -704,12 +784,16 @@ class _NotificationSelectionScreenState
 
         if (_origin == 'edit' && docId != null && docId.isNotEmpty) {
           batch.update(ref, data);
-          afterCommit.add(() async =>
-              provider.updateSchedule(s.copyWith(id: ref.id), abcId: _abcId!));
+          afterCommit.add(
+            () async =>
+                provider.updateSchedule(s.copyWith(id: ref.id), abcId: _abcId!),
+          );
         } else {
           batch.set(ref, data);
-          afterCommit.add(() async =>
-              provider.createSchedule(s.copyWith(id: ref.id), abcId: _abcId!));
+          afterCommit.add(
+            () async =>
+                provider.createSchedule(s.copyWith(id: ref.id), abcId: _abcId!),
+          );
         }
 
         if (s.id == null) {
@@ -737,8 +821,9 @@ class _NotificationSelectionScreenState
     } catch (e, st) {
       debugPrint('알림 저장 중 오류: $e\n$st');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('알림을 저장하는 중 오류가 발생했습니다. 다시 시도해주세요.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('알림을 저장하는 중 오류가 발생했습니다. 다시 시도해주세요.')),
+        );
       }
     } finally {
       if (mounted) {
@@ -801,19 +886,23 @@ class _NotificationSelectionScreenState
                 // ✅ 여기!
                 // 새로 추가된 콜백들도 함께 ↓
                 onHelp: _showHelpDialog,
-                onToggleEnter: (v) => setState(() {
-                  if (_draftLocation != null) {
-                    _draftLocation = _draftLocation!.copyWith(notifyEnter: v);
-                  }
-                }),
-                onToggleExit: (v) => setState(() {
-                  if (_draftLocation != null) {
-                    _draftLocation = _draftLocation!.copyWith(notifyExit: v);
-                  }
-                }),
-
+                onToggleEnter:
+                    (v) => setState(() {
+                      if (_draftLocation != null) {
+                        _draftLocation = _draftLocation!.copyWith(
+                          notifyEnter: v,
+                        );
+                      }
+                    }),
+                onToggleExit:
+                    (v) => setState(() {
+                      if (_draftLocation != null) {
+                        _draftLocation = _draftLocation!.copyWith(
+                          notifyExit: v,
+                        );
+                      }
+                    }),
               ),
-
             ),
           ),
         ],

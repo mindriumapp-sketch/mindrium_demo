@@ -59,6 +59,7 @@ class _Week6NextRelieveScreenState extends State<Week6NextRelieveScreen> {
 
   /// ✅ 메인 문장 (하이라이트 포함)
   Widget _buildMainRichLine({required bool isFace}) {
+    final userName = Provider.of<UserProvider>(context, listen: false).userName;
     final String highlight = isFace ? '직면하는 행동' : '회피하는 행동';
     return RichText(
       textAlign: TextAlign.center,
@@ -66,7 +67,7 @@ class _Week6NextRelieveScreenState extends State<Week6NextRelieveScreen> {
         style: _bodyStyle,
         children: [
           TextSpan(
-            text: '방금 보셨던 "${widget.selectedBehavior}"(이)라는 행동을\n불안을 ',
+            text: '$userName님, 방금 보셨던 "${widget.selectedBehavior}"(이)라는 행동을\n불안을 ',
           ),
           WidgetSpan(
             alignment: PlaceholderAlignment.middle,
@@ -83,7 +84,6 @@ class _Week6NextRelieveScreenState extends State<Week6NextRelieveScreen> {
   /// - AnimatedSwitcher(메인: RichText 하이라이트 / 서브: 일반 텍스트)
   /// - 하단 아이콘
   Widget _relieveResultCardRich({
-    required String userName,
     required bool showMainText,
     required Widget mainRich,
     required String subText,
@@ -91,29 +91,13 @@ class _Week6NextRelieveScreenState extends State<Week6NextRelieveScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 🧜 이름 표시 (원본 함수와 동일)
-        Text(
-          '$userName님',
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF5B3EFF),
-            fontFamily: 'Noto Sans KR',
-          ),
+        const SizedBox(height: 8),
+        Image.asset(
+          'assets/image/think_blue.png',
+          height: 160,
+          filterQuality: FilterQuality.high,
         ),
         const SizedBox(height: 20),
-
-        // 💠 포인트 구분선 (원본 함수와 동일)
-        Container(
-          width: 48,
-          height: 4,
-          decoration: BoxDecoration(
-            color: const Color(0xFF5B3EFF).withOpacity(0.2),
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(height: 40),
-
         // ✨ 전환되는 안내문 (여기만 RichText 지원)
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 400),
@@ -136,8 +120,6 @@ class _Week6NextRelieveScreenState extends State<Week6NextRelieveScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userName = Provider.of<UserProvider>(context, listen: false).userName;
-
     // 서브 문장(일반 텍스트)
     const String subText = '그 행동이 단기적으로 불안을 얼마나 완화할 수 있을지 함께 살펴볼게요.';
 
@@ -167,7 +149,6 @@ class _Week6NextRelieveScreenState extends State<Week6NextRelieveScreen> {
 
       /// 💠 카드 본문
       child: _relieveResultCardRich(
-        userName: userName,
         showMainText: _showMainText,
         mainRich: _buildMainRichLine(isFace: widget.behaviorType == 'face'),
         subText: subText,

@@ -12,18 +12,19 @@ class JellyfishNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 말풍선 + 꼬리
-        Stack(
+    const double tailTop = 30;
+    const double jellySize = 80.0;
+
+    return Padding(padding: EdgeInsetsGeometry.fromLTRB(0, 12, 0, 12),
+      child: Padding(
+        // ← 여기로 전체를 살짝 오른쪽으로 민다 (수치는 화면 보면서 조절)
+        padding: const EdgeInsets.only(left: 40),
+        child: Stack(
           clipBehavior: Clip.none,
           children: [
-            // 말풍선 본체
+            // 💬 말풍선
             Container(
-              constraints: const BoxConstraints(
-                maxWidth: 280,
-              ),
+              constraints: const BoxConstraints(minWidth: 220, maxWidth: 280),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -38,15 +39,13 @@ class JellyfishNotice extends StatelessWidget {
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const Text('💡', style: TextStyle(fontSize: 18)),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
                       feedback ??
-                          '화면에 보이는 생각이 어떠한 행동인지 선택한 후 다음 버튼을 누르세요.',
+                          '지금은 위 생각에 대해 얼마나 강하게 \n믿고 계시나요?\n아래 슬라이더를 조절하고 [다음]을 \n눌러주세요.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: feedback != null
@@ -62,41 +61,39 @@ class JellyfishNotice extends StatelessWidget {
               ),
             ),
 
-            // 말풍선 꼬리
+            // ⬅️ 꼬리
             Positioned(
-              left: 20,
-              bottom: -20,
+              left: -10,
+              top: tailTop,
               child: CustomPaint(
-                size: const Size(24, 24),
-                painter: _AngularTailPainter(color: Colors.white),
+                size: const Size(16, 16),
+                painter: _LeftTailPainter(color: Colors.white),
+              ),
+            ),
+
+            // 🪼 해파리 (이제 좀 더 오른쪽에 붙여도 잘리지 않음)
+            Positioned(
+              left: -80, // 여기 값만 다시 조절해서 딱 붙이기
+              top: tailTop - (jellySize / 2) + 8,
+              child: SizedBox(
+                width: jellySize,
+                height: jellySize,
+                child: Image.asset(
+                  'assets/image/jellyfish.png',
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ],
         ),
-
-        const SizedBox(height: 20),
-
-        // 해파리
-        Padding(
-          padding: const EdgeInsets.only(left: 0),
-          child: SizedBox(
-            width: 60,
-            height: 60,
-            child: Image.asset(
-              'assets/image/jellyfish.png',
-              fit: BoxFit.contain,
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
-// 말풍선 꼬리
-class _AngularTailPainter extends CustomPainter {
+class _LeftTailPainter extends CustomPainter {
   final Color color;
-  _AngularTailPainter({required this.color});
+  _LeftTailPainter({required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -105,22 +102,15 @@ class _AngularTailPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     final path = Path()
-      ..moveTo(0, 0) // 왼쪽 위
-      ..lineTo(size.width, 0) // 오른쪽 위
-      ..lineTo(size.width * 0.4, size.height) // 아래 꼭짓점 (약간 왼쪽)
+      ..moveTo(size.width, 0)
+      ..lineTo(0, size.height * 0.5)
+      ..lineTo(size.width, size.height)
       ..close();
 
-    // 그림자 효과
-    canvas.drawShadow(
-      path,
-      Colors.black.withOpacity(0.08),
-      2.0,
-      false,
-    );
-
+    canvas.drawShadow(path, Colors.black.withOpacity(0.08), 2.0, false);
     canvas.drawPath(path, paint);
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

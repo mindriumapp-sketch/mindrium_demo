@@ -1,5 +1,16 @@
+// 🔹 Mindrium: SUD 이후 단계 선택 화면 (DiaryOrRelaxOrHome)
+// 사용자가 SUD 평가를 마친 뒤 다음 활동을 선택하는 화면
+// 연결 흐름:
+//   BeforeSudRatingScreen  →  DiaryOrRelaxOrHome
+//     ├─ “다른 걱정에 집중해보기” → /diary_select (새 일기 작성)
+//     ├─ “이완 활동 하기” → /relaxation_noti (이완 오디오 재생 화면)
+//     └─ “홈” → /home (메인 화면으로 복귀)
+// import 목록:
+//   flutter/material.dart               → 기본 Flutter 위젯
+//   gad_app_team/widgets/custom_appbar.dart → 상단 공용 CustomAppBar 사용
+
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/widgets/custom_appbar.dart';
+import 'package:gad_app_team/widgets/inner_btn_card.dart';
 
 class DiaryOrRelaxOrHome extends StatelessWidget {
   const DiaryOrRelaxOrHome({super.key});
@@ -7,110 +18,65 @@ class DiaryOrRelaxOrHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments as Map?;
-    // final String? abcId   = args?['abcId']   as String?;
     final String? groupId = args?['groupId'] as String?;
     final int? sud = args?['sud'] as int?;
 
-    return Scaffold(
-      appBar: const CustomAppBar(title: '다음 단계 선택'),
-      backgroundColor: Colors.grey.shade100,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '어떤 활동을 진행하시겠어요??',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold
+    return InnerBtnCardScreen(
+      appBarTitle: '다음 단계 선택',
+      title: '어떤 활동을 진행하시겠어요?',
+      primaryText: '이완 활동 하기',
+      secondaryText: '홈으로 돌아가기',
+      feedback: '필요하다면 다른 걱정에도 다시 집중해볼 수 있어요.',
+      onPrimary: () {
+        // relaxation 화면 이동
+        Navigator.pushNamed(
+          context,
+          '/relaxation_noti',
+          arguments: {
+            'taskId': groupId,
+            'weekNumber': 4,
+            'mp3Asset': 'noti.mp3',
+            'riveAsset': 'noti.riv',
+            'nextPage': '/relaxation_score',
+            'origin': 'apply',
+          },
+        );
+      },
+      onSecondary: () {
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+      },
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: OutlinedButton(
+              onPressed: () {
+                Navigator.pushNamed(
+                  context,
+                  '/diary_select',
+                  arguments: {'groupId': groupId, 'sud': sud},
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF47A6FF), width: 2.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
               ),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: 300,
-              height: 60,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(
-                    context,
-                    '/diary_select',
-                    arguments: {
-                      'groupId': groupId,
-                      'sud': sud,
-                    }
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  textStyle: const TextStyle(fontSize: 24),
-                  backgroundColor: Colors.indigo,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  '다른 걱정에 집중해보기',
-                  style: TextStyle(
-                    color: Colors.white
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: 300,
-              height: 60,
-              child: ElevatedButton(
-                onPressed: ()  {
-                  // TODO: 세현님 도움 필요.....일단 4주차 고정..
-                  Navigator.pushNamed(
-                    context, 
-                    '/relaxation_noti',
-                    arguments: {
-                      'taskId': groupId, // 임시..
-                      'weekNumber': 4, // 임시..
-                      'mp3Asset': 'noti.mp3',
-                      'riveAsset': 'noti.riv',
-                      'nextPage': '/relaxation_score',
-                      'origin': 'apply'
-                    }
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  textStyle: const TextStyle(fontSize: 24),
-                  backgroundColor: Colors.indigo.shade100,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  '이완 활동 하기',
-                  style: TextStyle(color: Colors.black),
+              child: const Text(
+                '다른 걱정에 집중해보기',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Noto Sans KR',
+                  color: Color(0xFF47A6FF),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: 300,
-              height: 60,
-              child: ElevatedButton(
-                onPressed: ()  {
-                  Navigator.pushNamedAndRemoveUntil(context, '/home',  (_) => false);
-                },
-                style: ElevatedButton.styleFrom(
-                  textStyle: const TextStyle(fontSize: 24),
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  '홈',
-                  style: TextStyle(color: Colors.black),
-                ),
-              ),
-            )
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

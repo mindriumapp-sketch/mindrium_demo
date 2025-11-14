@@ -185,8 +185,8 @@ class _Week4AlternativeThoughtsScreenState
             : null,
 
         // 레이아웃 옵션 (이전 화면과 동일 톤)
-        pagePadding: const EdgeInsets.symmetric(horizontal: 34, vertical: 24),
-        panelsGap: 12,
+        pagePadding: const EdgeInsets.symmetric(horizontal: 34, vertical: 12),
+        panelsGap: 2,
         panelRadius: 20,
         panelPadding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
 
@@ -240,7 +240,9 @@ class _Week4AlternativeThoughtsScreenState
         ),
 
         // 패널 사이 말풍선
-        middleNoticeText: '아래 영역을 탭하면 항목이 추가돼요!\n엔터 또는 바깥 터치로 확정됩니다',
+        middleBannerText: '입력 영역을 탭하면 항목이 추가돼요!\n엔터 또는 바깥 터치로 확정됩니다',
+        // height: 120,
+        // topPadding: 20,
 
         // ─────────────────── 하단 패널 (칩 입력) ───────────────────
         bottomChild: Column(

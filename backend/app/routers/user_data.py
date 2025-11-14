@@ -231,6 +231,45 @@ async def add_survey(
     return survey_doc
 
 
+@router.get("/worry-groups/archived", summary="아카이브된 걱정 그룹 조회")
+async def get_archived_worry_groups(
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    사용자가 아카이브한 걱정(ABC) 그룹 목록을 반환합니다.
+    """
+    user_id = current_user["_id"]
+    user = await db[USER_COLLECTION].find_one({"_id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+
+    def _iso(value):
+        if isinstance(value, datetime):
+            return value.isoformat()
+        return value
+
+    groups = []
+    for group in user.get("worry_groups", []):
+        if not group.get("archived"):
+            continue
+        groups.append({
+            "group_id": group.get("group_id"),
+            "group_title": group.get("group_name") or group.get("group_title"),
+            "group_contents": group.get("description") or group.get("group_contents"),
+            "character_id": group.get("character_id"),
+            "created_at": _iso(group.get("created_at")),
+            "archived_at": _iso(group.get("archived_at")),
+            "average_sud": group.get("average_sud"),
+        })
+
+    groups.sort(
+        key=lambda g: g.get("archived_at") or g.get("created_at") or "",
+        reverse=True,
+    )
+    return groups
+
+
 @router.get("/progress", response_model=UserDataResponse, summary="전체 진행도 조회")
 async def get_user_progress(
     current_user: dict = Depends(get_current_user),

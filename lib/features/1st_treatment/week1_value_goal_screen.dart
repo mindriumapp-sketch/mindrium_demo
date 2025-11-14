@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/widgets/tutorial_design.dart'; // ✅ 기존 디자인 클래스만 import
+import 'package:gad_app_team/widgets/tutorial_design.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gad_app_team/data/user_data_model.dart';
@@ -118,7 +118,7 @@ class _Week1ValueGoalScreenState extends State<Week1ValueGoalScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              '이 프로그램을 통해 불안을 관리하고\n더 나은 삶을 만들어가시길 바랍니다.',
+              '이 프로그램을 통해 불안을 관리하고 \n 더 나은 삶을 만들어가시길 바랍니다.',
               style: TextStyle(
                 fontSize: 14.5,
                 color: Color(0xFF333333),

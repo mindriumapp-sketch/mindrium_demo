@@ -205,7 +205,7 @@ class _Week4ConcentrationScreenState extends State<Week4ConcentrationScreen> {
 
     return ApplyDesign(
       appBarTitle: '4주차 - 인지 왜곡 찾기',
-      cardTitle: '$userName님',
+      cardTitle: '상황에 집중하기',
       onBack: () => Navigator.pop(context),
       onNext: () {
         if (!_isNextEnabled) {
@@ -261,7 +261,7 @@ class _Week4ConcentrationScreenState extends State<Week4ConcentrationScreen> {
             RuledParagraph(
               text: _showSituation
                   ? (_abcModel != null
-                  ? "'${_abcModel!['activatingEvent'] ?? ''}' (이)라는 상황을 \n잠시 집중해보겠습니다."
+                  ? "$userName님,\n'${_abcModel!['activatingEvent'] ?? ''}' (이)라는 상황을 \n잠시 집중해보겠습니다."
                   : '이때의 상황을 자세하게 집중해 보세요.')
                   : (_abcModel != null &&
                   _abcModel!['belief'] != null &&

@@ -3,6 +3,7 @@ import 'package:gad_app_team/widgets/top_btm_card.dart';
 import 'package:gad_app_team/widgets/thought_card.dart';
 import 'package:gad_app_team/widgets/custom_popup_design.dart';
 import 'package:gad_app_team/widgets/detail_popup.dart';
+import 'package:gad_app_team/utils/edu_progress.dart';
 
 class Week5VisualScreen extends StatefulWidget {
   final List<String> previousChips;     // 불안을 회피하는 행동
@@ -29,7 +30,8 @@ class _Week5VisualScreenState extends State<Week5VisualScreen> {
         positiveText: '홈으로 돌아가기',
         negativeText: null,
         onNegativePressed: null,
-        onPositivePressed: () {
+        onPositivePressed: () async {
+          //await EduProgress.markWeekDone(5);
           Navigator.of(context, rootNavigator: true).pop();
           Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
         },

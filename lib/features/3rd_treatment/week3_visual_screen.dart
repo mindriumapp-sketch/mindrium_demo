@@ -1,9 +1,12 @@
 // lib/features/3rd_treatment/week3_visual_screen.dart
+
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/widgets/top_btm_card.dart';        // ApplyDoubleCard
 import 'package:gad_app_team/widgets/custom_popup_design.dart'; // 완료 팝업
 import 'package:gad_app_team/widgets/thought_card.dart';        // ThoughtCard / ThoughtType
 import 'package:gad_app_team/widgets/detail_popup.dart';        // 자세히 보기 팝업
+import 'package:gad_app_team/widgets/navigation_button.dart';
+import 'package:gad_app_team/widgets/custom_appbar.dart';
+import 'package:gad_app_team/utils/edu_progress.dart';
 
 class Week3VisualScreen extends StatefulWidget {
   final List<String> previousChips;    // 도움이 되지 않는 생각
@@ -31,7 +34,8 @@ class _Week3VisualScreenState extends State<Week3VisualScreen> {
           positiveText: '홈으로 돌아가기',
           negativeText: null,
           onNegativePressed: null,
-          onPositivePressed: () {
+          onPositivePressed: () async {
+            //await EduProgress.markWeekDone(3);
             Navigator.of(context, rootNavigator: true).pop();
             Navigator.of(context)
                 .pushNamedAndRemoveUntil('/home', (route) => false);
@@ -143,19 +147,122 @@ class _Week3VisualScreenState extends State<Week3VisualScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ApplyDoubleCard(
-      appBarTitle: '3주차 - Self Talk',
-      topChild: _buildTopPanel(),
-      bottomChild: _buildBottomPanel(),
-      onBack: () => Navigator.pop(context),
-      onNext: _showFinishDialog,
-      pagePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      panelsGap: 24,
-      panelPadding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-      panelRadius: 20,
-      maxWidth: 980,
-      topcardColor: Colors.white,
-      btmcardColor: Colors.white,
+    final size = MediaQuery.of(context).size;
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
+    const double horizontalPadding = 24.0;
+    const double panelRadius = 20.0;
+    const double gapBetweenPanels = 24.0;
+    final double maxWidth =
+    size.width - 48 > 980 ? 980 : size.width - 48;
+
+    return Scaffold(
+      extendBody: true, // ✅ bottomNavigationBar 뒤까지 확장
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.white,
+      appBar: const CustomAppBar(
+        title: '3주차 - Self Talk',
+        confirmOnBack: false,
+        showHome: true,
+      ),
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // 🌊 옅은 바다 배경
+            Opacity(
+              opacity: 0.35,
+              child: Image.asset(
+                'assets/image/eduhome.png',
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.high,
+              ),
+            ),
+
+            // 🧩 내용 영역
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    horizontalPadding,
+                    24,
+                    horizontalPadding,
+                    bottomInset + 120, // 아래 버튼 자리 확보
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: maxWidth),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 상단 카드 (도움이 되는 생각)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius:
+                            BorderRadius.circular(panelRadius),
+                            boxShadow: [
+                              BoxShadow(
+                                color:
+                                Colors.black.withOpacity(0.08),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.fromLTRB(
+                              20, 18, 20, 18),
+                          child: _buildTopPanel(),
+                        ),
+
+                        const SizedBox(height: gapBetweenPanels),
+
+                        // 하단 카드 (도움이 되지 않는 생각)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius:
+                            BorderRadius.circular(panelRadius),
+                            boxShadow: [
+                              BoxShadow(
+                                color:
+                                Colors.black.withOpacity(0.08),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.fromLTRB(
+                              20, 18, 20, 18),
+                          child: _buildBottomPanel(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      // ✅ 화면 맨 아래 고정 네비게이션 버튼
+      bottomNavigationBar: Container(
+        color: Colors.transparent,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            child: NavigationButtons(
+              leftLabel: '이전',
+              rightLabel: '다음',
+              onBack: () => Navigator.pop(context),
+              onNext: _showFinishDialog,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

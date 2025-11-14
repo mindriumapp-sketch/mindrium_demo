@@ -18,7 +18,7 @@ class AbcBeliefScreen extends StatelessWidget {
     return AbcActivateDesign(
       appBarTitle: '2주차 - ABC 모델',
       descriptionText: descriptionText,
-      scenarioImage: 'assets/image/belief.png', // ✅ 이미지 복구
+      scenarioImage: 'assets/image/belief.png',
       onBack: () => Navigator.pop(context),
       onNext: () {
         Navigator.push(

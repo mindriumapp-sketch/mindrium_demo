@@ -1,32 +1,47 @@
 import 'package:flutter/material.dart';
 
-class CustomPopupDesign extends StatelessWidget {
+class CustomPopupDesign extends StatefulWidget {
   final String title;
-  final String? highlightText;
+  final String highlightText;
   final String message;
   final String positiveText;
-  final String? negativeText;                 // <- nullable 로 변경
+  final String? negativeText;
   final VoidCallback onPositivePressed;
-  final VoidCallback? onNegativePressed;      // <- nullable 로 변경
+  final VoidCallback? onNegativePressed;
   final String? backgroundAsset;
   final String? iconAsset;
+  final String memoBgAsset;
+
+  /// ✅ 입력필드 활성화 여부
+  final bool enableInput;
+  final TextEditingController? controller;
+  final String inputHint;
 
   const CustomPopupDesign({
     super.key,
     required this.title,
     required this.message,
     required this.onPositivePressed,
-    this.onNegativePressed,                   // <- nullable
-    this.highlightText,
+    this.onNegativePressed,
+    this.highlightText = '',
     this.positiveText = '확인',
-    this.negativeText = '취소',               // <- 기본값은 그대로
+    this.negativeText = '취소',
     this.backgroundAsset,
     this.iconAsset,
+    this.memoBgAsset = 'assets/image/popup2.png',
+    this.enableInput = false, // ✅ 기본은 비활성화
+    this.controller,
+    this.inputHint = '내용을 입력하세요',
   });
 
   @override
+  State<CustomPopupDesign> createState() => _CustomPopupDesignState();
+}
+
+class _CustomPopupDesignState extends State<CustomPopupDesign> {
+  @override
   Widget build(BuildContext context) {
-    final bool singleAction = negativeText == null; // <- 취소 생략 여부
+    final bool singleAction = widget.negativeText == null;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -34,7 +49,6 @@ class CustomPopupDesign extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // 카드
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(28, 60, 28, 28),
@@ -48,20 +62,20 @@ class CustomPopupDesign extends StatelessWidget {
                   offset: const Offset(0, 12),
                 ),
               ],
-              image: backgroundAsset != null
-                  ? DecorationImage(
-                image: AssetImage(backgroundAsset!),
-                fit: BoxFit.cover,
-                opacity: 0.15,
-              )
-                  : null,
+              image:
+                  widget.backgroundAsset != null
+                      ? DecorationImage(
+                        image: AssetImage(widget.backgroundAsset!),
+                        fit: BoxFit.cover,
+                        opacity: 0.15,
+                      )
+                      : null,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 타이틀
                 Text(
-                  title,
+                  widget.title,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontFamily: 'NotoSansKR',
@@ -70,44 +84,84 @@ class CustomPopupDesign extends StatelessWidget {
                     color: Color(0xFF1B3A57),
                   ),
                 ),
-                const SizedBox(height: 12),
 
-                // 메시지
-                RichText(
-                  textAlign: TextAlign.center,
-                  text: TextSpan(
-                    style: const TextStyle(
-                      fontFamily: 'NotoSansKR',
-                      fontSize: 15,
-                      color: Color(0xFF356D91),
-                      height: 1.5,
-                    ),
-                    children: [
-                      if (highlightText != null)
-                        const TextSpan(
-                          text: '', // 필요하면 강조문구 사용
-                        ),
-                      TextSpan(text: message),
-                    ],
+                if (widget.highlightText.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _FoldedMemoTag(
+                    text: widget.highlightText,
+                    memoBgAsset: widget.memoBgAsset,
                   ),
-                ),
+                  const SizedBox(height: 20),
+                ],
+
+                // ✅ 입력 필드 or 메시지
+                if (widget.enableInput && widget.controller != null)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: const Color(0xFF74D2FF),
+                        width: 1.3,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF74D2FF).withOpacity(0.1),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    child: TextField(
+                      controller: widget.controller,
+                      maxLines: 1,
+                      cursorColor: const Color(0xFF74D2FF),
+                      style: const TextStyle(
+                        fontFamily: 'NotoSansKR',
+                        fontSize: 15,
+                        color: Color(0xFF356D91),
+                      ),
+                      decoration: InputDecoration(
+                        hintText: widget.inputHint,
+                        hintStyle: const TextStyle(
+                          color: Color(0xFF9BBFD6),
+                          fontSize: 14,
+                        ),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  )
+                else
+                  RichText(
+                    textAlign: TextAlign.center,
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontFamily: 'NotoSansKR',
+                        fontSize: 15,
+                        color: Color(0xFF356D91),
+                        height: 1.5,
+                      ),
+                      children: [TextSpan(text: widget.message)],
+                    ),
+                  ),
 
                 const SizedBox(height: 28),
 
-                // 버튼 영역
+                // ✅ 버튼 영역
                 if (singleAction)
-                // ✅ 확인 단독: 가로 전체
                   SizedBox(
                     width: double.infinity,
                     child: _buildButton(
-                      context,
-                      label: positiveText,
-                      onPressed: onPositivePressed,
+                      label: widget.positiveText,
+                      onPressed: widget.onPositivePressed,
                       isPrimary: true,
                     ),
                   )
                 else
-                // 기존: 취소 + 확인
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -115,9 +169,8 @@ class CustomPopupDesign extends StatelessWidget {
                         child: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 6),
                           child: _buildButton(
-                            context,
-                            label: negativeText!,
-                            onPressed: onNegativePressed ?? () {},
+                            label: widget.negativeText!,
+                            onPressed: widget.onNegativePressed ?? () {},
                             isPrimary: false,
                           ),
                         ),
@@ -126,9 +179,8 @@ class CustomPopupDesign extends StatelessWidget {
                         child: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 6),
                           child: _buildButton(
-                            context,
-                            label: positiveText,
-                            onPressed: onPositivePressed,
+                            label: widget.positiveText,
+                            onPressed: widget.onPositivePressed,
                             isPrimary: true,
                           ),
                         ),
@@ -162,9 +214,14 @@ class CustomPopupDesign extends StatelessWidget {
                   ],
                 ),
                 child: ClipOval(
-                  child: iconAsset != null
-                      ? Image.asset(iconAsset!, fit: BoxFit.cover)
-                      : const Icon(Icons.auto_awesome, color: Colors.white, size: 36),
+                  child:
+                      widget.iconAsset != null
+                          ? Image.asset(widget.iconAsset!, fit: BoxFit.cover)
+                          : const Icon(
+                            Icons.auto_awesome,
+                            color: Colors.white,
+                            size: 36,
+                          ),
                 ),
               ),
             ),
@@ -174,12 +231,11 @@ class CustomPopupDesign extends StatelessWidget {
     );
   }
 
-  Widget _buildButton(
-      BuildContext context, {
-        required String label,
-        required VoidCallback onPressed,
-        required bool isPrimary,
-      }) {
+  Widget _buildButton({
+    required String label,
+    required VoidCallback onPressed,
+    required bool isPrimary,
+  }) {
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
@@ -189,9 +245,10 @@ class CustomPopupDesign extends StatelessWidget {
         foregroundColor: isPrimary ? Colors.white : const Color(0xFF356D91),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: isPrimary
-              ? BorderSide.none
-              : const BorderSide(color: Color(0xFF74D2FF), width: 1.2),
+          side:
+              isPrimary
+                  ? BorderSide.none
+                  : const BorderSide(color: Color(0xFF74D2FF), width: 1.2),
         ),
       ),
       child: Text(
@@ -201,6 +258,54 @@ class CustomPopupDesign extends StatelessWidget {
           fontSize: 15,
           fontWeight: FontWeight.w600,
         ),
+      ),
+    );
+  }
+}
+
+class _FoldedMemoTag extends StatelessWidget {
+  final String? text;
+  final String? memoBgAsset;
+
+  const _FoldedMemoTag({this.text, this.memoBgAsset});
+
+  @override
+  Widget build(BuildContext context) {
+    if (text == null ||
+        text!.isEmpty ||
+        memoBgAsset == null ||
+        memoBgAsset!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return SizedBox(
+      width: 288,
+      height: 58,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: Image.asset(
+              memoBgAsset!,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: 58,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              text!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF263C69),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

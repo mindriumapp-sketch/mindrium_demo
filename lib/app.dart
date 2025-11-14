@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/chatbot/chatbot_main.dart';
 import 'package:gad_app_team/common/constants.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:gad_app_team/contents/apply_alternative_thought.dart';
@@ -120,7 +119,7 @@ class MyApp extends StatelessWidget {
       ],
 
       // 🪸 초기 화면
-      home: const SplashScreen(),
+      home: const HomeScreen(),
 
       // 🧭 라우트 정의 (기존 그대로)
       routes: {
@@ -202,8 +201,6 @@ class MyApp extends StatelessWidget {
           return PokemonBattleDeletePage(groupId: groupId);
         },
         '/archive_sea': (context) => SeaArchivePage(),
-
-        '/agent_help': (context) => ChatApp(),
       },
     );
   }

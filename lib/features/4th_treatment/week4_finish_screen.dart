@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:gad_app_team/data/user_provider.dart';
+import 'package:gad_app_team/utils/edu_progress.dart';
 
 // ✅ 튜토리얼 공용 디자인: 배경/카드/네비게이션 포함
 import 'package:gad_app_team/widgets/tutorial_design.dart';
@@ -32,7 +31,6 @@ class Week4FinishScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userName = Provider.of<UserProvider>(context, listen: false).userName;
 
     // 기존 문구 그대로 유지
     final String successText =
@@ -61,7 +59,10 @@ class Week4FinishScreen extends StatelessWidget {
             title: '이완 음성 안내 시작',
             message: '잠시 후, 이완을 위한 음성 안내가 시작됩니다.\n주변 소리와 음량을 조절해보세요.',
             positiveText: '확인',
-            onPositivePressed: () => Navigator.of(ctx).pop(),
+            onPositivePressed: () async {
+              Navigator.of(ctx).pop();
+              //await EduProgress.markWeekDone(4);
+            },
             negativeText: null,           // ✅ 취소 숨김
             onNegativePressed: null,      // ✅ 필요 없음
             // backgroundAsset: 'assets/image/popup_bg.png',

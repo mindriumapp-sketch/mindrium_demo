@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gad_app_team/data/api/api_client.dart';
-import 'package:gad_app_team/data/api/users_api.dart';
-import 'package:gad_app_team/data/api/user_data_api.dart';
-import 'package:gad_app_team/data/api/auth_api.dart';
-import 'package:gad_app_team/data/storage/token_storage.dart';
+import 'package:provider/provider.dart';
 
 // ✅ 블루 토스트 배너
 import 'package:gad_app_team/widgets/blue_banner.dart';
+import 'package:gad_app_team/data/user_provider.dart';
 
 class MyInfoScreen extends StatefulWidget {
   const MyInfoScreen({super.key});
@@ -27,12 +25,6 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
   final TextEditingController confirmPasswordController =
       TextEditingController();
 
-  final TokenStorage _tokens = TokenStorage();
-  late final ApiClient _apiClient = ApiClient(tokens: _tokens);
-  late final UsersApi _usersApi = UsersApi(_apiClient);
-  late final UserDataApi _userDataApi = UserDataApi(_apiClient);
-  late final AuthApi _authApi = AuthApi(_apiClient, _tokens);
-
   bool isEditing = false;
   bool isLoading = true;
   bool showPasswordFields = false;
@@ -46,18 +38,44 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
   }
 
   Future<void> _loadUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      await _loadUserDataFromBackend();
+      return;
+    }
     try {
-      final me = await _usersApi.me();
-      nameController.text = (me['name'] as String?)?.trim() ?? '';
-      emailController.text = (me['email'] as String?)?.trim() ?? '';
-      final createdAtRaw = me['createdAt'] ?? me['created_at'];
-      if (createdAtRaw is String) {
-        createdAt = DateTime.tryParse(createdAtRaw);
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+      final data = doc.data();
+      if (data != null) {
+        nameController.text = data['name'] ?? '';
+        emailController.text = data['email'] ?? '';
+        coreValueController.text = data['coreValue'] ?? '';
+        if (data['createdAt'] != null) {
+          createdAt = (data['createdAt'] as Timestamp).toDate();
+        }
       }
-      final coreValue = await _userDataApi.getCoreValue();
-      coreValueController.text = (coreValue?['core_value'] as String?) ?? '';
     } catch (e) {
       debugPrint("내 정보 로드 실패: $e");
+      // 필요하면 실패 토스트도 사용 가능
+      BlueBanner.show(context, '내 정보를 불러오지 못했어요.');
+    }
+    setState(() => isLoading = false);
+  }
+
+  Future<void> _loadUserDataFromBackend() async {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      await userProvider.loadUserData();
+
+      nameController.text = userProvider.userName;
+      emailController.text = userProvider.userEmail;
+      createdAt = userProvider.createdAt;
+    } catch (e) {
+      debugPrint("내 정보(백엔드) 로드 실패: $e");
       if (mounted) {
         BlueBanner.show(context, '내 정보를 불러오지 못했어요.');
       }
@@ -67,20 +85,16 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
   }
 
   Future<void> _updateUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _showSnack('현재 계정에서는 빠른 수정 기능을 준비 중입니다.');
+      return;
+    }
     setState(() => isLoading = true);
 
     final currentPw = currentPasswordController.text.trim();
     final newPw = newPasswordController.text.trim();
     final confirmPw = confirmPasswordController.text.trim();
-    final email = emailController.text.trim();
-    final name = nameController.text.trim();
-    final coreValue = coreValueController.text.trim();
-
-    if (name.isEmpty) {
-      _showSnack('이름을 입력해주세요.');
-      setState(() => isLoading = false);
-      return;
-    }
 
     if (showPasswordFields && currentPw.isEmpty) {
       _showSnack('기존 비밀번호를 입력해야 합니다.');
@@ -95,30 +109,42 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
     }
 
     try {
-      await _usersApi.updateMe({'name': name});
-      // 2025-11-13 핵심 가치는 MongoDB API로 분리 저장
-      if (coreValue.isEmpty) {
-        await _userDataApi.deleteCoreValue();
-      } else {
-        await _userDataApi.updateCoreValue(coreValue);
+      // 🔐 비밀번호 재인증
+      if (showPasswordFields) {
+        final cred = EmailAuthProvider.credential(
+          email: user.email!,
+          password: currentPw,
+        );
+        await user.reauthenticateWithCredential(cred);
       }
 
+      // ✏️ 이름/핵심 가치 업데이트
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({
+            'name': nameController.text.trim(),
+            'coreValue': coreValueController.text.trim(),
+          });
+
+      await user.updateDisplayName(nameController.text.trim());
+
+      // 🔄 비밀번호 변경
       if (showPasswordFields && newPw.isNotEmpty) {
-        await _changePassword(email: email, currentPw: currentPw, newPw: newPw);
+        await user.updatePassword(newPw);
         _showSnack('비밀번호가 변경되었습니다. 다시 로그인해주세요.');
-        await _logout();
+        await FirebaseAuth.instance.signOut();
+        if (!mounted) return;
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
         return;
       }
 
       _showSnack('내 정보가 업데이트되었습니다.');
-      setState(() {
-        isEditing = false;
-        showPasswordFields = false;
-      });
+      setState(() => isEditing = false);
     } catch (e) {
       _showSnack('업데이트 실패: $e');
     } finally {
-      if (mounted) setState(() => isLoading = false);
+      setState(() => isLoading = false);
     }
   }
 
@@ -127,27 +153,15 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
   }
 
   Future<void> _logout() async {
-    await _tokens.clear();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', false);
-    await prefs.remove('uid');
-    await prefs.remove('email');
+    await FirebaseAuth.instance.signOut();
     if (!mounted) return;
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    Navigator.pushReplacementNamed(context, '/login');
   }
 
-  Future<void> _changePassword({
-    required String email,
-    required String currentPw,
-    required String newPw,
-  }) async {
-    // 2025-11-13 MongoDB 백엔드 비밀번호 변경 흐름
-    await _authApi.login(email: email, password: currentPw);
-    final token = await _authApi.requestPasswordResetToken(email);
-    if (token == null || token.isEmpty) {
-      throw Exception('비밀번호 변경 토큰을 가져오지 못했습니다.');
-    }
-    await _authApi.resetPasswordWithToken(token: token, newPassword: newPw);
+  int daysBetween(DateTime a, DateTime b) {
+    final da = DateTime(a.year, a.month, a.day);
+    final db = DateTime(b.year, b.month, b.day);
+    return da.difference(db).inDays;
   }
 
   @override
@@ -244,13 +258,19 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
                             const SizedBox(height: 8),
                             Align(
                               alignment: Alignment.centerRight,
-                              child: Text(
-                                joinDateText,
-                                style: const TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: 13,
-                                  fontFamily: 'Noto Sans KR',
-                                ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    joinDateText,
+                                    style: const TextStyle(
+                                      color: Colors.black54,
+                                      fontSize: 13,
+                                      fontFamily: 'Noto Sans KR',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                ],
                               ),
                             ),
                             const SizedBox(height: 24),

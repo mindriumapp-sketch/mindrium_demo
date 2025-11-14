@@ -4,6 +4,7 @@ import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gad_app_team/widgets/blue_white_card.dart';
+import 'package:gad_app_team/widgets/navigation_button.dart'; // 🔹 네비게이션 버튼 가져오기
 
 class ValueStartScreen extends StatefulWidget {
   final int weekNumber;
@@ -44,10 +45,8 @@ class _ValueStartScreenState extends State<ValueStartScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
+        final doc =
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
         if (doc.exists) {
           final data = doc.data()!;
           if (!mounted) return;
@@ -140,9 +139,10 @@ class _ValueStartScreenState extends State<ValueStartScreen> {
       appBar: CustomAppBar(title: '${widget.weekNumber}주차 - 시작하기'),
       body: Stack(
         children: [
+          // 배경
           Positioned.fill(
             child: Opacity(
-              opacity: 0.65,
+              opacity: 0.35,
               child: Image.asset(
                 'assets/image/eduhome.png',
                 fit: BoxFit.cover,
@@ -150,11 +150,14 @@ class _ValueStartScreenState extends State<ValueStartScreen> {
               ),
             ),
           ),
+
+          // 본문 + 아래 고정 네비게이션
           SafeArea(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : Column(
               children: [
+                // 위쪽: PageView가 차지
                 Expanded(
                   child: PageView(
                     controller: _page,
@@ -173,64 +176,21 @@ class _ValueStartScreenState extends State<ValueStartScreen> {
                         navy: _navy,
                         title: '${widget.weekNumber}주차 활동 안내',
                         subtitle: widget.weekTitle,
-                        weekNumber: widget.weekNumber, // ✅ 추가
+                        weekNumber: widget.weekNumber,
                       ),
                     ],
                   ),
                 ),
+
+                // 아래: 항상 바닥에 붙는 네비게이션 (기존 로직 그대로 연결)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(34, 0, 34, 24),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _index == 0 ? null : _goPrev,
-                          style: OutlinedButton.styleFrom(
-                            padding:
-                            const EdgeInsets.symmetric(vertical: 14),
-                            backgroundColor:
-                            Colors.white.withOpacity(_index == 0 ? 0.5 : 1),
-                            side: BorderSide(
-                              color: Colors.white.withOpacity(0.8),
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            '이 전',
-                            style: TextStyle(
-                              color: _index == 0
-                                  ? Colors.black38
-                                  : _blue,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _goNextOrStart,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _blue,
-                            foregroundColor: Colors.white,
-                            padding:
-                            const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            '다 음',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  child: NavigationButtons(
+                    onBack: _index == 0 ? null : _goPrev,
+                    onNext: _goNextOrStart,
+                    // 기존 ElevatedButton 텍스트가 '다 음' 이었으니 그대로
+                    rightLabel: '다음',
+                    leftLabel: '이전',
                   ),
                 ),
               ],
@@ -395,14 +355,14 @@ class _GuidePage extends StatelessWidget {
   final Color navy;
   final String title;
   final String subtitle;
-  final int weekNumber; // 추가
+  final int weekNumber;
 
   const _GuidePage({
     required this.maxWidth,
     required this.navy,
     required this.title,
     required this.subtitle,
-    required this.weekNumber, // 추가
+    required this.weekNumber,
   });
 
   @override

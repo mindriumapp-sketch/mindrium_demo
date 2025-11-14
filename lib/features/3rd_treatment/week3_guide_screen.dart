@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/widgets/top_btm_card.dart';        // ApplyDoubleCard, PanelHeader
-import 'package:gad_app_team/widgets/chips_editor.dart';        // 칩 입력 위젯
+import 'package:gad_app_team/widgets/top_btm_card.dart'; // ApplyDoubleCard, PanelHeader
+import 'package:gad_app_team/widgets/chips_editor.dart'; // 칩 입력 위젯
 import 'package:gad_app_team/features/3rd_treatment/week3_explain_alternative_thoughts.dart';
 
 /// 🌊 3주차 - Self Talk (상상하기 단계)
@@ -26,10 +26,7 @@ class _Week3GuideScreenState extends State<Week3GuideScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const PanelHeader(
-          subtitle: '불안하면 어떤 일이 일어날까요? ✨',
-          showDivider: false,
-        ),
+        const PanelHeader(subtitle: '불안하면 어떤 일이 일어날까요?', showDivider: false),
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: Container(
@@ -46,7 +43,7 @@ class _Week3GuideScreenState extends State<Week3GuideScreen> {
             child: AspectRatio(
               aspectRatio: 16 / 9,
               child: Image.asset(
-                'assets/image/imagination.png',   // ✅ 여기만 바뀜
+                'assets/image/imagination.png', // ✅ 여기만 바뀜
                 fit: BoxFit.cover,
                 filterQuality: FilterQuality.high,
                 width: w,
@@ -91,8 +88,9 @@ class _Week3GuideScreenState extends State<Week3GuideScreen> {
     Navigator.push(
       context,
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) =>
-            Week3ExplainAlternativeThoughtsScreen(chips: values),
+        pageBuilder:
+            (_, __, ___) =>
+                Week3ExplainAlternativeThoughtsScreen(chips: values),
         transitionDuration: Duration.zero,
         reverseTransitionDuration: Duration.zero,
       ),

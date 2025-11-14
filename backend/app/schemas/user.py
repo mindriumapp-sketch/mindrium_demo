@@ -112,6 +112,7 @@ class UserMe(UserBase):
     _id: str
     survey_completed: bool
     email_verified: bool
+    created_at: datetime | None = None
 
 class UpdateUser(BaseModel):
     name: Optional[str] = None

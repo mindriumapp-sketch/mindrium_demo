@@ -8,9 +8,14 @@ class BehaviorConfirmDialog extends StatelessWidget {
   final String positiveText;
   final VoidCallback onNegativePressed;
   final VoidCallback onPositivePressed;
+  final bool single;
 
   final String badgeBgAsset;
   final String memoBgAsset;
+
+  // ✅ 추가: 커스텀 위젯 & 타이틀 컬러
+  final Widget? customContent;
+  final Color titleColor;
 
   const BehaviorConfirmDialog({
     super.key,
@@ -23,7 +28,30 @@ class BehaviorConfirmDialog extends StatelessWidget {
     this.positiveText = '예',
     this.badgeBgAsset = 'assets/image/popup1.png',
     this.memoBgAsset = 'assets/image/popup2.png',
+    this.single = false,
+    this.customContent,
+    this.titleColor = const Color(0xFF263C69), // 기본은 기존 색
   });
+
+  factory BehaviorConfirmDialog.singleButton({
+    required String titleText,
+    required String messageText,
+    required VoidCallback onConfirm,
+    String badgeBgAsset = 'assets/image/popup1.png',
+  }) {
+    return BehaviorConfirmDialog(
+      titleText: titleText,
+      highlightText: '',
+      messageText: messageText,
+      negativeText: '',
+      positiveText: '확인',
+      onNegativePressed: () {},
+      onPositivePressed: onConfirm,
+      memoBgAsset: '',
+      badgeBgAsset: badgeBgAsset,
+      single: true,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +64,7 @@ class BehaviorConfirmDialog extends StatelessWidget {
           // 메인 카드
           Container(
             width: double.infinity,
-            margin: const EdgeInsets.only(top: 60), // 배지 공간 확보
+            margin: const EdgeInsets.only(top: 60),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(26),
@@ -48,72 +76,61 @@ class BehaviorConfirmDialog extends StatelessWidget {
                 ),
               ],
             ),
-            padding: const EdgeInsets.fromLTRB(24, 60, 24, 32), // 상단 여유 증가
+            padding: const EdgeInsets.fromLTRB(24, 60, 24, 32),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // 🔹 타이틀 (색 커스터마이즈 가능)
                 Text(
                   titleText,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF263C69),
+                    color: titleColor,
                   ),
                 ),
                 const SizedBox(height: 12),
 
-                // 메모 띠 (popup2)
+                // 🔹 메모 띠 (memoBgAsset 없으면 숨김)
                 _FoldedMemoTag(
                   text: highlightText,
                   memoBgAsset: memoBgAsset,
                 ),
 
                 const SizedBox(height: 22),
-                Text(
-                  messageText,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: Color(0xFF4A5568),
-                    height: 1.5,
+
+                // 🔹 내용 영역: customContent 우선
+                if (customContent != null) ...[
+                  customContent!,
+                ] else if (messageText.isNotEmpty) ...[
+                  Text(
+                    messageText,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF4A5568),
+                      height: 1.5,
+                    ),
                   ),
-                ),
+                ],
+
                 const SizedBox(height: 30),
 
-                // 버튼 두 개
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: onNegativePressed,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          negativeText,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF263C69),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
+                // 🔹 버튼 영역
+                if (single) ...[
+                  Center(
+                    child: SizedBox(
+                      width: 140,
                       child: ElevatedButton(
                         onPressed: onPositivePressed,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF5DADEC),
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding:
+                          const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                           elevation: 0,
                         ),
@@ -121,13 +138,64 @@ class BehaviorConfirmDialog extends StatelessWidget {
                           positiveText,
                           style: const TextStyle(
                             fontSize: 16,
+                            wordSpacing: 1.8,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ] else ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: onNegativePressed,
+                          style: TextButton.styleFrom(
+                            padding:
+                            const EdgeInsets.symmetric(vertical: 12),
+                            backgroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            negativeText,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              wordSpacing: 1.8,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF5DADEC),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: onPositivePressed,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF5DADEC),
+                            foregroundColor: Colors.white,
+                            padding:
+                            const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            positiveText,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -138,7 +206,6 @@ class BehaviorConfirmDialog extends StatelessWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // 배경용 흰 원 (popup과 자연스럽게 이어짐)
                 Container(
                   width: 120,
                   height: 120,
@@ -162,7 +229,6 @@ class BehaviorConfirmDialog extends StatelessWidget {
   }
 }
 
-/// 메모띠 (popup2) 
 class _FoldedMemoTag extends StatelessWidget {
   final String text;
   final String memoBgAsset;
@@ -174,13 +240,12 @@ class _FoldedMemoTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // memoBgAsset이 비어있으면 아예 표시하지 않음
-    if (memoBgAsset.isEmpty) {
+    if (memoBgAsset.isEmpty || text.isEmpty) {
       return const SizedBox.shrink();
     }
 
     return SizedBox(
-      width: 288, // 피그마 기준
+      width: 288,
       height: 58,
       child: Stack(
         alignment: Alignment.center,
@@ -195,7 +260,7 @@ class _FoldedMemoTag extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12), // 좌우 패딩 줄임
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text(
               text,
               textAlign: TextAlign.center,

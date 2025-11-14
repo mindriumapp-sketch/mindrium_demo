@@ -115,7 +115,7 @@ class _Week4NextThoughtScreenState extends State<Week4NextThoughtScreen> {
 
     // 안내문 텍스트
     final situationText = (_activatingEvent != null && _activatingEvent!.isNotEmpty)
-        ? "잘 따라오고 계십니다!\n 다시 '$_activatingEvent' (라)는 상황을 \n자세하게 상상해 보세요."
+        ? "$userName님, \n잘 따라오고 계십니다!\n 다시 '$_activatingEvent' (이)라는 상황을 \n자세하게 상상해 보세요."
         : '이때의 상황을 자세하게 상상해 보세요.';
     final nextThoughtText =
         "일기에 작성하셨던 또 다른 \n생각인 '$nextThought'에 대해 \n계속 진행해보겠습니다.";
@@ -125,8 +125,8 @@ class _Week4NextThoughtScreenState extends State<Week4NextThoughtScreen> {
       fontSize: 18,
       fontWeight: FontWeight.w500,
       color: Colors.black,
-      height: 1.5,
-      letterSpacing: 0.1,
+      height: 1.8,
+      letterSpacing: 0.8,
       fontFamily: 'Noto Sans KR',
     );
 
@@ -163,10 +163,9 @@ class _Week4NextThoughtScreenState extends State<Week4NextThoughtScreen> {
           Text(
             '$_secondsLeft초 후에 다음 버튼이 활성화됩니다',
             style: const TextStyle(
-              fontSize: 16,
-              color: Color(0xFFB0B0B0),
-              fontWeight: FontWeight.w400,
-              fontFamily: 'Noto Sans KR',
+              fontSize: 14,
+              color: Color(0xFF9BA7B4),
+              fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
           ),
@@ -176,7 +175,7 @@ class _Week4NextThoughtScreenState extends State<Week4NextThoughtScreen> {
     // === ApplyDesign 사용: 배경/앱바/중앙 BlueWhiteCard/하단 네비 버튼 ===
     return ApplyDesign(
       appBarTitle: '4주차 - 인지 왜곡 찾기',
-      cardTitle: '$userName님',
+      cardTitle: '그때 상황 다시 떠올리기',
       onBack: () => Navigator.pop(context),
       onNext: _isNextEnabled
           ? () {

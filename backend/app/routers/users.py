@@ -27,6 +27,7 @@ async def me(db=Depends(get_db), user_id: str = Depends(get_current_user_id)):
         "gender": user.get("gender"),
         "survey_completed": user.get("survey_completed", False),
         "email_verified": user.get("email_verified", False),
+        "created_at": user.get("created_at"),
     }
 
 @router.put("/me", response_model=UserMe)
@@ -45,4 +46,5 @@ async def update_me(payload: UpdateUser, db=Depends(get_db), user_id: str = Depe
         "gender": user.get("gender"),
         "survey_completed": user.get("survey_completed", False),
         "email_verified": user.get("email_verified", False),
+        "created_at": user.get("created_at"),
     }

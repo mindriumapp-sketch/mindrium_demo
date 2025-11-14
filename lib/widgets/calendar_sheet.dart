@@ -212,8 +212,8 @@ class _WhiteCardContainer extends StatelessWidget {
             title,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 23,
-              fontWeight: FontWeight.w900,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
               color: Color(0xFF1F2937),
             ),
           ),

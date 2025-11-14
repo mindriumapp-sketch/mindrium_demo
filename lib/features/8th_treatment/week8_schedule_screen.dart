@@ -1,6 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 import 'package:gad_app_team/common/constants.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
@@ -66,9 +66,7 @@ class _Week8ScheduleScreenState extends State<Week8ScheduleScreen> {
       final eventsJson = prefs.getStringList('calendar_events') ?? [];
       setState(() {
         _savedEvents =
-            eventsJson
-                .map((e) => CalendarEvent.fromJson(jsonDecode(e)))
-                .toList();
+            eventsJson.map((e) => CalendarEvent.fromJson(jsonDecode(e))).toList();
         _isLoading = false;
       });
     } catch (_) {
@@ -96,8 +94,13 @@ class _Week8ScheduleScreenState extends State<Week8ScheduleScreen> {
     }
   }
 
-  void _addToCalendar(DateTime start, DateTime end) async {
-    if (widget.behaviorsToKeep.isEmpty) {
+  // ✅ 다이얼로그에서 선택된 행동을 넘겨서 저장하게 변경
+  void _addToCalendar(
+      List<String> chosenBehaviors,
+      DateTime start,
+      DateTime end,
+      ) async {
+    if (chosenBehaviors.isEmpty) {
       BlueBanner.show(context, '추가할 행동이 없습니다.');
       return;
     }
@@ -106,7 +109,7 @@ class _Week8ScheduleScreenState extends State<Week8ScheduleScreen> {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       startDate: start,
       endDate: end,
-      behaviors: widget.behaviorsToKeep,
+      behaviors: chosenBehaviors,
     );
 
     try {
@@ -122,110 +125,242 @@ class _Week8ScheduleScreenState extends State<Week8ScheduleScreen> {
     }
   }
 
+  // ✅ 위에서 네가 준 “펼쳐지는 행동 선택” 다이얼로그 스타일로 교체
   void _showAddEventDialog() {
+    // 다이얼로그 안에서 쓸 초기값들
     DateTime startDate = DateTime.now();
     DateTime endDate = DateTime.now().add(const Duration(days: 7));
 
+    final allBehaviors = [...widget.behaviorsToKeep];
+    // 기본은 전부 체크
+    final Map<String, bool> selected = {
+      for (final b in allBehaviors) b: false,
+    };
+
+    bool isExpanded = true; // 처음엔 열려있게
+
     showDialog(
       context: context,
-      builder:
-          (context) => StatefulBuilder(
-            builder: (context, setS) {
-              return AlertDialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                title: const Text(
-                  '캘린더에 추가',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                ),
-                content: Column(
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, innerSetState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: const Text(
+                '캘린더에 추가',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      '선택한 건강한 생활 습관들을\n캘린더에 추가하시겠습니까?',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF718096),
-                        height: 1.4,
+                    const Center(
+                      child: Text(
+                        '추가할 행동을 고르고\n기간을 선택해주세요.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF718096),
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 14),
+
+                    // 헤더 박스 (접히는 부분)
+                    GestureDetector(
+                      onTap: () {
+                        innerSetState(() {
+                          isExpanded = !isExpanded;
+                        });
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF8ED7FF)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              '현재 선택된 행동들',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF2D3748),
+                              ),
+                            ),
+                            Icon(
+                              isExpanded
+                                  ? Icons.keyboard_arrow_up
+                                  : Icons.keyboard_arrow_down,
+                              color: const Color(0xFF2D3748),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    if (isExpanded) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: allBehaviors.map((b) {
+                          final bool isOn = selected[b] ?? false;
+                          return GestureDetector(
+                            onTap: () {
+                              innerSetState(() {
+                                selected[b] = !isOn;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isOn
+                                    ? const Color(0xFF8ED7FF)
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: const Color(0xFF8ED7FF),
+                                ),
+                                boxShadow: isOn
+                                    ? [
+                                  BoxShadow(
+                                    color: const Color(0xFF8ED7FF)
+                                        .withOpacity(0.30),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ]
+                                    : null,
+                              ),
+                              child: Text(
+                                b,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: isOn
+                                      ? Colors.white
+                                      : const Color(0xFF2D3748),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+
+                    const SizedBox(height: 14),
+
+                    // 시작 기간
                     _dateTile('시작 기간', startDate, () async {
-                      final picked = await showDatePicker(
+                      final date = await showDatePicker(
                         context: context,
                         initialDate: startDate,
                         firstDate: DateTime.now(),
                         lastDate: DateTime.now().add(const Duration(days: 365)),
                       );
-                      if (picked != null) {
-                        setS(() {
-                          startDate = picked;
-                          if (endDate.isBefore(startDate)) endDate = startDate;
+                      if (date != null) {
+                        innerSetState(() {
+                          startDate = date;
+                          if (endDate.isBefore(startDate)) {
+                            endDate = startDate;
+                          }
                         });
                       }
                     }),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
+
+                    // 종료 기간
                     _dateTile('종료 기간', endDate, () async {
-                      final picked = await showDatePicker(
+                      final date = await showDatePicker(
                         context: context,
                         initialDate: endDate,
                         firstDate: startDate,
                         lastDate: DateTime.now().add(const Duration(days: 365)),
                       );
-                      if (picked != null) setS(() => endDate = picked);
+                      if (date != null) {
+                        innerSetState(() {
+                          endDate = date;
+                        });
+                      }
                     }),
                   ],
                 ),
-                actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                actions: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: const BorderSide(color: Color(0xFFE2E8F0)),
-                            ),
-                          ),
-                          child: const Text(
-                            '취소',
-                            style: TextStyle(color: Color(0xFF718096)),
+              ),
+              actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              actions: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: const Text(
+                          '취소',
+                          style: TextStyle(
+                            color: Color(0xFF8ED7FF),
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _addToCalendar(startDate, endDate);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: bluePrimary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // 선택된 행동들만 모으기
+                          final chosen = selected.entries
+                              .where((e) => e.value)
+                              .map((e) => e.key)
+                              .toList();
+
+                          if (chosen.isEmpty) {
+                            BlueBanner.show(context, '하나 이상 선택해주세요.');
+                            return;
+                          }
+
+                          Navigator.of(context).pop();
+                          _addToCalendar(chosen, startDate, endDate);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF8ED7FF),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
-                            '추가',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          '추가',
+                          style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
-                    ],
-                  ),
-                ],
-              );
-            },
-          ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -280,84 +415,95 @@ class _Week8ScheduleScreenState extends State<Week8ScheduleScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child:
-          items.isEmpty
-              ? const Center(
-                child: Text(
-                  '선택된 행동이 없습니다.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFFA0AEC0),
-                    fontStyle: FontStyle.italic,
+      child: items.isEmpty
+          ? const Center(
+        child: Text(
+          '선택된 행동이 없습니다.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Color(0xFFA0AEC0),
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      )
+          : Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 12,
+        runSpacing: 12,
+        children: items.map((b) {
+          return ConstrainedBox(
+            constraints: const BoxConstraints.tightFor(
+              width: 239,
+              height: 52,
+            ),
+            child: Container(
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: checkedChipFill,
+                borderRadius: BorderRadius.circular(5),
+                border: Border.all(color: chipBorderBlue, width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: chipBorderBlue.withOpacity(0.20),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
                   ),
-                ),
-              )
-              : Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 12,
-                runSpacing: 12,
-                children:
-                    items.map((b) {
-                      return ConstrainedBox(
-                        constraints: const BoxConstraints.tightFor(
-                          width: 239,
-                          height: 52,
-                        ),
-                        child: Container(
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: checkedChipFill,
-                            borderRadius: BorderRadius.circular(5),
-                            border: Border.all(color: chipBorderBlue, width: 1),
-                            boxShadow: [
-                              BoxShadow(
-                                color: chipBorderBlue.withOpacity(0.20),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            b,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF2D3748),
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                ],
               ),
+              child: Text(
+                b,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2D3748),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return EduhomeBg(
-      // ✅ 통일된 배경 위젯으로 감싸기
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: const CustomAppBar(title: '8주차 - 스케줄 관리'),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SafeArea(
+          child: Column(
+            children: [
+              // 위쪽: 스크롤 되는 영역
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(top: 20, bottom: 32),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 24),
+                      CalendarSheet(
+                        title: '캘린더에 추가',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '현재 선택된 행동들:',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF2D3748),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            _selectedBehaviorsChips(),
+                            const SizedBox(height: 24),
 
-        body:
-            _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : SafeArea(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.only(top: 20, bottom: 32),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 24),
-
-                        // 재사용 캘린더 시트
-                        CalendarSheet(
-                          title: '캘린더에 추가',
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+                            // ✅ 저장된 캘린더 이벤트 UI
+                            if (_savedEvents.isNotEmpty) ...[
                               const Text(
-                                '현재 선택된 행동들:',
+                                '저장된 캘린더 이벤트',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
@@ -365,136 +511,134 @@ class _Week8ScheduleScreenState extends State<Week8ScheduleScreen> {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              _selectedBehaviorsChips(),
-                              const SizedBox(height: 24),
-
-                              if (_savedEvents.isNotEmpty) ...[
-                                const Text(
-                                  '저장된 캘린더 이벤트',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF2D3748),
+                              ..._savedEvents.map((e) {
+                                final duration =
+                                    e.endDate.difference(e.startDate).inDays + 1;
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(0xFFE2E8F0),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.08),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                const SizedBox(height: 12),
-                                ..._savedEvents.map((e) {
-                                  final duration =
-                                      e.endDate.difference(e.startDate).inDays +
-                                      1;
-                                  return Container(
-                                    margin: const EdgeInsets.only(bottom: 10),
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: const Color(0xFFE2E8F0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              '${e.startDate.month}월 ${e.startDate.day}일 ~ '
+                                                  '${e.endDate.month}월 ${e.endDate.day}일 ($duration일)',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF2D3748),
+                                              ),
+                                            ),
+                                          ),
+                                          GestureDetector(
+                                            onTap: () => _deleteEvent(e.id),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFCBD5E0),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: const Icon(
+                                                Icons.delete,
+                                                color: Colors.white,
+                                                size: 16,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.08),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 4),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        '행동: ${e.behaviors.join(', ')}',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF718096),
                                         ),
-                                      ],
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            '${e.startDate.month}월 ${e.startDate.day}일 ~ ${e.endDate.month}월 ${e.endDate.day}일 ($duration일)',
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              color: Color(0xFF2D3748),
-                                            ),
-                                          ),
-                                        ),
-                                        GestureDetector(
-                                          onTap: () => _deleteEvent(e.id),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFCBD5E0),
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            child: const Icon(
-                                              Icons.delete,
-                                              color: Colors.white,
-                                              size: 16,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                                const SizedBox(height: 8),
-                              ],
-
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
                               const SizedBox(height: 8),
+                            ],
 
-                              // 2/3 폭 버튼
-                              Center(
-                                child: FractionallySizedBox(
-                                  widthFactor: 0.66,
-                                  child: ElevatedButton(
-                                    onPressed:
-                                        widget.behaviorsToKeep.isNotEmpty
-                                            ? _showAddEventDialog
-                                            : null,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: bluePrimary,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      elevation: 0,
+                            const SizedBox(height: 8),
+                            Center(
+                              child: FractionallySizedBox(
+                                widthFactor: 0.66,
+                                child: ElevatedButton(
+                                  onPressed: widget.behaviorsToKeep.isNotEmpty
+                                      ? _showAddEventDialog
+                                      : null,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: bluePrimary,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
                                     ),
-                                    child: const Text(
-                                      '캘린더에 추가하기',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  child: const Text(
+                                    '캘린더에 추가하기',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 24),
-                      ],
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 아래: 항상 바닥에 붙는 네비게이션
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                child: NavigationButtons(
+                  leftLabel: '이전',
+                  rightLabel: '다음',
+                  onBack: () => Navigator.pop(context),
+                  onNext: () => Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (_, __, ___) => Week8MatrixScreen(
+                        behaviorsToKeep: widget.behaviorsToKeep,
+                      ),
+                      transitionDuration: Duration.zero,
+                      reverseTransitionDuration: Duration.zero,
                     ),
                   ),
                 ),
-
-        bottomNavigationBar: Padding(
-          padding: const EdgeInsets.fromLTRB(34, 8, 34, 16),
-          child: NavigationButtons(
-            leftLabel: '이전',
-            rightLabel: '다음',
-            onBack: () => Navigator.pop(context),
-            onNext:
-                () => Navigator.push(
-                  context,
-                  PageRouteBuilder(
-                    pageBuilder:
-                        (_, __, ___) => Week8MatrixScreen(
-                          behaviorsToKeep: widget.behaviorsToKeep,
-                        ),
-                    transitionDuration: Duration.zero,
-                    reverseTransitionDuration: Duration.zero,
-                  ),
-                ),
+              ),
+            ],
           ),
         ),
       ),

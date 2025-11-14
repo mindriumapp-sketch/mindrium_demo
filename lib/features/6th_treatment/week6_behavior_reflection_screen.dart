@@ -89,25 +89,25 @@ class _Week6BehaviorReflectionScreenState
     String mainText;
     if (widget.behaviorType == 'avoid' && isShortTermHigh && !isLongTermHigh) {
       mainText =
-          '방금 보셨던 "${widget.selectedBehavior}"(라)는 행동을 불안을 회피하는 행동으로 선택하셨는데, 실제로 이 행동은 불안을 회피하는 쪽에 가까워 보이네요.';
+          ' 방금 보셨던 "${widget.selectedBehavior}"(라)는 행동을 불안을 회피하는 행동으로 선택하셨는데, 실제로 이 행동은 불안을 회피하는 쪽에 가까워 보이네요.';
     } else if (widget.behaviorType == 'avoid' &&
         !isShortTermHigh &&
         isLongTermHigh) {
       mainText =
-          '방금 보셨던 "${widget.selectedBehavior}"(라)는 행동을 불안을 회피하는 행동으로 선택하셨지만, 실제로는 불안을 직면하는 쪽에 가까워 보이네요.';
+          ' 방금 보셨던 "${widget.selectedBehavior}"(라)는 행동을 불안을 회피하는 행동으로 선택하셨지만, 실제로는 불안을 직면하는 쪽에 가까워 보이네요.';
     } else if (widget.behaviorType == 'face' &&
         !isShortTermHigh &&
         isLongTermHigh) {
       mainText =
-          '방금 보셨던 "${widget.selectedBehavior}"(라)는 행동을 불안을 직면하는 행동으로 선택하셨는데, 실제로 이 행동은 불안을 직면하는 쪽에 가까워 보이네요.';
+          ' 방금 보셨던 "${widget.selectedBehavior}"(라)는 행동을 불안을 직면하는 행동으로 선택하셨는데, 실제로 이 행동은 불안을 직면하는 쪽에 가까워 보이네요.';
     } else if (widget.behaviorType == 'face' &&
         isShortTermHigh &&
         !isLongTermHigh) {
       mainText =
-          '방금 보셨던 "${widget.selectedBehavior}"(라)는 행동을 불안을 직면하는 행동으로 선택하셨지만, 실제로는 불안을 회피하는 쪽에 가까워 보이네요.';
+          ' 방금 보셨던 "${widget.selectedBehavior}"(라)는 행동을 불안을 직면하는 행동으로 선택하셨지만, 실제로는 불안을 회피하는 쪽에 가까워 보이네요.';
     } else {
       mainText =
-          '방금 보셨던 "${widget.selectedBehavior}"(라)는 행동을 불안을 $userChoice이라고 선택하셨네요.';
+          ' 방금 보셨던 "${widget.selectedBehavior}"(라)는 행동을 불안을 $userChoice이라고 선택하셨네요.';
     }
 
     String subText = '이 행동이 과연 나에게 도움이 되는지 다시 한번 더 생각해보아요!';

@@ -3,14 +3,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
-import '../../common/constants.dart';
-import '../../widgets/custom_appbar.dart';
-import '../../widgets/navigation_button.dart';
+
 import '../../data/user_provider.dart';
 import '../2nd_treatment/abc_group_add.dart';
 import '../2nd_treatment/notification_selection_screen.dart';
 
-/// 🌊 GridItem (공통 구조)
+// 💡 Mindrium 위젯 디자인들
+import 'package:gad_app_team/widgets/memo_sheet_design.dart';
+import 'package:gad_app_team/widgets/abc_visualization_design.dart';
+import 'package:gad_app_team/widgets/custom_popup_design.dart';
+
+/// 🌊 GridItem 구조 (공통 유지)
 class GridItem {
   final IconData icon;
   final String label;
@@ -18,15 +21,17 @@ class GridItem {
   const GridItem({required this.icon, required this.label, this.isAdd = false});
 }
 
-/// 📊 시각화 / 피드백 화면
+/// 📊 시각화 + 피드백 화면
 class AbcVisualizationScreen extends StatefulWidget {
   final List<GridItem> activatingEventChips;
   final List<GridItem> beliefChips;
   final List<GridItem> resultChips;
   final List<GridItem> feedbackEmotionChips;
+
   final List<String> selectedPhysicalChips;
   final List<String> selectedEmotionChips;
   final List<String> selectedBehaviorChips;
+
   final bool isExampleMode;
   final String? origin;
   final String? abcId;
@@ -57,47 +62,42 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(title: '2주차 - ABC 모델'),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              if (_showFeedback) _buildFeedbackCard(context),
-              if (!_showFeedback) _buildAbcFlowDiagram(),
-            ],
-          ),
-        ),
+    return MemoFullDesign(
+      appBarTitle: '2주차 - ABC 모델',
+      child: Column(
+        children: [
+          if (_showFeedback) _buildFeedbackCard(context),
+          if (!_showFeedback) _buildAbcFlowDiagram(),
+        ],
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-        child: NavigationButtons(
-          leftLabel: '이전',
-          rightLabel: _showFeedback ? '다음' : (_isSaving ? '저장 중...' : '완료'),
-          onBack: () {
-            if (!_showFeedback) {
-              setState(() => _showFeedback = true);
-            } else {
-              Navigator.pop(context);
-            }
-          },
-          onNext:
-              _isSaving
-                  ? null
-                  : () {
-                    if (_showFeedback) {
-                      setState(() => _showFeedback = false);
-                    } else {
-                      _handleSave(context);
-                    }
-                  },
-        ),
-      ),
+      onBack: () {
+        if (!_showFeedback) {
+          setState(() => _showFeedback = true);
+        } else {
+          Navigator.pop(context);
+        }
+      },
+      onNext:
+          _isSaving
+              ? null
+              : () {
+                if (_showFeedback) {
+                  setState(() => _showFeedback = false);
+                } else {
+                  _handleSave(context);
+                }
+              },
+      rightLabel:
+          _showFeedback
+              ? '다음'
+              : _isSaving
+              ? '저장 중...'
+              : '저장',
+      memoHeight: MediaQuery.of(context).size.height * 0.67,
     );
   }
 
-  /// 💬 피드백 요약문 카드
+  /// 💬 피드백 카드
   Widget _buildFeedbackCard(BuildContext context) {
     final userName = Provider.of<UserProvider>(context, listen: false).userName;
     final situation = widget.activatingEventChips
@@ -108,145 +108,69 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
     final physical = widget.selectedPhysicalChips.join(', ');
     final behavior = widget.selectedBehaviorChips.join(', ');
 
-    return Card(
-      color: Colors.white,
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "$userName님, 말씀해주셔서 감사합니다 👏",
-              style: const TextStyle(
-                fontSize: 16.5,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
-              ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(height: 10),
+          const Text(
+            '글로 정리해보기',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: DesignPalette.textBlack,
+              fontFamily: 'Noto Sans KR',
             ),
-            const SizedBox(height: 16),
-            Text(
-              "‘$situation’ 상황에서 ‘$thought’ 생각을 하셨고,\n"
-              "‘$emotion’ 감정을 느끼셨습니다.\n\n"
-              "그 결과 신체적으로 ‘$physical’ 증상이 나타났고,\n"
-              "‘$behavior’ 행동을 하셨습니다.",
-              style: const TextStyle(fontSize: 15.5, color: Colors.black87),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            width: 200,
+            height: 2,
+            decoration: BoxDecoration(
+              color: Colors.black26.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(2),
             ),
-            const SizedBox(height: 20),
-            const Center(
-              child: Text(
-                "위의 내용을 그림으로 그려볼까요?",
-                style: TextStyle(
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.indigo,
-                ),
-              ),
+          ),
+          const SizedBox(height: 48),
+          Text(
+            '$userName님, \n말씀해주셔서 감사합니다 👏\n\n'
+            "‘$situation’ 상황에서 \n‘$thought’ 생각을 하셨고,\n‘$emotion’ 감정을 느끼셨습니다.\n\n"
+            "그 결과 신체적으로 ‘$physical’ 증상이 나타났고,\n‘$behavior’ 행동을 하셨습니다.",
+            style: const TextStyle(
+              height: 1.6,
+              fontSize: 16,
+              color: Colors.black87,
+              fontFamily: 'Noto Sans KR',
             ),
-          ],
-        ),
+            textAlign: TextAlign.start,
+          ),
+        ],
       ),
     );
   }
 
   /// 🔵 A→B→C 시각화 다이어그램
   Widget _buildAbcFlowDiagram() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildSectionCard(
-          icon: Icons.event_note,
-          title: '상황 (A)',
-          chips: widget.activatingEventChips,
-          color: const Color(0xFFDCE7FE),
-        ),
-        const Center(
-          child: Icon(Icons.arrow_downward, size: 36, color: AppColors.indigo),
-        ),
-        _buildSectionCard(
-          icon: Icons.psychology,
-          title: '생각 (B)',
-          chips: widget.beliefChips,
-          color: const Color(0xFFB1C9EF),
-        ),
-        const Center(
-          child: Icon(Icons.arrow_downward, size: 36, color: AppColors.indigo),
-        ),
-        _buildSectionCard(
-          icon: Icons.emoji_emotions,
-          title: '결과 (C)',
-          chips: widget.resultChips,
-          color: const Color(0xFF95B1EE),
-        ),
-      ],
+    final situationText = widget.activatingEventChips
+        .map((e) => e.label)
+        .join(', ');
+    final beliefText = widget.beliefChips.map((e) => e.label).join(', ');
+    final resultText = widget.resultChips.map((e) => e.label).join(', ');
+
+    return AbcVisualizationDesign.buildVisualizationLayout(
+      situationLabel: '상황 (A)',
+      beliefLabel: '생각 (B)',
+      resultLabel: '결과 (C)',
+      situationText: situationText,
+      beliefText: beliefText,
+      resultText: resultText,
     );
   }
 
-  Widget _buildSectionCard({
-    required IconData icon,
-    required String title,
-    required List<GridItem> chips,
-    required Color color,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              decoration: const BoxDecoration(
-                color: AppColors.indigo,
-                shape: BoxShape.circle,
-              ),
-              padding: const EdgeInsets.all(12),
-              child: Icon(icon, color: Colors.white),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children:
-                    chips
-                        .map(
-                          (e) => Chip(
-                            label: Text(e.label),
-                            avatar: Icon(
-                              e.icon,
-                              size: 16,
-                              color: AppColors.indigo,
-                            ),
-                            backgroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              side: const BorderSide(color: AppColors.indigo),
-                            ),
-                          ),
-                        )
-                        .toList(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// ☁️ Firestore 저장 로직
+  // ──────────────────────────────────────────────
+  // 🔹 저장 로직 (위치 동의 + Firestore)
+  // ──────────────────────────────────────────────
   Future<void> _handleSave(BuildContext context) async {
     if (_isSaving) return;
     setState(() => _isSaving = true);
@@ -261,16 +185,23 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
           .doc(user.uid)
           .collection('abc_models');
 
-      // 위치 가져오기 (선택)
-      Position? pos;
-      try {
-        final perm = await Geolocator.requestPermission();
-        if (perm == LocationPermission.always ||
-            perm == LocationPermission.whileInUse) {
-          pos = await Geolocator.getCurrentPosition();
-        }
-      } catch (_) {}
+      // 🗺️ 위치 동의 받기
+      final bool consent = await _requestLocationConsent(context);
 
+      Position? pos;
+      if (consent) {
+        try {
+          final perm = await Geolocator.requestPermission();
+          if (perm == LocationPermission.always ||
+              perm == LocationPermission.whileInUse) {
+            pos = await Geolocator.getCurrentPosition();
+          }
+        } catch (e) {
+          debugPrint("위치 접근 실패: $e");
+        }
+      }
+
+      // Firestore 저장
       final doc = await ref.add({
         'activatingEvent': widget.activatingEventChips
             .map((e) => e.label)
@@ -282,10 +213,10 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
         'consequence_behavior': widget.selectedBehaviorChips.join(', '),
         'latitude': pos?.latitude,
         'longitude': pos?.longitude,
+        'consent_location': consent,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // 그룹 추가 여부 묻기
       if (!mounted) return;
       _showGroupDialog(context, doc.id);
     } catch (e) {
@@ -299,58 +230,89 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
     }
   }
 
-  /// 🔔 그룹 추가 여부 다이얼로그
+  // ──────────────────────────────────────────────
+  // 📍 위치 정보 동의 팝업 (Mindrium 스타일)
+  // ──────────────────────────────────────────────
+  Future<bool> _requestLocationConsent(BuildContext context) async {
+    bool consent = false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return CustomPopupDesign(
+          title: '위치 정보 수집 동의',
+          message:
+              '현재 위치 정보를 함께 저장하여 개인 맞춤형 피드백을 제공하려고 합니다.\n'
+              '위치 정보 제공에 동의하시겠습니까?',
+          positiveText: '동의함',
+          negativeText: '동의 안 함',
+          onPositivePressed: () {
+            consent = true;
+            Navigator.pop(ctx);
+          },
+          onNegativePressed: () {
+            consent = false;
+            Navigator.pop(ctx);
+          },
+          backgroundAsset: 'assets/image/popup_bg.png',
+          iconAsset: 'assets/image/jellyfish.png',
+        );
+      },
+    );
+
+    return consent;
+  }
+
+  // ──────────────────────────────────────────────
+  // 💭 그룹 추가/알림 설정 선택 팝업
+  // ──────────────────────────────────────────────
   void _showGroupDialog(BuildContext context, String abcId) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder:
-          (dialogCtx) => AlertDialog(
-            title: const Text('걱정 그룹에 추가하시겠습니까?'),
-            content: const Text('작성한 ABC 일기를 그룹에 추가하시겠습니까?'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogCtx);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (_) => NotificationSelectionScreen(
-                            abcId: abcId,
-                            origin: widget.origin ?? 'etc',
-                            label:
-                                widget.activatingEventChips.isNotEmpty
-                                    ? widget.activatingEventChips.first.label
-                                    : '',
-                          ),
+      builder: (dialogCtx) {
+        return CustomPopupDesign(
+          title: '걱정 그룹에 추가하시겠습니까?',
+          message: '작성한 ABC 일기를 그룹에 추가하시겠습니까?',
+          positiveText: '예',
+          negativeText: '아니요',
+          onNegativePressed: () {
+            Navigator.pop(dialogCtx);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (_) => NotificationSelectionScreen(
+                      abcId: abcId,
+                      origin: widget.origin ?? 'etc',
+                      label:
+                          widget.activatingEventChips.isNotEmpty
+                              ? widget.activatingEventChips.first.label
+                              : '',
                     ),
-                  );
-                },
-                child: const Text('아니요'),
               ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogCtx);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (_) => AbcGroupAddScreen(
-                            abcId: abcId,
-                            origin: widget.origin ?? 'etc',
-                            label:
-                                widget.activatingEventChips.isNotEmpty
-                                    ? widget.activatingEventChips.first.label
-                                    : '',
-                          ),
+            );
+          },
+          onPositivePressed: () {
+            Navigator.pop(dialogCtx);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (_) => AbcGroupAddScreen(
+                      abcId: abcId,
+                      origin: widget.origin ?? 'etc',
+                      label:
+                          widget.activatingEventChips.isNotEmpty
+                              ? widget.activatingEventChips.first.label
+                              : '',
                     ),
-                  );
-                },
-                child: const Text('예'),
               ),
-            ],
-          ),
+            );
+          },
+        );
+      },
     );
   }
 }

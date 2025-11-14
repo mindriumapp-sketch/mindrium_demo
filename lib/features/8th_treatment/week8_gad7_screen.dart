@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart';
 import 'package:gad_app_team/features/8th_treatment/week8_planning_check_screen.dart';
+import 'package:gad_app_team/widgets/blue_banner.dart';
 
 class Week8Gad7Screen extends StatefulWidget {
   const Week8Gad7Screen({super.key});
@@ -69,51 +70,11 @@ class _Week8Gad7ScreenState extends State<Week8Gad7Screen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeaderCard(),
-          const SizedBox(height: 24),
+          JellyfishBanner(message: '지난 2주 동안의 불안 증상을 \n아래 항목에 따라 평가해주세요.',),
+          const SizedBox(height: 30),
           ...List.generate(_questions.length, _buildQuestionCard),
           const SizedBox(height: 28),
           if (_isCompleted) _buildResultCard(),
-        ],
-      ),
-    );
-  }
-
-  /// 💙 상단 안내 카드
-  Widget _buildHeaderCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF74D2FF).withOpacity(0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: const Row(
-        children: [
-          Icon(
-            Icons.psychology_alt_rounded,
-            color: Color(0xFF1B3A57),
-            size: 28,
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              '지난 2주 동안의 불안 증상을 아래 항목에 따라 평가해주세요.',
-              style: TextStyle(
-                fontFamily: 'NotoSansKR',
-                fontSize: 15.5,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF1B3A57),
-                height: 1.5,
-              ),
-            ),
-          ),
         ],
       ),
     );

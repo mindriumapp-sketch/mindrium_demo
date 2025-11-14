@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:gad_app_team/widgets/top_btm_card.dart';        // ✅ ApplyDoubleCard
 import 'package:gad_app_team/widgets/thought_card.dart';        // ✅ ThoughtCard
 import 'package:gad_app_team/widgets/custom_popup_design.dart'; // ✅ (팝업 UI)
+import 'package:gad_app_team/utils/edu_progress.dart';
 
 class Week6VisualScreen extends StatefulWidget {
   final List<String> previousChips;     // 불안을 회피하는 행동
@@ -28,7 +29,8 @@ class _Week6VisualScreenState extends State<Week6VisualScreen> {
         message: '오늘도 불안을 직면하고 회피하는 행동을 구분하는 실습을 마쳤어요!',
         positiveText: '홈으로 돌아가기',
         negativeText: null, // 단일 버튼
-        onPositivePressed: () {
+        onPositivePressed: () async {
+          //await EduProgress.markWeekDone(6);
           // 1) 팝업 닫고
           Navigator.of(context, rootNavigator: true).pop();
           // 2) 홈으로 이동

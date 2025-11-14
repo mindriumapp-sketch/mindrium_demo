@@ -1,26 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
-import '../../common/constants.dart';
+import 'package:gad_app_team/widgets/custom_popup_design.dart';
+
 import 'abc_visualization_screen.dart';
 import 'step_a_view.dart';
 import 'step_b_view.dart';
 import 'step_c_view.dart';
-import 'abc_dialogs.dart';
-import 'abc_tutorial_message.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:gad_app_team/data/user_provider.dart';
 import 'abc_guide_screen.dart';
 import 'abc_real_start_screen.dart';
-
-class GridItem {
-  final IconData icon;
-  final String label;
-  final bool isAdd;
-  const GridItem({required this.icon, required this.label, this.isAdd = false});
-}
 
 class AbcInputScreen extends StatefulWidget {
   final bool isExampleMode;
@@ -46,12 +34,21 @@ class _AbcInputScreenState extends State<AbcInputScreen> {
   int _currentStep = 0;
   int _currentCSubStep = 0;
 
-  // 선택 상태
   final Set<int> _selectedAGrid = {};
   final Set<int> _selectedBGrid = {};
   final Set<int> _selectedPhysical = {};
   final Set<int> _selectedEmotion = {};
   final Set<int> _selectedBehavior = {};
+
+  final List<String> _aSituations = ['회의', '수업', '모임'];
+  final List<String> _bBeliefs = [
+    '사람들이 나를 안 좋게 볼 거야',
+    '실수하면 큰일 나',
+    '비난받을까 봐 두려워',
+  ];
+  final List<String> _cPhysical = ['두근거림', '메스꺼움', '식은땀', '불면'];
+  final List<String> _cEmotion = ['불안', '분노', '슬픔', '두려움'];
+  final List<String> _cBehavior = ['결석', '전화 안 받기', '약속 피하기', '시선 피하기'];
 
   late bool _showGuide;
 
@@ -59,6 +56,69 @@ class _AbcInputScreenState extends State<AbcInputScreen> {
   void initState() {
     super.initState();
     _showGuide = widget.showGuide;
+
+    if (widget.isExampleMode) {
+      if (!_aSituations.contains('자전거를 타려고 함')) {
+        _aSituations.insert(0, '자전거를 타려고 함');
+      }
+      if (!_bBeliefs.contains('넘어질까봐 두려움')) {
+        _bBeliefs.insert(0, '넘어질까봐 두려움');
+      }
+      if (!_cBehavior.contains('자전거를 타지 않았어요')) {
+        _cBehavior.insert(0, '자전거를 타지 않았어요');
+      }
+    }
+  }
+
+  // ✅ 칩 선택 여부에 따라 다음 버튼 활성화
+  // ✅ 다음 버튼 활성화 조건
+  bool get _isNextEnabled {
+    switch (_currentStep) {
+      case 0:
+        return _selectedAGrid.isNotEmpty;
+      case 1:
+        return _selectedBGrid.isNotEmpty;
+      case 2:
+        if (_currentCSubStep == 0) return _selectedPhysical.isNotEmpty;
+        if (_currentCSubStep == 1) return _selectedEmotion.isNotEmpty;
+        if (_currentCSubStep == 2) return _selectedBehavior.isNotEmpty;
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  // ✅ 팝업을 통한 칩 추가 함수 (입력칸 포함)
+  Future<void> _showAddPopup({
+    required String title,
+    required String highlightText,
+    required Function(String text) onConfirm,
+  }) async {
+    final TextEditingController controller = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (ctx) {
+        return CustomPopupDesign(
+          title: title,
+          highlightText: highlightText,
+          message: '',
+          positiveText: '추가',
+          negativeText: '취소',
+          onPositivePressed: () {
+            final text = controller.text.trim();
+            if (text.isNotEmpty) {
+              onConfirm(text);
+            }
+            Navigator.pop(ctx);
+          },
+          onNegativePressed: () => Navigator.pop(ctx),
+          enableInput: true, // ✅ 입력칸 활성화
+          controller: controller,
+          inputHint: '새로운 항목을 입력해주세요',
+        );
+      },
+    );
   }
 
   void _nextStep() {
@@ -69,23 +129,51 @@ class _AbcInputScreenState extends State<AbcInputScreen> {
       } else if (_currentCSubStep < 2) {
         _currentCSubStep++;
       } else {
-        // 시각화 화면으로 이동
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (_) => AbcVisualizationScreen(
-                  activatingEventChips: [],
-                  beliefChips: [],
-                  resultChips: [],
-                  feedbackEmotionChips: [],
-                  isExampleMode: widget.isExampleMode,
-                  selectedPhysicalChips: [],
-                  selectedEmotionChips: [],
-                  selectedBehaviorChips: [],
-                ),
-          ),
-        );
+        if (widget.isExampleMode) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const AbcRealStartScreen()),
+          );
+        } else {
+          final activatingLabels =
+              _selectedAGrid.map((i) => _aSituations[i]).toList();
+          final beliefLabels = _selectedBGrid.map((i) => _bBeliefs[i]).toList();
+          final resultLabels = <String>[
+            ..._selectedEmotion.map((i) => _cEmotion[i]),
+            ..._selectedPhysical.map((i) => _cPhysical[i]),
+            ..._selectedBehavior.map((i) => _cBehavior[i]),
+          ];
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (_) => AbcVisualizationScreen(
+                    activatingEventChips:
+                        activatingLabels
+                            .map((s) => GridItem(icon: Icons.circle, label: s))
+                            .toList(),
+                    beliefChips:
+                        beliefLabels
+                            .map((s) => GridItem(icon: Icons.circle, label: s))
+                            .toList(),
+                    resultChips:
+                        resultLabels
+                            .map((s) => GridItem(icon: Icons.circle, label: s))
+                            .toList(),
+                    feedbackEmotionChips: const [],
+                    selectedPhysicalChips:
+                        _selectedPhysical.map((i) => _cPhysical[i]).toList(),
+                    selectedEmotionChips:
+                        _selectedEmotion.map((i) => _cEmotion[i]).toList(),
+                    selectedBehaviorChips:
+                        _selectedBehavior.map((i) => _cBehavior[i]).toList(),
+                    isExampleMode: widget.isExampleMode,
+                    origin: widget.origin,
+                  ),
+            ),
+          );
+        }
       }
     });
   }
@@ -107,9 +195,10 @@ class _AbcInputScreenState extends State<AbcInputScreen> {
     if (_showGuide) return const AbcGuideScreen();
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.white,
       appBar: CustomAppBar(
         title: widget.isExampleMode ? '예시 연습하기' : '2주차 - ABC 모델',
-        // ✅ 뒤로가기 동작
         onBack: () {
           if (_currentStep == 0 && _currentCSubStep == 0) {
             Navigator.pop(context);
@@ -117,25 +206,49 @@ class _AbcInputScreenState extends State<AbcInputScreen> {
             _previousStep();
           }
         },
-        // ✅ 홈 버튼 동작
         onHomePressed: () {
           Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
         },
       ),
-      backgroundColor: const Color(0xFFFBF8FF),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: _buildStepContent(),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-        child: NavigationButtons(
-          leftLabel: '이전',
-          rightLabel:
-              _currentStep < 2 ? '다음' : (_currentCSubStep < 2 ? '다음' : '확인'),
-          onBack: _previousStep,
-          onNext: _nextStep,
-        ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Opacity(
+            opacity: 0.35,
+            child: Image.asset(
+              'assets/image/eduhome.png',
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.high,
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 34,
+                      vertical: 24,
+                    ),
+                    child: _buildStepContent(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  child: NavigationButtons(
+                    onBack: _previousStep,
+                    onNext: _isNextEnabled ? _nextStep : null,
+                    rightLabel:
+                        widget.isExampleMode && _currentCSubStep == 2
+                            ? '확인'
+                            : '다음',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -144,26 +257,104 @@ class _AbcInputScreenState extends State<AbcInputScreen> {
     switch (_currentStep) {
       case 0:
         return StepAView(
+          situations: _aSituations,
           selectedAGrid: _selectedAGrid,
+          isExampleMode: widget.isExampleMode,
           onChipTap: (index, selected) {
             setState(() {
-              if (selected) {
-                _selectedAGrid.add(index);
-              } else {
-                _selectedAGrid.remove(index);
-              }
+              _selectedAGrid
+                ..clear()
+                ..add(index);
             });
           },
+          onAddSituation:
+              widget.isExampleMode
+                  ? null
+                  : (text) => _showAddPopup(
+                    title: '상황 추가',
+                    highlightText: 'A - 사건 (Activating Event)',
+                    onConfirm: (t) => setState(() => _aSituations.add(t)),
+                  ),
+          onDeleteSituation:
+              widget.isExampleMode
+                  ? null
+                  : (index) {
+                    setState(() {
+                      _aSituations.removeAt(index);
+                      _selectedAGrid.remove(index);
+                    });
+                  },
         );
+
       case 1:
-        return StepBView(selectedBGrid: _selectedBGrid);
+        return StepBView(
+          beliefs: _bBeliefs,
+          selectedBGrid: _selectedBGrid,
+          isExampleMode: widget.isExampleMode,
+          onChipTap:
+              (i, s) => setState(() {
+                if (s)
+                  _selectedBGrid.add(i);
+                else
+                  _selectedBGrid.remove(i);
+              }),
+          onAddBelief:
+              widget.isExampleMode
+                  ? null
+                  : (text) => _showAddPopup(
+                    title: '생각 추가',
+                    highlightText: 'B - 생각 (Belief)',
+                    onConfirm: (t) => setState(() => _bBeliefs.add(t)),
+                  ),
+          onDeleteBelief:
+              widget.isExampleMode
+                  ? null
+                  : (index) {
+                    setState(() {
+                      _bBeliefs.removeAt(index);
+                      _selectedBGrid.remove(index);
+                    });
+                  },
+        );
+
       case 2:
         return StepCView(
+          subStep: _currentCSubStep,
+          physicalList: _cPhysical,
+          emotionList: _cEmotion,
+          behaviorList: _cBehavior,
           selectedPhysical: _selectedPhysical,
           selectedEmotion: _selectedEmotion,
           selectedBehavior: _selectedBehavior,
-          subStep: _currentCSubStep,
+          isExampleMode: widget.isExampleMode,
+          onAddPhysical:
+              widget.isExampleMode
+                  ? null
+                  : (text) => _showAddPopup(
+                    title: '신체 반응 추가',
+                    highlightText: 'C1 - 신체 (Physical)',
+                    onConfirm: (t) => setState(() => _cPhysical.add(t)),
+                  ),
+          onAddEmotion:
+              widget.isExampleMode
+                  ? null
+                  : (text) => _showAddPopup(
+                    title: '감정 반응 추가',
+                    highlightText: 'C2 - 감정 (Emotion)',
+                    onConfirm: (t) => setState(() => _cEmotion.add(t)),
+                  ),
+          onAddBehavior:
+              widget.isExampleMode
+                  ? null
+                  : (text) => _showAddPopup(
+                    title: '행동 반응 추가',
+                    highlightText: 'C3 - 행동 (Behavior)',
+                    onConfirm: (t) => setState(() => _cBehavior.add(t)),
+                  ),
+
+          onSelectionChanged: () => setState(() {}),
         );
+
       default:
         return const SizedBox.shrink();
     }

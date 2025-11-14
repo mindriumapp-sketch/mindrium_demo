@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:gad_app_team/data/education_model.dart';
 import 'package:gad_app_team/widgets/memo_sheet_design.dart';
 import 'package:gad_app_team/widgets/custom_popup_design.dart';
+import 'package:gad_app_team/utils/edu_progress.dart';
 
 class EducationPage extends StatefulWidget {
   final List<String> jsonPrefixes; // ex. ['week1_', 'week1b_']
@@ -50,13 +51,17 @@ class _EducationPageState extends State<EducationPage> {
       final data = await EducationDataLoader.loadContents(path);
 
       final nextPath = "assets/education_data/$prefix${partIndex + 1}.json";
-      final hasMoreInCurrentPrefix = await EducationDataLoader.fileExists(nextPath);
+      final hasMoreInCurrentPrefix = await EducationDataLoader.fileExists(
+        nextPath,
+      );
 
       setState(() {
         contents = data;
         isLoading = false;
         currentIndex = 0;
-        hasNextPart = hasMoreInCurrentPrefix || (prefixIndex < widget.jsonPrefixes.length - 1);
+        hasNextPart =
+            hasMoreInCurrentPrefix ||
+            (prefixIndex < widget.jsonPrefixes.length - 1);
       });
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -123,48 +128,52 @@ class _EducationPageState extends State<EducationPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => CustomPopupDesign(
-        title: '교육 완료',
-        message: '교육이 완료되었습니다.',
-        positiveText: '닫기',
-        negativeText: '취소',
-        backgroundAsset: null,
-        iconAsset: null,
-        onNegativePressed: () => Navigator.pop(context),
-        onPositivePressed: () {
-          Navigator.pop(context);
-          Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
-        },
-      ),
+      builder:
+          (_) => CustomPopupDesign(
+            title: '교육 완료',
+            message: '교육이 완료되었습니다.',
+            positiveText: '닫기',
+            negativeText: '취소',
+            backgroundAsset: null,
+            iconAsset: null,
+            onNegativePressed: () => Navigator.pop(context),
+            onPositivePressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+            },
+          ),
     );
   }
+
 
   /// 🧘 이완 교육 다이얼로그 — CustomPopupDesign(확인 단일 버튼)
   void _showStartDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => CustomPopupDesign(
-        title: '이완 음성 안내 시작',
-        message: '잠시 후, 이완을 위한 음성 안내가 시작됩니다.\n주변 소리와 음량을 조절해보세요.',
-        positiveText: '확인',
-        negativeText: null,
-        backgroundAsset: null,
-        iconAsset: null,
-        onPositivePressed: () {
-          Navigator.pop(context);
-          Navigator.pushReplacementNamed(
-            context,
-            '/relaxation_education',
-            arguments: {
-              'taskId': 'edu_0001',
-              'weekNumber': 1,
-              'mp3Asset': 'week1.mp3',
-              'riveAsset': 'week1.riv',
+      builder:
+          (_) => CustomPopupDesign(
+            title: '이완 음성 안내 시작',
+            message: '잠시 후, 이완을 위한 음성 안내가 시작됩니다.\n주변 소리와 음량을 조절해보세요.',
+            positiveText: '확인',
+            negativeText: null,
+            backgroundAsset: null,
+            iconAsset: null,
+            onPositivePressed: () async {
+              //await EduProgress.markWeekDone(1);
+              Navigator.pop(context);
+              Navigator.pushReplacementNamed(
+                context,
+                '/relaxation_education',
+                arguments: {
+                  'taskId': 'edu_0001',
+                  'weekNumber': 1,
+                  'mp3Asset': 'week1.mp3',
+                  'riveAsset': 'week1.riv',
+                },
+              );
             },
-          );
-        },
-      ),
+          ),
     );
   }
 
@@ -182,7 +191,7 @@ class _EducationPageState extends State<EducationPage> {
       child: Text(
         text,
         style: const TextStyle(
-          fontSize: 16,
+          fontSize: 13,
           fontWeight: FontWeight.w500,
           color: Colors.black,
         ),
@@ -198,7 +207,9 @@ class _EducationPageState extends State<EducationPage> {
 
     for (final m in regex.allMatches(line)) {
       if (m.start > cursor) {
-        spans.add(TextSpan(text: line.substring(cursor, m.start), style: baseStyle));
+        spans.add(
+          TextSpan(text: line.substring(cursor, m.start), style: baseStyle),
+        );
       }
       final highlighted = m.group(1) ?? '';
       spans.add(
@@ -224,9 +235,7 @@ class _EducationPageState extends State<EducationPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final line in lines)
-          RichText(
-            text: TextSpan(children: _buildSpans(line, baseStyle)),
-          ),
+          RichText(text: TextSpan(children: _buildSpans(line, baseStyle))),
       ],
     );
   }
@@ -234,7 +243,7 @@ class _EducationPageState extends State<EducationPage> {
   /// 제목에도 **토큰이 있을 수 있으니 같은 처리
   Widget _richTitle(String text) {
     const titleStyle = TextStyle(
-      fontSize: 20,
+      fontSize: 18,
       fontWeight: FontWeight.w700,
       color: Color(0xFF232323),
       fontFamily: 'Noto Sans KR',
@@ -255,24 +264,26 @@ class _EducationPageState extends State<EducationPage> {
 
     return MemoFullDesign(
       appBarTitle: titleText,
-      onBack: (currentIndex == 0 && partIndex == 1 && prefixIndex == 0)
-          ? () {}
-          : (currentIndex == 0
-          ? _goToPreviousPart
-          : () {
-        _pageController.previousPage(
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-        );
-      }),
-      onNext: (currentIndex == contents.length - 1)
-          ? _loadNextPartOrPrefix
-          : () {
-        _pageController.nextPage(
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-        );
-      },
+      onBack:
+          (currentIndex == 0 && partIndex == 1 && prefixIndex == 0)
+              ? () {}
+              : (currentIndex == 0
+                  ? _goToPreviousPart
+                  : () {
+                    _pageController.previousPage(
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeInOut,
+                    );
+                  }),
+      onNext:
+          (currentIndex == contents.length - 1)
+              ? _loadNextPartOrPrefix
+              : () {
+                _pageController.nextPage(
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeInOut,
+                );
+              },
 
       /// ✨ 메모지 안의 내용
       child: SizedBox(
@@ -286,9 +297,9 @@ class _EducationPageState extends State<EducationPage> {
             final content = contents[index];
             const bodyStyle = TextStyle(
               color: Color(0xFF232323),
-              fontSize: 16,
+              fontSize: 14,
               fontFamily: 'Noto Sans KR',
-              height: 1.6,
+              height: 1.4,
               letterSpacing: 0.2,
             );
             return SingleChildScrollView(

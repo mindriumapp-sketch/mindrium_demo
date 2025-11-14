@@ -1,20 +1,47 @@
 import 'package:flutter/material.dart';
-import '../../common/constants.dart';
+import 'package:gad_app_team/widgets/abc_chips_design.dart';
+import 'package:gad_app_team/widgets/abc_step_card.dart';
+import 'package:gad_app_team/widgets/blue_banner.dart';
 
-/// 🌊 C단계 (결과 입력 화면)
-/// subStep = 0 → 신체증상 / 1 → 감정 / 2 → 행동
+/// 🧩 C단계: 결과(신체·감정·행동) 3단계 뷰
 class StepCView extends StatefulWidget {
+  final int subStep; // 0=신체, 1=감정, 2=행동
+  final List<String> physicalList;
+  final List<String> emotionList;
+  final List<String> behaviorList;
   final Set<int> selectedPhysical;
   final Set<int> selectedEmotion;
   final Set<int> selectedBehavior;
-  final int subStep;
+  final bool isExampleMode;
+
+  final void Function(String text)? onAddPhysical;
+  final void Function(String text)? onAddEmotion;
+  final void Function(String text)? onAddBehavior;
+
+  final void Function(int index)? onDeletePhysical;
+  final void Function(int index)? onDeleteEmotion;
+  final void Function(int index)? onDeleteBehavior;
+
+  /// ✅ 부모(AbcInputScreen)에 선택 변경 알림 콜백
+  final VoidCallback? onSelectionChanged;
 
   const StepCView({
     super.key,
+    required this.subStep,
+    required this.physicalList,
+    required this.emotionList,
+    required this.behaviorList,
     required this.selectedPhysical,
     required this.selectedEmotion,
     required this.selectedBehavior,
-    required this.subStep,
+    this.isExampleMode = false,
+    this.onAddPhysical,
+    this.onAddEmotion,
+    this.onAddBehavior,
+    this.onDeletePhysical,
+    this.onDeleteEmotion,
+    this.onDeleteBehavior,
+    this.onSelectionChanged,
   });
 
   @override
@@ -22,223 +49,105 @@ class StepCView extends StatefulWidget {
 }
 
 class _StepCViewState extends State<StepCView> {
-  // 각 항목별 GridItem 리스트
-  final List<Map<String, dynamic>> _physicalChips = [
-    {'icon': Icons.bed, 'label': '불면'},
-    {'icon': Icons.favorite, 'label': '두근거림'},
-    {'icon': Icons.sick, 'label': '메스꺼움'},
-    {'icon': Icons.spa, 'label': '식은땀'},
-    {'icon': Icons.add, 'label': '추가', 'isAdd': true},
-  ];
-  final List<Map<String, dynamic>> _emotionChips = [
-    {'icon': Icons.sentiment_dissatisfied, 'label': '불안'},
-    {'icon': Icons.flash_on, 'label': '분노'},
-    {'icon': Icons.sentiment_dissatisfied, 'label': '슬픔'},
-    {'icon': Icons.visibility_off, 'label': '두려움'},
-    {'icon': Icons.add, 'label': '추가', 'isAdd': true},
-  ];
-  final List<Map<String, dynamic>> _behaviorChips = [
-    {'icon': Icons.event_busy, 'label': '결석'},
-    {'icon': Icons.phone_disabled, 'label': '전화 안 받기'},
-    {'icon': Icons.event_note, 'label': '약속 피하기'},
-    {'icon': Icons.visibility_off, 'label': '시선 피하기'},
-    {'icon': Icons.add, 'label': '추가', 'isAdd': true},
-  ];
-
-  final TextEditingController _controller = TextEditingController();
-
-  // 공통 다이얼로그 (신체 / 감정 / 행동 추가)
-  void _showAddDialog(String title, List<Map<String, dynamic>> targetList) {
-    _controller.clear();
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (_) => Dialog(
-            backgroundColor: AppColors.indigo50,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Colors.indigo,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.indigo.shade100),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    child: TextField(
-                      controller: _controller,
-                      decoration: const InputDecoration(
-                        hintText: '예: 가슴 두근거림',
-                        border: InputBorder.none,
-                        isDense: true,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: () {
-                      final val = _controller.text.trim();
-                      if (val.isNotEmpty) {
-                        setState(() {
-                          targetList.insert(targetList.length - 1, {
-                            'icon': Icons.circle,
-                            'label': val,
-                          });
-                        });
-                        Navigator.pop(context);
-                      }
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.indigo,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: const Text('추가'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-    );
-  }
-
-  // 공통 Chip 렌더러
-  Widget _buildChipGroup({
-    required String type,
-    required List<Map<String, dynamic>> list,
-    required Set<int> selectedSet,
-  }) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: List.generate(list.length, (i) {
-        final item = list[i];
-        final bool isAdd = item['isAdd'] == true;
-        final bool isSelected = selectedSet.contains(i);
-
-        if (isAdd) {
-          return ActionChip(
-            avatar: const Icon(Icons.add, size: 18, color: AppColors.indigo),
-            label: const Text(
-              '추가',
-              style: TextStyle(color: AppColors.indigo, fontSize: 13.5),
-            ),
-            backgroundColor: AppColors.indigo50,
-            side: const BorderSide(color: AppColors.indigo, width: 1.2),
-            onPressed: () {
-              _showAddDialog('새로운 $type을(를) 입력하세요', list);
-            },
-          );
-        }
-
-        return FilterChip(
-          avatar: Icon(
-            item['icon'],
-            size: 18,
-            color: isSelected ? AppColors.indigo : Colors.grey.shade800,
-          ),
-          label: Text(
-            item['label'],
-            style: TextStyle(
-              color: isSelected ? AppColors.indigo : Colors.grey.shade800,
-              fontSize: 13.5,
-            ),
-          ),
-          selected: isSelected,
-          onSelected: (_) {
-            setState(() {
-              if (isSelected) {
-                selectedSet.remove(i);
-              } else {
-                selectedSet.add(i);
-              }
-            });
-          },
-          showCheckmark: false,
-          selectedColor: AppColors.indigo50,
-          backgroundColor: Colors.white,
-          side: BorderSide(
-            color: isSelected ? AppColors.indigo : Colors.grey.shade800,
-            width: 1.2,
-          ),
-        );
-      }),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     switch (widget.subStep) {
       case 0:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'C-1. 어떤 신체 증상이 나타났나요?',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            _buildChipGroup(
-              type: '신체 증상',
-              list: _physicalChips,
-              selectedSet: widget.selectedPhysical,
-            ),
-          ],
-        );
+        return _buildPhysicalStep();
       case 1:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'C-2. 어떤 감정이 들었나요?',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            _buildChipGroup(
-              type: '감정',
-              list: _emotionChips,
-              selectedSet: widget.selectedEmotion,
-            ),
-          ],
-        );
+        return _buildEmotionStep();
       case 2:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'C-3. 어떤 행동을 했나요?',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            _buildChipGroup(
-              type: '행동',
-              list: _behaviorChips,
-              selectedSet: widget.selectedBehavior,
-            ),
-          ],
-        );
       default:
-        return const SizedBox.shrink();
+        return _buildBehaviorStep();
     }
+  }
+
+  /// 🧠 0단계: 신체 반응 선택 화면
+  Widget _buildPhysicalStep() {
+    return _buildCommonSection(
+      title: '불안할 때 몸에\n어떤 증상이 있었나요?',
+      smallText: '결과를 관찰해요',
+      chips: widget.physicalList,
+      selectedIndexes: widget.selectedPhysical,
+      exampleMessage: "예시로 '두근거림' 칩을 눌러 선택해보세요!",
+      onAdd: widget.isExampleMode ? null : widget.onAddPhysical,
+      onDelete: widget.isExampleMode ? null : widget.onDeletePhysical,
+    );
+  }
+
+  /// 💬 1단계: 감정 반응 선택 화면
+  Widget _buildEmotionStep() {
+    return _buildCommonSection(
+      title: '불안할 때\n어떤 감정을 느꼈나요?',
+      smallText: '결과를 관찰해요',
+      chips: widget.emotionList,
+      selectedIndexes: widget.selectedEmotion,
+      exampleMessage: "예시로 '불안' 칩을 눌러 선택해보세요!",
+      onAdd: widget.isExampleMode ? null : widget.onAddEmotion,
+      onDelete: widget.isExampleMode ? null : widget.onDeleteEmotion,
+    );
+  }
+
+  /// 🏃‍♀️ 2단계: 행동 반응 선택 화면
+  Widget _buildBehaviorStep() {
+    return _buildCommonSection(
+      title: '그때 어떤 행동을 했나요?',
+      smallText: '결과를 관찰해요',
+      chips: widget.behaviorList,
+      selectedIndexes: widget.selectedBehavior,
+      exampleMessage: "예시로 '자전거를 타지 않았어요' 칩을 눌러보세요!",
+      onAdd: widget.isExampleMode ? null : widget.onAddBehavior,
+      onDelete: widget.isExampleMode ? null : widget.onDeleteBehavior,
+    );
+  }
+
+  /// 🎯 공통 구성 (신체/감정/행동 공용 뷰)
+  Widget _buildCommonSection({
+    required String title,
+    required String smallText,
+    required List<String> chips,
+    required Set<int> selectedIndexes,
+    required String exampleMessage,
+    required void Function(String text)? onAdd,
+    required void Function(int index)? onDelete,
+  }) {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AbcStepCard(
+            activeIndex: 2,
+            smallText: smallText,
+            bigText: title,
+            selectedChips: selectedIndexes.map((i) => chips[i]).toList(),
+          ),
+          const SizedBox(height: 30),
+          if (widget.isExampleMode) JellyfishBanner(message: exampleMessage),
+          const SizedBox(height: 20),
+          AbcChipsDesign(
+            chips: chips,
+            defaultCount: widget.isExampleMode ? 3 : 4,
+            selectedIndexes: selectedIndexes,
+            singleSelect: false,
+            onChipToggle: (i, selected) {
+              setState(() {
+                if (selected) {
+                  selectedIndexes.add(i);
+                } else {
+                  selectedIndexes.remove(i);
+                }
+              });
+              widget.onSelectionChanged?.call(); // ✅ 부모에게 상태 변경 알림
+            },
+            onChipAdd: onAdd,
+            onChipDelete: onDelete,
+            isExampleMode: widget.isExampleMode,
+          ),
+          const SizedBox(height: 50),
+        ],
+      ),
+    );
   }
 }

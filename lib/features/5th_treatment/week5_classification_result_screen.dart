@@ -24,10 +24,17 @@ class Week5ClassificationResultScreen extends StatelessWidget {
       body: Stack( // 💡 Stack 추가
         fit: StackFit.expand,
         children: [
-          // 🌊 화면 전체 배경 (0.35) - 배경 이미지 추가
-          Opacity(
-            opacity: 0.65,
-            child: Image.asset('assets/image/eduhome.png', fit: BoxFit.cover),
+          // 🌊 화면 전체 배경 (ApplyDesign 동일)
+          Container(
+            color: Colors.white, // 흰색 베이스 추가
+            child: Opacity(
+              opacity: 0.35, // 동일한 투명도
+              child: Image.asset(
+                'assets/image/eduhome.png',
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.high,
+              ),
+            ),
           ),
 
           SafeArea(

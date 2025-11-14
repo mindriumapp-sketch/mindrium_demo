@@ -34,43 +34,23 @@ class NavigationButtons extends StatelessWidget {
         children: [
           /// ⬅ 이전 버튼 (화이트 배경 + 블루 테두리)
           Expanded(
-            child: FilledButton(
+            child: OutlinedButton(
               onPressed: onBack,
-              style: ButtonStyle(
-                backgroundColor: WidgetStateProperty.resolveWith<Color?>((
-                  states,
-                ) {
-                  if (states.contains(WidgetState.disabled)) return grey300;
-                  return white;
-                }),
-                foregroundColor: WidgetStateProperty.resolveWith<Color?>((
-                  states,
-                ) {
-                  if (states.contains(WidgetState.disabled)) return grey;
-                  return blueMain;
-                }),
-                shape: WidgetStateProperty.resolveWith<OutlinedBorder>((
-                  states,
-                ) {
-                  final borderColor =
-                      states.contains(WidgetState.disabled)
-                          ? grey300
-                          : blueLight;
-                  return RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(borderRadius),
-                    side: BorderSide(color: borderColor, width: 1),
-                  );
-                }),
-                padding: WidgetStateProperty.all(
-                  const EdgeInsets.symmetric(vertical: 16),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(
+                  color: onBack == null ? grey300 : blueMain,
+                  width: 1.4,
                 ),
-                textStyle: WidgetStateProperty.all(
-                  const TextStyle(
-                    fontSize: fontSize,
-                    fontWeight: FontWeight.w600,
-                  ),
+                backgroundColor: white,
+                foregroundColor: onBack == null ? grey : blueMain,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(borderRadius),
                 ),
-                elevation: WidgetStateProperty.all(0),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                textStyle: const TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               child: Text(leftLabel),
             ),
@@ -86,13 +66,17 @@ class NavigationButtons extends StatelessWidget {
                 backgroundColor: WidgetStateProperty.resolveWith<Color?>((
                   states,
                 ) {
-                  if (states.contains(WidgetState.disabled)) return grey300;
+                  if (onNext == null || states.contains(WidgetState.disabled)) {
+                    return grey300;
+                  }
                   return blueMain;
                 }),
                 foregroundColor: WidgetStateProperty.resolveWith<Color?>((
                   states,
                 ) {
-                  if (states.contains(WidgetState.disabled)) return grey;
+                  if (onNext == null || states.contains(WidgetState.disabled)) {
+                    return grey;
+                  }
                   return white;
                 }),
                 shape: WidgetStateProperty.all(

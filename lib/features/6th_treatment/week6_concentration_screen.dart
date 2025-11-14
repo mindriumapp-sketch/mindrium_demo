@@ -124,7 +124,7 @@ class _Week6ConcentrationScreenState extends State<Week6ConcentrationScreen> {
 
     return ApplyDesign(
       appBarTitle: '6주차 - 불안 직면 VS 회피',
-      cardTitle: '$userName님',
+      cardTitle: '상황에 집중하기',
       onBack: () => Navigator.pop(context),
       onNext: () {
             if (!_isNextEnabled) {
@@ -164,7 +164,7 @@ class _Week6ConcentrationScreenState extends State<Week6ConcentrationScreen> {
                   RuledParagraph(
                     text: _showSituation
                         ? _abcModel != null
-                        ? '"${_abcModel!['activatingEvent'] ?? ''}" (이)라는 상황에서\n'
+                        ? '$userName님, "${_abcModel!['activatingEvent'] ?? ''}" (이)라는 상황에서\n'
                         '"${_getFirstBehavior(_abcModel!['consequence_behavior'])}"(이)라고 행동을 하였습니다.\n\n그때의 상황에 집중해보세요.'
                         : '이때의 상황을 자세히 떠올려보세요.'
                         : '앞서 보셨던 행동이 불안을 \n직면한 행동인지, 회피한 행동인지 함께 살펴볼게요.',
@@ -181,15 +181,15 @@ class _Week6ConcentrationScreenState extends State<Week6ConcentrationScreen> {
                     padding: EdgeInsets.symmetric(horizontal: 4),
                     lineWidth: kRuleWidth,
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 16),
                   if (!_isNextEnabled)
                     Text(
                       '$_secondsLeft초 후에 다음 버튼이 활성화됩니다',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontSize: 15,
-                        color: Color(0xFFB0B0B0),
-                        fontWeight: FontWeight.w400,
+                        fontSize: 14,
+                        color: Color(0xFF9BA7B4),
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                 ],

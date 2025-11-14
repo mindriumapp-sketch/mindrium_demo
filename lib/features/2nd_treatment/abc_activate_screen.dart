@@ -17,8 +17,7 @@ class AbcActivateScreen extends StatelessWidget {
 
     return AbcActivateDesign(
       appBarTitle: '2주차 - ABC 모델',
-      scenarioImage:
-          'assets/image/activating event.png', // ✅ 메모 안에 들어갈 일러스트 (필요 시 교체)
+      scenarioImage: 'assets/image/activating event.png',
       descriptionText: descriptionText,
 
       /// ⬅️ 이전 버튼

@@ -5,6 +5,7 @@ import 'package:rive/rive.dart' as rive;
 import 'package:gad_app_team/common/constants.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'relaxation_logger.dart';
+import 'package:gad_app_team/utils/edu_progress.dart';
 
 // --- 주차 타이틀 ---
 const Map<int, String> kRelaxationWeekTitles = {
@@ -151,9 +152,12 @@ class _PracticePlayerState extends State<PracticePlayer>
       _logger.logEvent("session_complete");
       await _saveOnce(reason: 'complete');
       if (!mounted) return;
+      //await EduProgress.markWeekDone(1);
+      // ✅ 홈으로 이동 (진행도 갱신 및 다음 주차 unlock 반영)
       Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
     }
   }
+
 
   @override
   void dispose() {

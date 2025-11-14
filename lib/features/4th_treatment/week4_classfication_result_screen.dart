@@ -235,12 +235,17 @@ class Week4ClassificationResultScreen extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           // 🌊 배경
-          Opacity(opacity: 0.65,
-            child: Image.asset(
-              'assets/image/eduhome.png',
-              fit: BoxFit.cover,
-              filterQuality: FilterQuality.high,
-            ),),
+          Container(
+            color: Colors.white, // 흰 배경 유지
+            child: Opacity(
+              opacity: 0.35, // ApplyDesign과 동일한 투명도
+              child: Image.asset(
+                'assets/image/eduhome.png',
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.high,
+              ),
+            ),
+          ),
           // 본문
           SafeArea(
             child: Center(
@@ -254,6 +259,7 @@ class Week4ClassificationResultScreen extends StatelessWidget {
                       // 1) 본문 카드 (진행표시 생략)
                       QuizCard(
                         quizText: quizText,
+                        quizSize: 18,
                         currentIndex: 1,
                         // totalCount: null → 진행상태 숨김 (위젯에서 null 허용 구현되어 있어야 함)
                       ),
@@ -274,7 +280,7 @@ class Week4ClassificationResultScreen extends StatelessWidget {
                         onPressed: onPrimary,
                         // 라벨을 외부에서 덮어쓰기 위해 text 사용(네가 수정한 ChoiceCardButton에 대응)
                         othText: '도움이 되는 생각을 찾아볼게요!',
-                        height: 75,
+                        height: 54,
                       ),
 
                       if (!isFromAnxietyScreen) ...[
@@ -284,7 +290,7 @@ class Week4ClassificationResultScreen extends StatelessWidget {
                           type: ChoiceType.another,
                           onPressed: onSecondary,
                           anoText: secondaryButtonLabel,
-                          height: 75,
+                          height: 54,
                         ),
                       ],
                     ],

@@ -9,8 +9,6 @@ import 'package:gad_app_team/data/user_provider.dart';
 // ✅ 두 패널 레이아웃 (네가 저장한 파일)
 import 'package:gad_app_team/widgets/top_btm_card.dart';
 
-// ✅ 해파리 말풍선 안내 위젯
-
 class Week4ClassificationScreen extends StatefulWidget {
   final List<String> bListInput;
   final int? beforeSud;
@@ -235,21 +233,31 @@ class Week4ClassificationScreenState extends State<Week4ClassificationScreen> {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          PanelHeader(
-            icon: Image.asset('assets/image/question_icon.png', width: 32, height: 32),
-            subtitle: '$userName님께서 걱정일기에 작성해주신 생각을 보며 진행해주세요.',
-          ),
-          const SizedBox(height: 8),
+          SizedBox(height: 35),
           Text(
-            displayB,
-            style: const TextStyle(
-              fontSize: 20,
-              color: Colors.black,
+            '$userName님께서 걱정일기에 작성해주신 생각을 보며 진행해주세요.',
+            style: TextStyle(
+              fontSize: 14,
               fontWeight: FontWeight.w500,
+              color: Color(0xFF8796B8),
+              letterSpacing: 1.2,
+              fontFamily: 'Noto Sans KR',
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 15),
+          SizedBox(height: 30),
+          Text(
+            displayB,
+            style: TextStyle(
+              fontSize: 20,
+              height: 1.35,
+              wordSpacing: 1.4,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF263C69),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 35),
         ],
       );
     }
@@ -262,12 +270,12 @@ class Week4ClassificationScreenState extends State<Week4ClassificationScreen> {
           Text(
             '${_sliderValue.round()}',
             style: TextStyle(
-              fontSize: 64,
+              fontSize: 60,
               fontWeight: FontWeight.bold,
               color: _trackColor,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
               trackShape: const RoundedRectSliderTrackShape(),
@@ -331,7 +339,8 @@ class Week4ClassificationScreenState extends State<Week4ClassificationScreen> {
       onNext: _onNext,
       topChild: buildTopPanel(),
       bottomChild: buildBottomPanel(),
-      middleNoticeText: '지금은 위 생각에 대해 얼마나 강하게 믿고 계시나요? \n아래 슬라이더를 조정하고 [ 다음 ]을 눌러주세요.'
+      middleBannerText: '지금은 위 생각에 대해 \n얼마나 강하게 믿고 계시나요? 아래 슬라이더를 조정하고 [ 다음 ]을 눌러주세요.',
+      panelsGap: 2,
     );
   }
 }

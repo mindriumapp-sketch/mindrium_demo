@@ -1,16 +1,17 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gad_app_team/widgets/custom_appbar.dart';
+import 'package:gad_app_team/widgets/inner_btn_card.dart';
 import 'package:gad_app_team/features/4th_treatment/week4_alternative_thoughts.dart';
 import 'package:provider/provider.dart';
 import 'package:gad_app_team/data/user_provider.dart';
 
-/// DB에 저장된 B(생각) 리스트를 불러와 사용자가 선택하면
-/// Week4AlternativeThoughtsScreen으로 이동하는 화면
+/// 💡 Firestore의 'belief' 필드(B 리스트)를 불러와 선택 후 다음 단계로 이동하는 화면
 class ApplyAlternativeThoughtScreen extends StatefulWidget {
   const ApplyAlternativeThoughtScreen({super.key});
+
   @override
   State<ApplyAlternativeThoughtScreen> createState() =>
       _ApplyAlternativeThoughtScreenState();
@@ -24,17 +25,17 @@ class _ApplyAlternativeThoughtScreenState
   String? _abcId;
   int _beforeSud = 0;
   int? _selectedIndex;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final args = ModalRoute.of(context)?.settings.arguments as Map? ?? {};
     _abcId = args['abcId'] as String?;
     _beforeSud = (args['beforeSud'] as int?) ?? 0;
-    if (_bList.isEmpty && !_loading) {
-      _fetchBeliefs();
-    }
+    if (_bList.isEmpty && !_loading) _fetchBeliefs();
   }
 
+  /// 🔹 Firestore에서 'belief' 리스트 로드
   Future<void> _fetchBeliefs() async {
     setState(() {
       _loading = true;
@@ -49,8 +50,8 @@ class _ApplyAlternativeThoughtScreenState
       }
 
       final firestore = FirebaseFirestore.instance;
-
       List<String> list;
+
       if (_abcId != null && _abcId!.isNotEmpty) {
         final doc =
             await firestore
@@ -61,34 +62,29 @@ class _ApplyAlternativeThoughtScreenState
                 .get();
 
         final data = doc.data();
-        if (!doc.exists || data == null) {
-          throw Exception('해당 ABC를 찾을 수 없습니다.');
-        }
+        if (!doc.exists || data == null) throw Exception('해당 ABC를 찾을 수 없습니다.');
         list = _parseBeliefList(data['belief']);
         _abcId = doc.id;
 
         if (list.isEmpty) {
-          final dynamic rawGroup = data['group_id'] ?? data['groupId'];
-          final groupId = rawGroup?.toString();
+          final groupId = (data['group_id'] ?? data['groupId'])?.toString();
           if (groupId != null && groupId.isNotEmpty) {
             list = await _loadGroupBeliefs(firestore, uid, groupId);
           }
         }
-
-        if (list.isEmpty) {
-          list = await _loadAllBeliefs(firestore, uid);
-        }
+        if (list.isEmpty) list = await _loadAllBeliefs(firestore, uid);
       } else {
         list = await _loadAllBeliefs(firestore, uid);
-        if (list.isEmpty) {
-          throw Exception('저장된 일기를 찾을 수 없습니다.');
-        }
+        if (list.isEmpty) throw Exception('저장된 일기를 찾을 수 없습니다.');
         _abcId = await _latestAbcId(firestore, uid);
       }
-      setState(() {
-        _bList = list;
-        _loading = false;
-      });
+
+      if (mounted) {
+        setState(() {
+          _bList = list;
+          _loading = false;
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -114,8 +110,7 @@ class _ApplyAlternativeThoughtScreenState
     final seen = <String>{};
     final acc = <String>[];
     for (final doc in qs.docs) {
-      final data = doc.data();
-      final items = _parseBeliefList(data['belief']);
+      final items = _parseBeliefList(doc.data()['belief']);
       for (final item in items) {
         if (seen.add(item)) acc.add(item);
       }
@@ -138,8 +133,7 @@ class _ApplyAlternativeThoughtScreenState
     final seen = <String>{};
     final acc = <String>[];
     for (final doc in snapshot.docs) {
-      final data = doc.data();
-      final items = _parseBeliefList(data['belief']);
+      final items = _parseBeliefList(doc.data()['belief']);
       for (final item in items) {
         if (seen.add(item)) acc.add(item);
       }
@@ -156,8 +150,7 @@ class _ApplyAlternativeThoughtScreenState
             .orderBy('createdAt', descending: true)
             .limit(1)
             .get();
-    if (snapshot.docs.isEmpty) return null;
-    return snapshot.docs.first.id;
+    return snapshot.docs.isEmpty ? null : snapshot.docs.first.id;
   }
 
   List<String> _parseBeliefList(dynamic belief) {
@@ -169,26 +162,22 @@ class _ApplyAlternativeThoughtScreenState
           .toList();
     }
     if (belief is String) {
-      final s = belief.trim();
-      if (s.isEmpty) return const [];
       final parts =
-          s
+          belief
               .split(RegExp(r'[,\n;]+'))
               .map((e) => e.trim())
               .where((e) => e.isNotEmpty)
               .toList();
-      return parts.isEmpty ? [s] : parts;
+      return parts.isEmpty ? [belief] : parts;
     }
-    final s = belief.toString().trim();
-    return s.isEmpty ? const [] : [s];
+    return [belief.toString()];
   }
 
   void _onSelect(String b) {
     final all = _bList;
     final remaining = List<String>.from(all)..remove(b);
     final args = ModalRoute.of(context)?.settings.arguments as Map? ?? {};
-    final dynamic diary = args['diary'];
-    debugPrint('[apply_alt_thought] abcId=$_abcId, diary=$diary');
+    final diary = args['diary'];
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -209,151 +198,97 @@ class _ApplyAlternativeThoughtScreenState
   @override
   Widget build(BuildContext context) {
     final userName = context.read<UserProvider>().userName;
-    return Scaffold(
-      appBar: const CustomAppBar(title: '도움이 되는 생각 찾기'),
-      backgroundColor: const Color(0xFFFBF8FF),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child:
-                _loading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _error != null
-                    ? Center(
-                      child: Text(
-                        _error!,
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    )
-                    : Card(
-                      elevation: 8,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                      color: Colors.white,
-                      child: Padding(
+
+    return InnerBtnCardScreen(
+      appBarTitle: '도움이 되는 생각 찾기',
+      title: '$userName님,\n어떤 생각을 대상으로 찾아볼까요?',
+      primaryText: '도움이 되는 생각을 찾아볼게요!',
+      onPrimary:
+          (_selectedIndex != null && _bList.isNotEmpty)
+              ? () {
+                final b = _bList[_selectedIndex!];
+                _onSelect(b);
+              }
+              : () {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('생각을 선택해주세요.')));
+              },
+      // ✅ 리스트 렌더링 복구 (Flexible + shrinkWrap)
+      child:
+          _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null
+              ? Center(
+                child: Text(
+                  _error!,
+                  style: const TextStyle(color: Colors.red, fontSize: 16),
+                ),
+              )
+              : _bList.isEmpty
+              ? const Padding(
+                padding: EdgeInsets.all(12),
+                child: Text(
+                  '저장된 생각(B)이 없습니다.',
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 15,
+                    fontFamily: 'Noto Sans KR',
+                  ),
+                ),
+              )
+              : Flexible(
+                // 👇 ListView가 안 보이던 문제 해결
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: _bList.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final b = _bList[index];
+                    final selected = _selectedIndex == index;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() => _selectedIndex = index);
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 28.0,
-                          vertical: 32.0,
+                          horizontal: 16,
+                          vertical: 14,
                         ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              '$userName님',
-                              style: const TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF5B3EFF),
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Container(
-                              width: 48,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFF5B3EFF,
-                                ).withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            const Text(
-                              '어떤 생각을 대상으로 도움이 되는 생각을 찾아볼까요?',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black,
-                                height: 1.6,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            if (_bList.isEmpty)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 16),
-                                child: Text('저장된 생각(B)이 없습니다.'),
-                              )
-                            else
-                              Flexible(
-                                child: ListView.separated(
-                                  shrinkWrap: true,
-                                  itemCount: _bList.length,
-                                  separatorBuilder:
-                                      (_, __) => const SizedBox(height: 8),
-                                  itemBuilder: (context, index) {
-                                    final b = _bList[index];
-                                    final selected = _selectedIndex == index;
-                                    return Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color:
-                                              selected
-                                                  ? const Color(0xFF2962F6)
-                                                  : Colors.grey.shade300,
-                                          width: selected ? 2 : 1,
-                                        ),
-                                      ),
-                                      child: CheckboxListTile(
-                                        value: selected,
-                                        onChanged: (v) {
-                                          setState(() {
-                                            _selectedIndex =
-                                                v == true ? index : null;
-                                          });
-                                        },
-                                        controlAffinity:
-                                            ListTileControlAffinity.leading,
-                                        title: Text(b),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            const SizedBox(height: 24),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 56,
-                              child: ElevatedButton(
-                                onPressed:
-                                    (_selectedIndex != null &&
-                                            _bList.isNotEmpty)
-                                        ? () {
-                                          final b = _bList[_selectedIndex!];
-                                          _onSelect(b);
-                                        }
-                                        : null,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF2962F6),
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  elevation: 0,
-                                ),
-                                child: const Text(
-                                  '도움이 되는 생각을 찾아볼게요!',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                        decoration: BoxDecoration(
+                          color:
+                              selected
+                                  ? const Color(0xFF47A6FF).withOpacity(0.15)
+                                  : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color:
+                                selected
+                                    ? const Color(0xFF47A6FF)
+                                    : Colors.grey.shade300,
+                            width: selected ? 2 : 1,
+                          ),
+                        ),
+                        child: Text(
+                          b,
+                          style: TextStyle(
+                            fontSize: 15.5,
+                            color:
+                                selected
+                                    ? const Color(0xFF0B5394)
+                                    : Colors.black87,
+                            fontWeight:
+                                selected ? FontWeight.w600 : FontWeight.w400,
+                            fontFamily: 'Noto Sans KR',
+                          ),
                         ),
                       ),
-                    ),
-          ),
-        ),
-      ),
+                    );
+                  },
+                ),
+              ),
     );
   }
 }

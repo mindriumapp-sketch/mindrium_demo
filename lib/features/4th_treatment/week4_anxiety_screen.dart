@@ -62,57 +62,66 @@ class _Week4AnxietyScreenState extends State<Week4AnxietyScreen> {
 
         // 레이아웃 옵션
         pagePadding: const EdgeInsets.symmetric(horizontal: 34, vertical: 24),
-        panelsGap: 12,
+        panelsGap: 2,
         panelRadius: 20,
         panelPadding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
 
         // 상단 패널
-        topChild: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            SizedBox(height: 20),
-            Text(
-              '앞선 상황과 관련해서 불안을 일으키는 또 다른 생각이 있으실까요?',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF8796B8),
-                letterSpacing: 0.2,
+        topChild: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: 35),
+              Text(
+                '앞선 상황과 관련해서 불안을 일으키는 \n또 다른 생각이 있으실까요?',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF8796B8),
+                  letterSpacing: 1.2,
+                  fontFamily: 'Noto Sans KR',
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 20),
-            Text(
-              '또 다른 불안한 생각 적어보기',
-              style: TextStyle(
-                fontSize: 20,
-                height: 1.35,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF263C69),
+              SizedBox(height: 30),
+              Text(
+                '또 다른 불안한 생각 적어보기',
+                style: TextStyle(
+                  fontSize: 20,
+                  height: 1.35,
+                  wordSpacing: 1.4,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF263C69),
+                  fontFamily: 'Noto Sans KR',
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 20),
-          ],
+              SizedBox(height: 35),
+            ],
+          ),
         ),
 
-        middleNoticeText: '입력 영역을 탭하면 항목이 추가돼요! \n엔터 또는 바깥 터치로 확정됩니다',
+        middleBannerText: '입력 영역을 탭하면 항목이 추가돼요! \n엔터 또는 바깥 터치로 확정됩니다',
 
         // 하단 패널 (칩 편집 위젯 사용)
-        bottomChild: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ChipsEditor(
-              key: _chipsKey,
-              initial: const [],            // 초기 칩 있으면 전달
-              onChanged: _onChanged,        // 확정 칩 리스트 콜백
-              minHeight: 150,
-              maxWidthFactor: 0.78,
-            ),
-            const SizedBox(height: 8),
-          ],
+        bottomChild: Center(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ChipsEditor(
+                key: _chipsKey,
+                initial: const [],            // 초기 칩 있으면 전달
+                onChanged: _onChanged,        // 확정 칩 리스트 콜백
+                minHeight: 150,
+                maxWidthFactor: 0.78,
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
         btmcardColor: const Color(0xFF7DD9E8).withOpacity(0.35),
+        // height: 120,
+        // topPadding: 20,
       ),
     );
   }

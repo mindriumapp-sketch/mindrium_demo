@@ -1,6 +1,7 @@
 // File: features/8th_treatment/week8_maintenance_suggestions_screen.dart
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart';
+import 'package:gad_app_team/widgets/custom_popup_design.dart';
 
 class Week8MaintenanceSuggestionsScreen extends StatefulWidget {
   const Week8MaintenanceSuggestionsScreen({super.key});
@@ -16,11 +17,11 @@ class _Week8MaintenanceSuggestionsScreenState
   final bool _isNextEnabled = true;
 
   final List<String> _suggestions = [
-    '연습을 매일 하세요. 비록 짧은 시간이라도 괜찮습니다.',
-    '가능하다면 매일 같은 시간, 같은 장소에서 연습하세요.',
-    '연습을 해야 할 일 목록의 하나로 생각하기보다, 자신을 돌보는 방법으로 여기세요.',
-    '다른 사람들과 함께 연습할 수 있는 방법을 찾아보세요.',
-    '어려움이 오면 언제든 이 앱으로 돌아와 다시 시작할 수 있다는 것을 기억하세요.',
+    '연습을 매일 하세요. \n비록 짧은 시간이라도 괜찮습니다.',
+    '가능하다면 매일 같은 시간, \n같은 장소에서 연습하세요.',
+    '연습을 해야 할 일 목록의 하나로 생각하기보다, \n자신을 돌보는 방법으로 여기세요.',
+    '다른 사람들과 함께 연습할 수 있는 \n방법을 찾아보세요.',
+    '어려움이 오면 언제든 이 앱으로 돌아와 \n다시 시작할 수 있다는 것을 기억하세요.',
   ];
 
   void _nextStep() {
@@ -44,89 +45,17 @@ class _Week8MaintenanceSuggestionsScreenState
       context: context,
       barrierDismissible: false,
       builder:
-          (_) => Dialog(
-            backgroundColor: Colors.white.withOpacity(0.95),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(28),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF74D2FF), Color(0xFF99E0FF)],
-                      ),
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF74D2FF).withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.celebration,
-                      color: Colors.white,
-                      size: 36,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    '8주차 완료!',
-                    style: TextStyle(
-                      fontFamily: 'NotoSansKR',
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1B3A57),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '8주간의 여정을 성공적으로 완주하셨습니다 🎉\n앞으로도 꾸준히 자신을 돌보세요.',
-                    style: TextStyle(
-                      fontFamily: 'NotoSansKR',
-                      fontSize: 14,
-                      color: Color(0xFF356D91),
-                      height: 1.5,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(
-                        context,
-                      ).pushNamedAndRemoveUntil('/home', (_) => false);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF74D2FF),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 40,
-                        vertical: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: const Text(
-                      '홈으로 돌아가기',
-                      style: TextStyle(
-                        fontFamily: 'NotoSansKR',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          (_) => CustomPopupDesign(
+            title: '8주차 완료!',
+            message: '8주간의 여정을 성공적으로 완주하셨습니다!\n앞으로도 꾸준히 자신을 돌보세요!',
+            onPositivePressed: () {
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil('/home', (_) => false);
+            },
+            positiveText: '홈으로 돌아가기',
+            negativeText: null,
+          )
     );
   }
 
@@ -134,7 +63,7 @@ class _Week8MaintenanceSuggestionsScreenState
   Widget build(BuildContext context) {
     return ApplyDesign(
       appBarTitle: '8주차 - 유지방법 제안',
-      cardTitle: '건강한 습관을 지속하기 위한 다섯 가지 제안',
+      cardTitle: '건강한 습관을 지속하기 위한 \n다섯 가지 제안',
       onBack: _previousStep,
       onNext: _isNextEnabled ? _nextStep : () {},
       child: Column(

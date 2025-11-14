@@ -1,7 +1,6 @@
 // lib/features/3rd_treatment/week3_explain_alternative_thoughts.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import 'package:gad_app_team/widgets/tutorial_design.dart'; // <-- ApplyDesign
 import 'package:gad_app_team/data/user_provider.dart';
 import 'package:gad_app_team/features/3rd_treatment/week3_alternative_thoughts.dart';

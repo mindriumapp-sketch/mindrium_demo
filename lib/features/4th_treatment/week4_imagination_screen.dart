@@ -53,13 +53,12 @@ class _Week4ImaginationScreenState extends State<Week4ImaginationScreen> {
   Widget build(BuildContext context) {
     final userName =
         Provider.of<UserProvider>(context, listen: false).userName ?? 'USER';
-
     // BlueWhiteCard에서 쓰던 밑줄 길이를 그대로 사용
     const double kRuleWidth = 220;
 
     return ApplyDesign(
       appBarTitle: '4주차 - 인지 왜곡 찾기',
-      cardTitle: '$userName님',
+      cardTitle: '상황 떠올리기',
       onBack: () => Navigator.pop(context),
       onNext: () {
         // ApplyDesign은 onNext null 비허용—탭 가드로 동작만 막아줌
@@ -89,8 +88,8 @@ class _Week4ImaginationScreenState extends State<Week4ImaginationScreen> {
           ),
           const SizedBox(height: 20),
 
-          const RuledParagraph(
-            text: '이때의 상황을 자세히\n생각해 보세요.',
+          RuledParagraph(
+            text: '$userName님, 이때의 상황을 \n자세히 생각해 보세요.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 18,
