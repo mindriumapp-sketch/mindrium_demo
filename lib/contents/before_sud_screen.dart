@@ -6,12 +6,15 @@
 import 'package:flutter/material.dart';
 
 // ────────────────────────  PACKAGES  ────────────────────────
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:dio/dio.dart';
 import 'package:geolocator/geolocator.dart';
 
 // ───────────────────────────  LOCAL  ────────────────────────
 import 'package:gad_app_team/widgets/tutorial_design.dart'; // ★ ApplyDesign 가져오기
+import 'package:gad_app_team/data/storage/token_storage.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/diaries_api.dart';
+import 'package:gad_app_team/data/api/sud_api.dart';
 
 /// SUD(0‒10)을 입력받아 저장하고, 점수에 따라 후속 행동을 안내하는 화면
 class BeforeSudRatingScreen extends StatefulWidget {
@@ -24,6 +27,11 @@ class BeforeSudRatingScreen extends StatefulWidget {
 
 class _BeforeSudRatingScreenState extends State<BeforeSudRatingScreen> {
   int _sud = 5; // 슬라이더 값 (0‒10)
+  final TokenStorage _tokens = TokenStorage();
+  late final ApiClient _apiClient = ApiClient(tokens: _tokens);
+  late final DiariesApi _diariesApi = DiariesApi(_apiClient);
+  late final SudApi _sudApi = SudApi(_apiClient);
+  bool _saving = false;
 
   @override
   void initState() {
@@ -31,28 +39,23 @@ class _BeforeSudRatingScreenState extends State<BeforeSudRatingScreen> {
     debugPrint('[SUD] arguments = ${widget.abcId}');
   }
 
-  // ────────────────────── Firestore 저장 ──────────────────────
+  // ────────────────────── FastAPI 저장 ──────────────────────
   Future<void> _saveSud(String? abcId) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
     if (abcId == null || abcId.isEmpty) return;
+    final access = await _tokens.access;
+    if (access == null) {
+      throw Exception('로그인이 필요합니다.');
+    }
 
     final pos = await _getCurrentPosition(); // 위치 권한 없으면 null
 
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('abc_models')
-        .doc(abcId)
-        .collection('sud_score')
-        .add({
-          'before_sud': _sud,
-          'after_sud': _sud,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-          if (pos != null) 'latitude': pos.latitude,
-          if (pos != null) 'longitude': pos.longitude,
-        });
+    await _sudApi.createSudScore(
+      diaryId: abcId,
+      beforeScore: _sud,
+      afterScore: _sud,
+      latitude: pos?.latitude,
+      longitude: pos?.longitude,
+    );
   }
 
   /// 현재 위치 가져오기 (권한 거부 시 null)
@@ -74,22 +77,26 @@ class _BeforeSudRatingScreenState extends State<BeforeSudRatingScreen> {
     return null;
   }
 
-  Future<String> _loadGroupId(String uid, String abcId) async {
+  Future<String> _loadGroupId(String abcId) async {
     try {
-      final doc =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .collection('abc_models')
-              .doc(abcId)
-              .get();
-      final data = doc.data();
-      if (data == null) return '';
-      final dynamic raw = data['group_id'] ?? data['groupId'];
+      final diary = await _diariesApi.getDiary(abcId);
+      final dynamic raw = diary['group_Id'] ?? diary['groupId'];
       return raw == null ? '' : raw.toString();
+    } on DioException catch (_) {
+      return '';
     } catch (_) {
       return '';
     }
+  }
+
+  Future<bool> _hasAccessToken() async {
+    final access = await _tokens.access;
+    return access != null;
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   // ────────────────────── 구간/스타일 유틸 ──────────────────────
@@ -132,58 +139,67 @@ class _BeforeSudRatingScreenState extends State<BeforeSudRatingScreen> {
       cardTitle: '지금 느끼는 불안 정도를\n선택해 주세요',
       onBack: () => Navigator.pop(context),
       onNext: () async {
-        await _saveSud(abcId);
-        if (!context.mounted) return;
+        if (_saving) return;
+        setState(() => _saving = true);
 
-        if (!hasAbcId && origin == 'apply') {
-          Navigator.pushReplacementNamed(
-            context,
-            '/diary_yes_or_no',
-            arguments: {
-              'origin': 'apply',
-              if (diary != null) 'diary': diary,
-              'beforeSud': _sud,
-            },
-          );
-          return;
-        }
+        try {
+          await _saveSud(abcId);
+          if (!context.mounted) return;
 
-        final user = FirebaseAuth.instance.currentUser;
-        if (user == null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('로그인 정보가 없습니다.')));
-          return;
-        }
+          if (!hasAbcId && origin == 'apply') {
+            Navigator.pushReplacementNamed(
+              context,
+              '/diary_yes_or_no',
+              arguments: {
+                'origin': 'apply',
+                if (diary != null) 'diary': diary,
+                'beforeSud': _sud,
+              },
+            );
+            return;
+          }
 
-        if (!hasAbcId) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('기록 정보를 찾을 수 없습니다. 다시 시도해 주세요.')),
-          );
-          return;
-        }
+          final isLoggedIn = await _hasAccessToken();
+          if (!isLoggedIn) {
+            _showSnack('로그인 정보가 없습니다.');
+            return;
+          }
 
-        final ensuredAbcId = abcId!;
-        final groupId = await _loadGroupId(user.uid, ensuredAbcId);
-        if (!context.mounted) return;
+          if (!hasAbcId) {
+            _showSnack('기록 정보를 찾을 수 없습니다. 다시 시도해 주세요.');
+            return;
+          }
 
-        if (_sud > 2) {
-          Navigator.pushReplacementNamed(
-            context,
-            '/similar_activation',
-            arguments: {'abcId': ensuredAbcId, 'groupId': groupId, 'sud': _sud},
-          );
-        } else {
-          Navigator.pushReplacementNamed(
-            context,
-            '/diary_relax_home',
-            arguments: {
-              'abcId': ensuredAbcId,
-              'groupId': groupId,
-              'sud': _sud,
-              'origin': origin,
-            },
-          );
+          final ensuredAbcId = abcId!;
+          final groupId = await _loadGroupId(ensuredAbcId);
+          if (!context.mounted) return;
+
+          if (_sud > 2) {
+            Navigator.pushReplacementNamed(
+              context,
+              '/similar_activation',
+              arguments: {'abcId': ensuredAbcId, 'groupId': groupId, 'sud': _sud},
+            );
+          } else {
+            Navigator.pushReplacementNamed(
+              context,
+              '/diary_relax_home',
+              arguments: {
+                'abcId': ensuredAbcId,
+                'groupId': groupId,
+                'sud': _sud,
+                'origin': origin,
+              },
+            );
+          }
+        } on DioException catch (e) {
+          final message =
+              e.response?.data is Map ? e.response?.data['detail']?.toString() : e.message;
+          _showSnack('SUD를 저장하지 못했습니다: ${message ?? '알 수 없는 오류'}');
+        } catch (e) {
+          _showSnack('SUD를 저장하지 못했습니다: $e');
+        } finally {
+          if (mounted) setState(() => _saving = false);
         }
       },
 

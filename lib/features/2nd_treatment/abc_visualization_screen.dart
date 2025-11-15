@@ -205,6 +205,19 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
         }
       }
 
+      List<Map<String, dynamic>> sudScorePayload = const [];
+      if (widget.beforeSud != null) {
+        final nowIso = DateTime.now().toUtc().toIso8601String();
+        sudScorePayload = [
+          {
+            'before_sud': widget.beforeSud,
+            'after_sud': widget.beforeSud,
+            'created_at': nowIso,
+            'updated_at': nowIso,
+          },
+        ];
+      }
+
       final diary = await _diariesApi.createDiary(
         groupId: 0,
         activatingEvents: activatingEvents,
@@ -212,7 +225,7 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
         consequenceE: emotionList,
         consequenceP: physicalList,
         consequenceB: behaviorList,
-        sudScores: widget.beforeSud != null ? [widget.beforeSud!] : const [],
+        sudScores: sudScorePayload,
         alternativeThoughts: const [],
         alarms: const [],
         latitude: pos?.latitude,
@@ -223,7 +236,11 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
       debugPrint('FastAPI diary 저장 완료: $createdDiaryId');
 
       if (!mounted) return;
-      _showSavedPopup(context);
+      _showSavedPopup(
+        context,
+        diaryId: createdDiaryId,
+        label: activatingEvents,
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -271,7 +288,15 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
   // ──────────────────────────────────────────────
   // ✅ 저장 완료 안내 팝업
   // ──────────────────────────────────────────────
-  void _showSavedPopup(BuildContext context) {
+  void _showSavedPopup(
+    BuildContext context, {
+    String? diaryId,
+    String? label,
+  }) {
+    final resolvedDiaryId = diaryId ?? widget.abcId;
+    final resolvedLabel =
+        label ?? widget.activatingEventChips.map((e) => e.label).join(', ');
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -279,17 +304,29 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
         return CustomPopupDesign(
           title: '일기가 저장되었습니다',
           message: '기록해 주셔서 감사합니다. 계속 진행하시겠어요?',
-          positiveText: '홈으로 이동',
-          negativeText: '계속 작성',
+          positiveText: '알림 설정하기',
+          negativeText: '홈으로',
           onPositivePressed: () {
             Navigator.pop(dialogCtx);
-            Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+            final args = <String, dynamic>{};
+            if (resolvedDiaryId != null && resolvedDiaryId.isNotEmpty) {
+              args['abcId'] = resolvedDiaryId;
+            }
+            if (resolvedLabel.isNotEmpty) {
+              args['label'] = resolvedLabel;
+            }
+            if (widget.origin != null) {
+              args['origin'] = widget.origin;
+            }
+            Navigator.pushNamed(
+              context,
+              '/noti_select',
+              arguments: args.isEmpty ? null : args,
+            );
           },
           onNegativePressed: () {
             Navigator.pop(dialogCtx);
-            if (mounted) {
-              setState(() => _showFeedback = true);
-            }
+            Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
           },
         );
       },

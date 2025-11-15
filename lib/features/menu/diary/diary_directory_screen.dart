@@ -15,8 +15,8 @@ class DiaryEntry {
   final List<String> consequenceEmotion;
   final List<String> consequencePhysical;
   final List<String> consequenceBehavior;
-  final List<int> sudScores;
-  final List<dynamic> alarms;
+  final List<Map<String, dynamic>> sudScores;
+  final List<Map<String, dynamic>> alarms;
   final DateTime createdAt;
   final DateTime? updatedAt;
   final String? addressName;
@@ -50,20 +50,42 @@ class DiaryEntry {
       return DateTime.now().toUtc();
     }
 
-    List<String> _stringList(dynamic value) {
+    List<String> stringList(dynamic value) {
       if (value is List) {
         return value.map((e) => e?.toString() ?? '').where((e) => e.isNotEmpty).toList();
       }
       return const [];
     }
 
-    List<int> _intList(dynamic value) {
+    List<Map<String, dynamic>> sudScoreList(dynamic value) {
       if (value is List) {
         return value
-            .map((e) => e is num ? e.toInt() : int.tryParse(e.toString()) ?? 0)
+            .whereType<Map>()
+            .map((e) => e.map((key, val) => MapEntry(key.toString(), val)))
             .toList();
       }
       return const [];
+    }
+
+    List<Map<String, dynamic>> alarmList(dynamic value) {
+      Iterable<Map> source;
+      if (value is Map) {
+        source = value.values.whereType<Map>();
+      } else if (value is List) {
+        source = value.whereType<Map>();
+      } else {
+        return const [];
+      }
+
+      return source
+          .map((alarm) {
+            final sanitized = alarm.map((k, v) => MapEntry(k.toString(), v));
+            sanitized.remove('latitude');
+            sanitized.remove('longitude');
+            return sanitized;
+          })
+          .toList()
+          .cast<Map<String, dynamic>>();
     }
 
     return DiaryEntry(
@@ -72,12 +94,12 @@ class DiaryEntry {
           ? (raw['group_Id'] as num).toInt()
           : int.tryParse('${raw['group_Id']}'),
       activatingEvents: raw['activating_events']?.toString() ?? '-',
-      belief: _stringList(raw['belief']),
-      consequenceEmotion: _stringList(raw['consequence_e']),
-      consequencePhysical: _stringList(raw['consequence_p']),
-      consequenceBehavior: _stringList(raw['consequence_b']),
-      sudScores: _intList(raw['sudScores']),
-      alarms: (raw['alarms'] as List?) ?? const [],
+      belief: stringList(raw['belief']),
+      consequenceEmotion: stringList(raw['consequence_e']),
+      consequencePhysical: stringList(raw['consequence_p']),
+      consequenceBehavior: stringList(raw['consequence_b']),
+      sudScores: sudScoreList(raw['sudScores']),
+      alarms: alarmList(raw['alarms']),
       createdAt: parseDate(createdRaw),
       updatedAt: updatedRaw == null ? null : parseDate(updatedRaw),
       addressName: raw['addressName']?.toString(),
@@ -245,7 +267,10 @@ class _NotificationDirectoryScreenState extends State<NotificationDirectoryScree
               padding: const EdgeInsets.only(bottom: 24),
               itemCount: filtered.length,
               itemBuilder: (context, index) {
-                return _DiaryCard(entry: filtered[index]);
+                return _DiaryCard(
+                  entry: filtered[index],
+                  onAlarmUpdated: _loadDiaries,
+                );
               },
             ),
           ),
@@ -326,7 +351,8 @@ class _GroupFilter extends StatelessWidget {
 
 class _DiaryCard extends StatelessWidget {
   final DiaryEntry entry;
-  const _DiaryCard({required this.entry});
+  final Future<void> Function()? onAlarmUpdated;
+  const _DiaryCard({required this.entry, this.onAlarmUpdated});
 
   @override
   Widget build(BuildContext context) {
@@ -341,7 +367,7 @@ class _DiaryCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFE3F2FD), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -431,7 +457,24 @@ class _DiaryCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            _AlarmSection(alarms: entry.alarms),
+            _AlarmSection(
+              alarms: entry.alarms,
+              onEdit: () async {
+                await Navigator.pushNamed(
+                  context,
+                  '/noti_select',
+                  arguments: {
+                    'fromDirectory': true,
+                    'abcId': entry.id,
+                    'label': entry.activatingEvents,
+                    'origin': 'diary_directory',
+                  },
+                );
+                if (onAlarmUpdated != null) {
+                  await onAlarmUpdated!();
+                }
+              },
+            ),
             if (entry.addressName != null && entry.addressName!.isNotEmpty) ...[
               const SizedBox(height: 12),
               _buildSection(
@@ -452,12 +495,39 @@ class _DiaryCard extends StatelessWidget {
 }
 
 class _SudScoreBar extends StatelessWidget {
-  final List<int> scores;
+  final List<Map<String, dynamic>> scores;
   const _SudScoreBar({required this.scores});
+
+  int _parseScore(dynamic value) {
+    if (value is num) return value.clamp(0, 10).toInt();
+    if (value is String) {
+      final parsed = double.tryParse(value);
+      if (parsed != null) {
+        return parsed.clamp(0, 10).toInt();
+      }
+    }
+    return 0;
+  }
+
+  DateTime _parseDate(dynamic value) {
+    if (value is DateTime) return value.toUtc();
+    if (value is String) {
+      try {
+        return DateTime.parse(value).toUtc();
+      } catch (_) {}
+    }
+    return DateTime.now().toUtc();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final latest = scores.isNotEmpty ? scores.last.clamp(0, 10) : 0;
+    Map<String, dynamic>? latestEntry;
+    if (scores.isNotEmpty) {
+      final copy = List<Map<String, dynamic>>.from(scores);
+      copy.sort((a, b) => _parseDate(a['created_at']).compareTo(_parseDate(b['created_at'])));
+      latestEntry = copy.last;
+    }
+    final latest = _parseScore(latestEntry?['before_sud']);
     final ratio = latest / 10.0;
     final color = Color.lerp(const Color(0xFF4CAF50), const Color(0xFFF44336), ratio)!;
 
@@ -485,9 +555,9 @@ class _SudScoreBar extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: color.withOpacity(0.3)),
+                  border: Border.all(color: color.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   '$latest / 10',
@@ -517,8 +587,16 @@ class _SudScoreBar extends StatelessWidget {
 }
 
 class _AlarmSection extends StatelessWidget {
-  final List<dynamic> alarms;
-  const _AlarmSection({required this.alarms});
+  final List<Map<String, dynamic>> alarms;
+  final VoidCallback? onEdit;
+  const _AlarmSection({required this.alarms, this.onEdit});
+
+  static const List<String> _weekdayNames = ['월', '화', '수', '목', '금', '토', '일'];
+
+  String _weekdayLabel(int dayNumber) {
+    if (dayNumber < 1 || dayNumber > 7) return '$dayNumber';
+    return _weekdayNames[dayNumber - 1];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -527,9 +605,16 @@ class _AlarmSection extends StatelessWidget {
         context: context,
         icon: Icons.notifications_none,
         title: '알림 정보',
-        child: const Text(
-          '설정된 알림이 없습니다.',
-          style: TextStyle(color: Color(0xFF1B405C)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '설정된 알림이 없습니다.',
+              style: TextStyle(color: Color(0xFF1B405C)),
+            ),
+            const SizedBox(height: 8),
+            _AlarmActionButton(label: '알림 추가', onPressed: onEdit),
+          ],
         ),
       );
     }
@@ -540,40 +625,99 @@ class _AlarmSection extends StatelessWidget {
       title: '알림 정보',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: alarms.asMap().entries.map((entry) {
-          final map = entry.value as Map? ?? {};
-          final location = map['location'] ?? map['addressName'] ?? '-';
-          final notifyEnter = map['notifyEnter'] == true;
-          final notifyExit = map['notifyExit'] == true;
+        children: [
+          ...alarms.asMap().entries.map((entry) {
+            final map = entry.value as Map? ?? {};
+          final location = map['location_desc'] ??
+              map['location'] ??
+              map['addressName'] ??
+              '-';
+          final notifyEnter = map['notifyEnter'] == true || map['enter'] == true;
+          final notifyExit = map['notifyExit'] == true || map['exit'] == true;
           final condition = notifyEnter && notifyExit
               ? '입장/퇴장'
               : notifyEnter
                   ? '입장 시'
                   : notifyExit
                       ? '퇴장 시'
-                      : '단일 알림';
+                      : '';
           final time = map['time'] ?? map['scheduledTime'] ?? '-';
+          final repeatOption = (map['repeat_option'] ?? '').toString();
+          final weekDays = (map['weekDays'] as List?)
+                  ?.map((e) => e is num ? e.toInt() : int.tryParse('$e') ?? 0)
+                  .where((d) => d > 0 && d <= 7)
+                  .toList() ??
+              const [];
+          final reminderMinutes = map['reminder_minutes'];
+          final repeatText = repeatOption == 'weekly'
+              ? (weekDays.isNotEmpty
+                  ? '매주 (${weekDays.map(_weekdayLabel).join(', ')})'
+                  : '매주')
+              : '매일';
+          final reminderText = reminderMinutes is num && reminderMinutes > 0
+              ? '알림 $reminderMinutes분 전'
+              : null;
+          final locationDisplay = condition.isNotEmpty && location != '-'
+              ? '$location ($condition)'
+              : condition.isNotEmpty
+                  ? condition
+                  : location.toString();
 
-          return Container(
-            margin: EdgeInsets.only(top: entry.key > 0 ? 10 : 0),
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FBFF),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF4A8CCB)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _infoRow(Icons.location_on_outlined, '위치', location.toString()),
-                const SizedBox(height: 6),
-                _infoRow(Icons.notifications_outlined, '조건', condition),
-                const SizedBox(height: 6),
-                _infoRow(Icons.access_time_outlined, '시간', time.toString()),
-              ],
-            ),
-          );
-        }).toList(),
+            return Container(
+              margin: EdgeInsets.only(top: entry.key > 0 ? 10 : 0),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FBFF),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF4A8CCB)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _infoRow(Icons.location_on_outlined, '위치', locationDisplay),
+                  const SizedBox(height: 6),
+                  _infoRow(Icons.access_time_outlined, '시간', time.toString()),
+                  const SizedBox(height: 6),
+                  _infoRow(Icons.repeat, '반복', repeatText),
+                  if (reminderText != null) ...[
+                    const SizedBox(height: 6),
+                    _infoRow(Icons.alarm, '다시 알림', reminderText),
+                  ],
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 8),
+          _AlarmActionButton(label: '알림 수정', onPressed: onEdit),
+        ],
+      ),
+    );
+  }
+}
+
+class _AlarmActionButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onPressed;
+  const _AlarmActionButton({required this.label, this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    const accent = Color(0xFF5B9FD3);
+    return Align(
+      alignment: Alignment.centerRight,
+      child: ElevatedButton.icon(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: accent,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        icon: const Icon(Icons.notifications_active_outlined, color: Colors.white),
+        label: Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
+        ),
+        onPressed: onPressed,
       ),
     );
   }

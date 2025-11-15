@@ -190,11 +190,38 @@ class MyApp extends StatelessWidget {
         '/archive': (context) => ArchiveScreen(),
         '/week1': (context) => const Week1Screen(),
         '/week2': (context) => const Week2Screen(),
-        '/abc': (context) => const AbcInputScreen(showGuide: false),
+        '/abc': (context) {
+          final args =
+              (ModalRoute.of(context)?.settings.arguments as Map?) ?? const {};
+          int? beforeSud;
+          final beforeRaw = args['beforeSud'];
+          if (beforeRaw is int) {
+            beforeSud = beforeRaw;
+          } else if (beforeRaw is num) {
+            beforeSud = beforeRaw.toInt();
+          }
+
+          return AbcInputScreen(
+            showGuide: args['showGuide'] as bool? ?? false,
+            isExampleMode: args['isExampleMode'] as bool? ?? false,
+            abcId: args['abcId'] as String?,
+            origin: args['origin'] as String?,
+            beforeSud: beforeSud,
+          );
+        },
         '/week4': (context) => const Week4Screen(),
         '/week8': (context) => const Week8Screen(),
         '/alt_thought': (context) => const Week4ClassificationResultScreen(),
-        '/noti_select': (context) => NotificationSelectionScreen(),
+        '/noti_select': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map?;
+          return NotificationSelectionScreen(
+            fromDirectory: args?['fromDirectory'] as bool? ?? false,
+            label: args?['label'] as String?,
+            abcId: args?['abcId'] as String?,
+            notificationId: args?['notificationId'] as String?,
+            origin: args?['origin'] as String?,
+          );
+        },
         '/diary_directory': (context) => NotificationDirectoryScreen(),
         '/battle': (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map?;

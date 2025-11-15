@@ -13,9 +13,9 @@ class DiariesApi {
     List<String> consequenceP = const [],
     List<String> consequenceE = const [],
     List<String> consequenceB = const [],
-    List<int> sudScores = const [],
+    List<Map<String, dynamic>> sudScores = const [],
     List<dynamic> alternativeThoughts = const [],
-    List<dynamic> alarms = const [],
+    List<Map<String, dynamic>> alarms = const [],
     double? latitude,
     double? longitude,
     String? addressName,
@@ -82,5 +82,52 @@ class DiariesApi {
       requestOptions: res.requestOptions,
       message: 'Invalid /diaries/{id} update response',
     );
+  }
+
+  Future<List<Map<String, dynamic>>> listAlarms(String diaryId) async {
+    final res = await _client.dio.get('/diaries/$diaryId/alarms');
+    final data = res.data;
+    if (data is List) {
+      return data
+          .whereType<Map>()
+          .map((raw) => raw.map((k, v) => MapEntry(k.toString(), v)))
+          .toList()
+          .cast<Map<String, dynamic>>();
+    }
+    throw DioException(
+      requestOptions: res.requestOptions,
+      message: 'Invalid /diaries/{id}/alarms response',
+    );
+  }
+
+  Future<Map<String, dynamic>> createAlarm(
+    String diaryId,
+    Map<String, dynamic> body,
+  ) async {
+    final res = await _client.dio.post('/diaries/$diaryId/alarms', data: body);
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    throw DioException(
+      requestOptions: res.requestOptions,
+      message: 'Invalid /diaries/{id}/alarms create response',
+    );
+  }
+
+  Future<Map<String, dynamic>> updateAlarm(
+    String diaryId,
+    String alarmId,
+    Map<String, dynamic> body,
+  ) async {
+    final res = await _client.dio.put('/diaries/$diaryId/alarms/$alarmId', data: body);
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    throw DioException(
+      requestOptions: res.requestOptions,
+      message: 'Invalid /diaries/{id}/alarms/{alarm_id} response',
+    );
+  }
+
+  Future<void> deleteAlarm(String diaryId, String alarmId) async {
+    await _client.dio.delete('/diaries/$diaryId/alarms/$alarmId');
   }
 }

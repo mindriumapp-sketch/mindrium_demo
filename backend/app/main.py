@@ -5,6 +5,7 @@ from core.config import get_settings
 from routers.auth import router as auth_router
 from routers.users import router as users_router
 from routers.diaries import router as diaries_router
+from routers.sud_scores import router as sud_scores_router
 from routers.user_data import router as user_data_router
 
 settings = get_settings()
@@ -34,5 +35,7 @@ async def health():
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(diaries_router)
+# SUD 점수 기록 라우터
+app.include_router(sud_scores_router)
 # 2025-11-13 사용자 데이터 라우터 등록 (설문 저장 등)
 app.include_router(user_data_router)

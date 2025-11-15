@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
 from pydantic import BaseModel, Field
 
 
@@ -10,7 +10,7 @@ class DiaryBase(BaseModel):
     consequence_p: List[str] = Field(default_factory=list)
     consequence_e: List[str] = Field(default_factory=list)
     consequence_b: List[str] = Field(default_factory=list)
-    sud_scores: List[int] = Field(default_factory=list, alias="sudScores")
+    sud_scores: List[Any] = Field(default_factory=list, alias="sudScores")
     alternative_thoughts: List[Any] = Field(default_factory=list, alias="alternativeThoughts")
     alarms: List[Any] = Field(default_factory=list)
     latitude: Optional[float] = None
@@ -18,7 +18,7 @@ class DiaryBase(BaseModel):
     address_name: Optional[str] = Field(None, alias="addressName")
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 class DiaryCreate(DiaryBase):
@@ -32,7 +32,7 @@ class DiaryUpdate(BaseModel):
     consequence_p: Optional[List[str]] = None
     consequence_e: Optional[List[str]] = None
     consequence_b: Optional[List[str]] = None
-    sud_scores: Optional[List[int]] = Field(None, alias="sudScores")
+    sud_scores: Optional[List[Any]] = Field(None, alias="sudScores")
     alternative_thoughts: Optional[List[Any]] = Field(None, alias="alternativeThoughts")
     alarms: Optional[List[Any]] = None
     latitude: Optional[float] = None
@@ -40,7 +40,7 @@ class DiaryUpdate(BaseModel):
     address_name: Optional[str] = Field(None, alias="addressName")
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 class DiaryResponse(DiaryBase):
@@ -49,4 +49,43 @@ class DiaryResponse(DiaryBase):
     updated_at: datetime = Field(..., alias="updatedAt")
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
+
+
+class AlarmBase(BaseModel):
+    time: Optional[str] = None
+    location_desc: Optional[str] = Field(None, alias="location_desc")
+    repeat_option: Optional[str] = Field(None, alias="repeat_option")
+    weekdays: List[int] = Field(default_factory=list, alias="weekDays")
+    reminder_minutes: Optional[int] = Field(None, alias="reminder_minutes")
+    enter: bool = Field(False, alias="enter")
+    exit: bool = Field(False, alias="exit")
+
+    class Config:
+        populate_by_name = True
+
+
+class AlarmCreate(AlarmBase):
+    pass
+
+
+class AlarmUpdate(BaseModel):
+    time: Optional[str] = None
+    location_desc: Optional[str] = Field(None, alias="location_desc")
+    repeat_option: Optional[str] = Field(None, alias="repeat_option")
+    weekdays: Optional[List[int]] = Field(None, alias="weekDays")
+    reminder_minutes: Optional[int] = Field(None, alias="reminder_minutes")
+    enter: Optional[bool] = None
+    exit: Optional[bool] = None
+
+    class Config:
+        populate_by_name = True
+
+
+class AlarmResponse(AlarmBase):
+    alarm_id: str = Field(..., alias="alarmId")
+    created_at: datetime = Field(..., alias="createdAt")
+    updated_at: datetime = Field(..., alias="updatedAt")
+
+    class Config:
+        populate_by_name = True

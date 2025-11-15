@@ -20,6 +20,7 @@ class AbcInputScreen extends StatefulWidget {
   final bool showGuide;
   final String? abcId;
   final String? origin;
+  final int? beforeSud;
 
   const AbcInputScreen({
     super.key,
@@ -28,6 +29,7 @@ class AbcInputScreen extends StatefulWidget {
     this.showGuide = true,
     this.abcId,
     this.origin,
+    this.beforeSud,
   });
 
   @override
@@ -255,6 +257,7 @@ class _AbcInputScreenState extends State<AbcInputScreen> {
                         _selectedBehavior.map((i) => _cBehavior[i]).toList(),
                     isExampleMode: widget.isExampleMode,
                     origin: widget.origin,
+                    beforeSud: widget.beforeSud,
                   ),
             ),
           );
