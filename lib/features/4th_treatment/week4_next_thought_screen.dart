@@ -11,6 +11,7 @@ import 'package:gad_app_team/widgets/ruled_paragraph.dart';
 import 'package:gad_app_team/data/api/api_client.dart';
 import 'package:gad_app_team/data/api/diaries_api.dart';
 import 'package:gad_app_team/data/storage/token_storage.dart';
+import 'package:gad_app_team/data/api/user_data_api.dart';
 
 class Week4NextThoughtScreen extends StatefulWidget {
   final List<String> remainingBList;
@@ -48,12 +49,14 @@ class _Week4NextThoughtScreenState extends State<Week4NextThoughtScreen> {
   bool _isLoading = true;
   late final ApiClient _client;
   late final DiariesApi _diariesApi;
+  late final UserDataApi _userDataApi;
 
   @override
   void initState() {
     super.initState();
     _client = ApiClient(tokens: TokenStorage());
     _diariesApi = DiariesApi(_client);
+    _userDataApi = UserDataApi(_client);
     _startCountdown();
     _fetchActivatingEvent();
   }
@@ -172,31 +175,59 @@ class _Week4NextThoughtScreenState extends State<Week4NextThoughtScreen> {
       cardTitle: '그때 상황 다시 떠올리기',
       onBack: () => Navigator.pop(context),
       onNext: _isNextEnabled
-          ? () {
+          ? () async {
         if (_showSituation) {
           setState(() => _showSituation = false);
-        } else {
-          Navigator.push(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (_, __, ___) => Week4ClassificationScreen(
-                bListInput: widget.isFromAnxietyScreen
-                    ? widget.addedAnxietyThoughts
-                    : widget.remainingBList,
-                beforeSud: widget.beforeSud,
-                allBList: widget.allBList,
-                alternativeThoughts: widget.alternativeThoughts,
-                isFromAnxietyScreen: widget.isFromAnxietyScreen,
-                existingAlternativeThoughts:
-                widget.existingAlternativeThoughts,
-                abcId: widget.abcId,
-                loopCount: widget.loopCount,
-              ),
-              transitionDuration: Duration.zero,
-              reverseTransitionDuration: Duration.zero,
-            ),
-          );
+          return;
         }
+        // 1) 새로 입력한 불안 생각을 일기 belief에 누적 + 커스텀 태그 저장
+        try {
+          final newThoughts = widget.isFromAnxietyScreen ? widget.addedAnxietyThoughts : <String>[];
+          if (newThoughts.isNotEmpty) {
+            final id = widget.abcId;
+            // diaryId가 없으면 최신으로 보정
+            final diary = (id != null && id.isNotEmpty)
+                ? await _diariesApi.getDiary(id)
+                : await _diariesApi.getLatestDiary();
+            final diaryId = diary['diaryId']?.toString();
+            if (diaryId != null && diaryId.isNotEmpty) {
+              final List<String> existingBelief = [
+                ...((diary['belief'] is List)
+                    ? (diary['belief'] as List).map((e) => e.toString())
+                    : diary['belief']?.toString().split(',') ?? <String>[]),
+              ].map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+              final toAdd = newThoughts.map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+              final merged = <String>{...existingBelief, ...toAdd}.toList();
+              await _diariesApi.updateDiary(diaryId, {'belief': merged});
+              // 커스텀 태그(B)로도 저장
+              for (final t in toAdd) {
+                await _userDataApi.createCustomTag(text: t, type: 'B');
+              }
+            }
+          }
+        } catch (_) {}
+
+        // 2) 다음 화면 이동
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => Week4ClassificationScreen(
+              bListInput: widget.isFromAnxietyScreen
+                  ? widget.addedAnxietyThoughts
+                  : widget.remainingBList,
+              beforeSud: widget.beforeSud,
+              allBList: widget.allBList,
+              alternativeThoughts: widget.alternativeThoughts,
+              isFromAnxietyScreen: widget.isFromAnxietyScreen,
+              existingAlternativeThoughts:
+              widget.existingAlternativeThoughts,
+              abcId: widget.abcId,
+              loopCount: widget.loopCount,
+            ),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+          ),
+        );
       }
           : null,
       child: body, // 비활성화 상태면 null 전달 → NavigationButtons에서 비활성 처리

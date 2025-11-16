@@ -1,12 +1,10 @@
 
 // lib/features/4th_treatment/week4_skip_choice_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'week4_concentration_screen.dart';
 import 'week4_anxiety_screen.dart';
-import 'package:gad_app_team/data/user_provider.dart';
 import 'week4_finish_screen.dart';
 
 // ✅ UI 위젯
@@ -36,7 +34,7 @@ class Week4SkipChoiceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userName = Provider.of<UserProvider>(context, listen: false).userName;
+    // final userName = Provider.of<UserProvider>(context, listen: false).userName;
 
     // ===== 안내 문구 =====
     final description = isFromAfterSud
@@ -69,6 +67,7 @@ class Week4SkipChoiceScreen extends StatelessWidget {
             pageBuilder: (_, __, ___) => Week4AnxietyScreen(
               beforeSud: beforeSud,
               existingAlternativeThoughts: existingAlternativeThoughts,
+              abcId: abcId,
               loopCount: loopCount + 1,
             ),
             transitionDuration: Duration.zero,
@@ -85,6 +84,7 @@ class Week4SkipChoiceScreen extends StatelessWidget {
           pageBuilder: (_, __, ___) => Week4AnxietyScreen(
             beforeSud: beforeSud,
             existingAlternativeThoughts: existingAlternativeThoughts,
+            abcId: abcId,
             loopCount: loopCount + 1,
           ),
           transitionDuration: Duration.zero,
