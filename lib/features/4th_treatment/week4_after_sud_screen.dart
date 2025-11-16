@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 // ✅ 공용 카드 레이아웃
 import 'package:gad_app_team/widgets/tutorial_design.dart'; // ApplyDesign
 
 import 'week4_finish_screen.dart';
 import 'week4_skip_choice_screen.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/sud_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 class Week4AfterSudScreen extends StatefulWidget {
   final int beforeSud;
@@ -17,6 +18,7 @@ class Week4AfterSudScreen extends StatefulWidget {
   final bool isFromAnxietyScreen;
   final List<String> originalBList;
   final int loopCount;
+  final String? abcId;
 
   const Week4AfterSudScreen({
     super.key,
@@ -28,6 +30,7 @@ class Week4AfterSudScreen extends StatefulWidget {
     this.isFromAnxietyScreen = false,
     this.originalBList = const [],
     this.loopCount = 1,
+    this.abcId,
   });
 
   @override
@@ -36,81 +39,77 @@ class Week4AfterSudScreen extends StatefulWidget {
 
 class _Week4AfterSudScreenState extends State<Week4AfterSudScreen> {
   int _sud = 5;
-  List<String> _originalBList = [];
   List<String> _allAlternativeThoughts = [];
+  late final ApiClient _client;
+  late final SudApi _sudApi;
+  String? _diaryIdFromRoute;
+  bool _didReadArgs = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchOriginalBList();
+    _client = ApiClient(tokens: TokenStorage());
+    _sudApi = SudApi(_client);
     _collectAllAlternativeThoughts();
   }
 
-  Future<void> _fetchOriginalBList() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('abc_models')
-          .orderBy('createdAt', descending: true)
-          .limit(1)
-          .get();
-
-      if (snapshot.docs.isNotEmpty) {
-        final data = snapshot.docs.first.data();
-        final belief = data['belief'] as String?;
-        if (belief != null && belief.isNotEmpty) {
-          final beliefs = belief
-              .split(',')
-              .map((e) => e.trim())
-              .where((e) => e.isNotEmpty)
-              .toList();
-          if (!mounted) return;
-          setState(() {
-            _originalBList = beliefs;
-          });
-        }
-      }
-    } catch (e) {
-      debugPrint('Error fetching original B list: $e');
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didReadArgs) return;
+    _didReadArgs = true;
+    _diaryIdFromRoute = widget.abcId;
+    if (_diaryIdFromRoute == null || _diaryIdFromRoute!.isEmpty) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map?;
+      _diaryIdFromRoute = args?['abcId'] as String?;
     }
   }
 
   Future<void> _collectAllAlternativeThoughts() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-
-      final currentAlternativeThoughts = widget.alternativeThoughts;
-      final allAlternativeThoughts = <String>[];
-
-      for (final t in currentAlternativeThoughts) {
-        if (!allAlternativeThoughts.contains(t)) {
-          allAlternativeThoughts.add(t);
-        }
-      }
-
-      if (!mounted) return;
-      setState(() {
-        _allAlternativeThoughts = allAlternativeThoughts;
-      });
-    } catch (e) {
-      debugPrint('Error collecting alternative thoughts: $e');
-      final unique = <String>[];
-      for (final t in widget.alternativeThoughts) {
-        if (!unique.contains(t)) unique.add(t);
-      }
-      if (!mounted) return;
-      setState(() {
-        _allAlternativeThoughts = unique;
-      });
+    final unique = <String>[];
+    for (final t in widget.alternativeThoughts) {
+      if (!unique.contains(t)) unique.add(t);
     }
+    if (!mounted) return;
+    setState(() {
+      _allAlternativeThoughts = unique;
+    });
   }
 
   void _handleNext() {
+    // SUD(after) 저장: 기존 엔트리(before만 있는 최신)를 찾아 업데이트
+    final id = _diaryIdFromRoute;
+    if (id != null && id.isNotEmpty) {
+      _sudApi
+          .listSudScores(id)
+          .then((list) async {
+            // after_sud가 null인 가장 최신 항목 선택
+            Map<String, dynamic>? target;
+            for (final e in list.reversed) {
+              final m = e as Map<String, dynamic>;
+              if ((m['after_sud'] == null) || (m['after_sud']?.toString().isEmpty ?? true)) {
+                target = m;
+                break;
+              }
+            }
+            if (target != null && target['sud_id'] != null) {
+              await _sudApi.updateSudScore(
+                diaryId: id,
+                sudId: target['sud_id'].toString(),
+                afterScore: _sud,
+              );
+            } else {
+              // 안전장치: 없으면 새로 생성(두 값 모두)
+              await _sudApi.createSudScore(
+                diaryId: id,
+                beforeScore: widget.beforeSud,
+                afterScore: _sud,
+              );
+            }
+          })
+          .catchError((_) {});
+    }
+
     if (_sud < widget.beforeSud) {
       // 낮아짐 → 종료 화면
       Navigator.pushReplacement(

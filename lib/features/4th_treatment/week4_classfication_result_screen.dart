@@ -124,7 +124,7 @@ class Week4ClassificationResultScreen extends StatelessWidget {
                 ]),
                 isFromAnxietyScreen: isFromAnxietyScreen,
                 originalBList: safeAllBList,
-                abcId: abcId_,
+                abcId: abcId ?? abcId_,  // 명시적으로 전달
                 loopCount: loopCount,
               ),
           transitionDuration: Duration.zero,
@@ -151,11 +151,27 @@ class Week4ClassificationResultScreen extends StatelessWidget {
       // 대체생각이 있으면 After SUD로
       if (alternativeThoughts != null &&
           alternativeThoughts!.isNotEmpty) {
-        if (abcId_ != null && abcId_.isNotEmpty) {
-          Navigator.pushReplacementNamed(
+        final String? diaryId = abcId ?? abcId_;
+        if (diaryId != null && diaryId.isNotEmpty) {
+          Navigator.pushReplacement(
             context,
-            '/after_sud',
-            arguments: {'abcId': abcId_},
+            PageRouteBuilder(
+              pageBuilder: (_, __, ___) =>
+                  Week4AfterSudScreen(
+                    beforeSud: safeBeforeSud,
+                    currentB: (bList != null &&
+                        bList!.isNotEmpty)
+                        ? bList!.last
+                        : '',
+                    remainingBList: safeRemainingBList,
+                    allBList: safeAllBList,
+                    alternativeThoughts:
+                    alternativeThoughts ?? [],
+                    abcId: diaryId,
+                  ),
+              transitionDuration: Duration.zero,
+              reverseTransitionDuration: Duration.zero,
+            ),
           );
         } else {
           Navigator.pushReplacement(

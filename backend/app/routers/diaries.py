@@ -163,7 +163,7 @@ def _serialize_sud_entry(doc: dict) -> dict:
     }
 
 
-def _serialize_diary(doc: dict) -> dict:
+def _serialize_diary(doc: dict, *, array_index: int | None = None) -> dict:
     alarms_raw = _normalize_alarms(doc.get("alarms", []))
     doc["alarms"] = alarms_raw
     sud_entries = _normalize_sud_scores(doc.get("sudScores", []))
@@ -187,6 +187,7 @@ def _serialize_diary(doc: dict) -> dict:
         "updatedAt": _parse_datetime_value(
             doc.get("updatedAt"), fallback=_parse_datetime_value(doc.get("createdAt"))
         ),
+        "arrayIndex": array_index,
     }
 
 
@@ -270,13 +271,30 @@ async def list_diaries(
     diaries = user.get("diaries", [])
 
     filtered = []
-    for diary in diaries:
+    for idx, diary in enumerate(diaries):
         if group_id is not None and diary.get("group_Id") != group_id:
             continue
-        filtered.append(DiaryResponse(**_serialize_diary(diary)))
+        filtered.append(DiaryResponse(**_serialize_diary(diary, array_index=idx)))
 
     filtered.sort(key=lambda d: d.created_at or datetime.now(timezone.utc), reverse=True)
     return filtered
+
+
+@router.get("/latest", response_model=DiaryResponse)
+async def get_latest_diary(
+    db=Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+):
+    """
+    사용자의 일기 배열에서 '마지막 요소'를 최신으로 간주하여 반환합니다.
+    정렬/타임스탬프와 무관하게 항상 배열 끝의 요소를 돌려줍니다.
+    """
+    user = await _get_user_or_404(db, user_id)
+    diaries = user.get("diaries", [])
+    if not diaries:
+        raise HTTPException(status_code=404, detail="No diaries")
+    latest = diaries[-1]
+    return DiaryResponse(**_serialize_diary(latest, array_index=len(diaries) - 1))
 
 
 @router.get("/{diary_id}", response_model=DiaryResponse)
@@ -303,7 +321,8 @@ async def update_diary(
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields to update")
 
-    update_data["updatedAt"] = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc)
+    update_data["updatedAt"] = now
     if "alarms" in update_data:
         update_data["alarms"] = _normalize_alarms(update_data["alarms"])
     if "sudScores" in update_data:
@@ -315,7 +334,31 @@ async def update_diary(
     updated_diary = None
     for idx, diary in enumerate(diaries):
         if diary.get("diary_id") == diary_id:
-            diaries[idx] = {**diary, **update_data}
+            # realOddness는 belief 기준 병합
+            if "realOddness" in update_data:
+                incoming = update_data.pop("realOddness") or []
+                existing = list(diary.get("realOddness", []))
+                by_belief: Dict[str, dict] = {}
+                for e in existing:
+                    if isinstance(e, dict) and e.get("belief"):
+                        by_belief[str(e.get("belief")).strip()] = dict(e)
+                for e in incoming:
+                    if isinstance(e, dict) and e.get("belief"):
+                        key = str(e.get("belief")).strip()
+                        prev = by_belief.get(key, {"belief": key})
+                        # before/after 각각 개별 필드만 갱신
+                        if "before" in e and e.get("before") is not None:
+                            prev["before"] = int(e.get("before"))
+                        if "after" in e and e.get("after") is not None:
+                            prev["after"] = int(e.get("after"))
+                        by_belief[key] = prev
+                merged_real = list(by_belief.values())
+                diary["realOddness"] = merged_real
+                diary["updatedAt"] = now
+                # 나머지 필드(있다면) 평범 병합
+                diaries[idx] = {**diary, **update_data}
+            else:
+                diaries[idx] = {**diary, **update_data}
             updated_diary = diaries[idx]
             updated = True
             break

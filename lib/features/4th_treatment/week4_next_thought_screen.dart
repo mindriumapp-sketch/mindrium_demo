@@ -1,8 +1,6 @@
 // lib/features/4th_treatment/week4_next_thought_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:gad_app_team/data/user_provider.dart';
 import 'package:gad_app_team/features/4th_treatment/week4_classfication_screen.dart';
@@ -10,6 +8,9 @@ import 'package:gad_app_team/features/4th_treatment/week4_classfication_screen.d
 // ✅ ApplyDesign (배경 + AppBar + BlueWhiteCard + 하단 네비 버튼)
 import 'package:gad_app_team/widgets/tutorial_design.dart';
 import 'package:gad_app_team/widgets/ruled_paragraph.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/diaries_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 class Week4NextThoughtScreen extends StatefulWidget {
   final List<String> remainingBList;
@@ -45,10 +46,14 @@ class _Week4NextThoughtScreenState extends State<Week4NextThoughtScreen> {
   bool _showSituation = true; // 상황 안내 먼저, 이후 보라 안내
   String? _activatingEvent;
   bool _isLoading = true;
+  late final ApiClient _client;
+  late final DiariesApi _diariesApi;
 
   @override
   void initState() {
     super.initState();
+    _client = ApiClient(tokens: TokenStorage());
+    _diariesApi = DiariesApi(_client);
     _startCountdown();
     _fetchActivatingEvent();
   }
@@ -74,29 +79,18 @@ class _Week4NextThoughtScreenState extends State<Week4NextThoughtScreen> {
   Future<void> _fetchActivatingEvent() async {
     setState(() => _isLoading = true);
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('로그인 정보 없음');
-      DocumentSnapshot<Map<String, dynamic>>? doc;
+      Map<String, dynamic>? diary;
       if (widget.abcId != null && widget.abcId!.isNotEmpty) {
-        doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('abc_models')
-            .doc(widget.abcId)
-            .get();
+        diary = await _diariesApi.getDiary(widget.abcId!);
       } else {
-        final snap = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('abc_models')
-            .orderBy('createdAt', descending: true)
-            .limit(1)
-            .get();
-        if (snap.docs.isNotEmpty) doc = snap.docs.first;
+        final list = await _diariesApi.listDiaries();
+        if (list.isNotEmpty) diary = list.first;
       }
       if (!mounted) return;
       setState(() {
-        _activatingEvent = doc?.data()?['activatingEvent'] as String?;
+        _activatingEvent = (diary?['activating_events'] ??
+                diary?['activatingEvent'])
+            ?.toString();
         _isLoading = false;
       });
     } catch (_) {

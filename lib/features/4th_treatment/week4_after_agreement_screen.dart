@@ -2,10 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:gad_app_team/widgets/top_btm_card.dart';         // ✅ 두 패널 레이아웃
-import 'package:gad_app_team/data/user_provider.dart';            // 사용자 이름
+import 'package:gad_app_team/widgets/top_btm_card.dart'; // ✅ 두 패널 레이아웃
+import 'package:gad_app_team/data/user_provider.dart'; // 사용자 이름
 import 'week4_after_sud_screen.dart';
 import 'week4_next_thought_screen.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/diaries_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 class Week4AfterAgreementScreen extends StatefulWidget {
   final String previousB;
@@ -41,17 +44,22 @@ class Week4AfterAgreementScreen extends StatefulWidget {
 class _Week4AfterAgreementScreenState extends State<Week4AfterAgreementScreen> {
   double _sliderValue = 5.0;
   late String _currentB;
+  late final ApiClient _client;
+  late final DiariesApi _diariesApi;
 
   @override
   void initState() {
     super.initState();
     _currentB = widget.previousB;
+    _client = ApiClient(tokens: TokenStorage());
+    _diariesApi = DiariesApi(_client);
   }
 
   // 점수에 따른 컬러 (Week4ClassificationScreen 스타일)
   Color get _trackColor =>
-      _sliderValue <= 2 ? Colors.green :
-      (_sliderValue >= 8 ? Colors.red : Colors.amber);
+      _sliderValue <= 2
+          ? Colors.green
+          : (_sliderValue >= 8 ? Colors.red : Colors.amber);
 
   List<String> _removeDuplicates(List<String> list) {
     final uniqueList = <String>[];
@@ -188,33 +196,81 @@ class _Week4AfterAgreementScreenState extends State<Week4AfterAgreementScreen> {
 
   // ────────────── onNext 로직 (원본 그대로 유지) ──────────────
   void _handleNext() {
+    // realOddness.after 갱신
+    final diaryId = widget.abcId;
+    if (diaryId != null && diaryId.isNotEmpty && _currentB.isNotEmpty) {
+      // 기존 realOddness와 병합하여 전체 배열로 업데이트
+      _diariesApi
+          .getDiary(diaryId)
+          .then((current) async {
+            final List<dynamic> existing =
+                (current['realOddness'] is List)
+                    ? List.from(current['realOddness'])
+                    : <dynamic>[];
+            final Map<String, Map<String, dynamic>> byBelief = {};
+            for (final e in existing) {
+              if (e is Map && e['belief'] != null) {
+                byBelief[e['belief'].toString().trim()] = e.map(
+                  (k, v) => MapEntry(k.toString(), v),
+                );
+              }
+            }
+            final key = _currentB.trim();
+            final prev = byBelief[key];
+            byBelief[key] = {
+              if (prev != null) ...prev,
+              'belief': key,
+              'after': _sliderValue.round(),
+            };
+            final merged = byBelief.values.toList();
+            await _diariesApi.updateDiary(diaryId, {'realOddness': merged});
+          })
+          .catchError((_) {});
+    }
+
     // 모든 B를 다룬 경우 → abcId 유무에 따라 분기
     if (widget.remainingBList.isEmpty) {
       if (widget.abcId != null && widget.abcId!.isNotEmpty) {
-        // ① abcId가 있으면: named route '/after_sud'로 이동 (abcId 전달)
-        Navigator.pushNamed(
+        Navigator.pushReplacement(
           context,
-          '/after_sud',
-          arguments: {'abcId': widget.abcId},
+          PageRouteBuilder(
+            pageBuilder:
+                (_, __, ___) => Week4AfterSudScreen(
+                  beforeSud: widget.beforeSud,
+                  currentB: _currentB,
+                  remainingBList: widget.remainingBList,
+                  allBList: widget.allBList,
+                  alternativeThoughts: _removeDuplicates([
+                    ...?widget.existingAlternativeThoughts,
+                    ...widget.alternativeThoughts,
+                  ]),
+                  isFromAnxietyScreen: widget.isFromAnxietyScreen,
+                  originalBList: widget.originalBList,
+                  loopCount: widget.loopCount,
+                ),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+          ),
         );
       } else {
         // ② abcId가 없으면: 기존 로직(Week4AfterSudScreen)으로 이동
         Navigator.push(
           context,
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => Week4AfterSudScreen(
-              beforeSud: widget.beforeSud,
-              currentB: _currentB,
-              remainingBList: widget.remainingBList,
-              allBList: widget.allBList,
-              alternativeThoughts: _removeDuplicates([
-                ...?widget.existingAlternativeThoughts,
-                ...widget.alternativeThoughts,
-              ]),
-              isFromAnxietyScreen: widget.isFromAnxietyScreen,
-              originalBList: widget.originalBList,
-              loopCount: widget.loopCount,
-            ),
+            pageBuilder:
+                (_, __, ___) => Week4AfterSudScreen(
+                  beforeSud: widget.beforeSud,
+                  currentB: _currentB,
+                  remainingBList: widget.remainingBList,
+                  allBList: widget.allBList,
+                  alternativeThoughts: _removeDuplicates([
+                    ...?widget.existingAlternativeThoughts,
+                    ...widget.alternativeThoughts,
+                  ]),
+                  isFromAnxietyScreen: widget.isFromAnxietyScreen,
+                  originalBList: widget.originalBList,
+                  loopCount: widget.loopCount,
+                ),
             transitionDuration: Duration.zero,
             reverseTransitionDuration: Duration.zero,
           ),
@@ -225,23 +281,24 @@ class _Week4AfterAgreementScreenState extends State<Week4AfterAgreementScreen> {
       Navigator.push(
         context,
         PageRouteBuilder(
-          pageBuilder: (_, __, ___) => Week4NextThoughtScreen(
-            remainingBList: widget.remainingBList,
-            beforeSud: widget.beforeSud,
-            allBList: widget.allBList,
-            alternativeThoughts: _removeDuplicates([
-              ...?widget.existingAlternativeThoughts,
-              ...widget.alternativeThoughts,
-            ]),
-            isFromAnxietyScreen: widget.isFromAnxietyScreen,
-            addedAnxietyThoughts: const [],
-            existingAlternativeThoughts: _removeDuplicates([
-              ...?widget.existingAlternativeThoughts,
-              ...widget.alternativeThoughts,
-            ]),
-            abcId: widget.abcId,
-            loopCount: widget.loopCount,
-          ),
+          pageBuilder:
+              (_, __, ___) => Week4NextThoughtScreen(
+                remainingBList: widget.remainingBList,
+                beforeSud: widget.beforeSud,
+                allBList: widget.allBList,
+                alternativeThoughts: _removeDuplicates([
+                  ...?widget.existingAlternativeThoughts,
+                  ...widget.alternativeThoughts,
+                ]),
+                isFromAnxietyScreen: widget.isFromAnxietyScreen,
+                addedAnxietyThoughts: const [],
+                existingAlternativeThoughts: _removeDuplicates([
+                  ...?widget.existingAlternativeThoughts,
+                  ...widget.alternativeThoughts,
+                ]),
+                abcId: widget.abcId,
+                loopCount: widget.loopCount,
+              ),
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
         ),
@@ -262,7 +319,8 @@ class _Week4AfterAgreementScreenState extends State<Week4AfterAgreementScreen> {
       bottomChild: _buildBottomPanel(),
 
       // 패널 사이 말풍선 안내
-      middleBannerText: '지금은 위 생각에 대해 얼마나 \n강하게 믿고 계시나요? 아래 슬라이더를 조정하고 [ 다음 ]을 눌러주세요.',
+      middleBannerText:
+          '지금은 위 생각에 대해 얼마나 \n강하게 믿고 계시나요? 아래 슬라이더를 조정하고 [ 다음 ]을 눌러주세요.',
 
       // 스타일(필요시 조정)
       pagePadding: const EdgeInsets.symmetric(horizontal: 34, vertical: 24),

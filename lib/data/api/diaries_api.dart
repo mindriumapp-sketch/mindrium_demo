@@ -71,6 +71,16 @@ class DiariesApi {
     );
   }
 
+  Future<Map<String, dynamic>> getLatestDiary() async {
+    final res = await _client.dio.get('/diaries/latest');
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    throw DioException(
+      requestOptions: res.requestOptions,
+      message: 'Invalid /diaries/latest response',
+    );
+  }
+
   Future<Map<String, dynamic>> updateDiary(
     String diaryId,
     Map<String, dynamic> body,

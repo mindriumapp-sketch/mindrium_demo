@@ -96,7 +96,11 @@ class _BeforeSudRatingScreenState extends State<BeforeSudRatingScreen> {
 
   void _showSnack(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+    });
   }
 
   // ────────────────────── 구간/스타일 유틸 ──────────────────────

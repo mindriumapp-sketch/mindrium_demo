@@ -1,13 +1,14 @@
 // lib/features/4th_treatment/week4_classification_screen.dart
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'week4_classfication_result_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:gad_app_team/data/user_provider.dart';
 
 // ✅ 두 패널 레이아웃 (네가 저장한 파일)
 import 'package:gad_app_team/widgets/top_btm_card.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/diaries_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 class Week4ClassificationScreen extends StatefulWidget {
   final List<String> bListInput;
@@ -39,7 +40,9 @@ class Week4ClassificationScreen extends StatefulWidget {
 class Week4ClassificationScreenState extends State<Week4ClassificationScreen> {
   // ── 상태/로직: 그대로 유지 ─────────────────────────────────────────────────────
   Color get _trackColor =>
-      _sliderValue <= 2 ? Colors.green : (_sliderValue >= 8 ? Colors.red : Colors.amber);
+      _sliderValue <= 2
+          ? Colors.green
+          : (_sliderValue >= 8 ? Colors.red : Colors.amber);
   Map<String, dynamic>? _abcModel;
   bool _isLoading = true;
   String? _error;
@@ -47,42 +50,45 @@ class Week4ClassificationScreenState extends State<Week4ClassificationScreen> {
   late List<String> _bList;
   late String _currentB;
   final Map<String, double> _bScores = {};
+  late final ApiClient _client;
+  late final DiariesApi _diariesApi;
 
   @override
   void initState() {
     super.initState();
+    _client = ApiClient(tokens: TokenStorage());
+    _diariesApi = DiariesApi(_client);
     final id = widget.abcId;
     if (id != null && id.isNotEmpty) {
-      _fetchAbcModelById(id);
+      _fetchDiaryById(id);
     } else {
-      _fetchLatestAbcModel();
+      _fetchLatestDiary();
     }
   }
 
-  Future<void> _fetchLatestAbcModel() async {
+  Future<void> _fetchLatestDiary() async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('로그인 정보 없음');
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('abc_models')
-          .orderBy('createdAt', descending: true)
-          .limit(1)
-          .get();
-      if (snapshot.docs.isEmpty) {
+      final list = await _diariesApi.listDiaries();
+      if (list.isEmpty) {
         setState(() {
           _abcModel = null;
           _isLoading = false;
         });
         return;
       }
+      // 가장 최신 선택(시간 필드 + 인덱스 우선)
+      // removed unused time helpers (latest 선택은 서버 /latest 사용)
+
+      // keep for reference of time parsing if needed later
+
+      // 최신 = 서버 latest API로 확정
+      final Map<String, dynamic> latest = await _diariesApi.getLatestDiary();
       setState(() {
-        _abcModel = snapshot.docs.first.data();
+        _abcModel = latest;
         _isLoading = false;
         _initBList();
       });
@@ -94,35 +100,16 @@ class Week4ClassificationScreenState extends State<Week4ClassificationScreen> {
     }
   }
 
-  Future<void> _fetchAbcModelById(String abcId) async {
+  Future<void> _fetchDiaryById(String diaryId) async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('로그인 정보 없음');
-
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('abc_models')
-          .doc(abcId)
-          .get();
-
-      if (!doc.exists) {
-        if (!mounted) return;
-        setState(() {
-          _abcModel = null;
-          _isLoading = false;
-          _error = '해당 ABC모델을 찾을 수 없습니다.';
-        });
-        return;
-      }
-
+      final res = await _diariesApi.getDiary(diaryId);
       if (!mounted) return;
       setState(() {
-        _abcModel = doc.data();
+        _abcModel = res;
         _isLoading = false;
         _initBList();
       });
@@ -136,53 +123,117 @@ class Week4ClassificationScreenState extends State<Week4ClassificationScreen> {
   }
 
   void _initBList() {
-    if (widget.bListInput.isNotEmpty) {
-      final skippedThoughts = widget.bListInput;
-      _bList = skippedThoughts;
-      _currentB = _bList.first;
-    } else if (_abcModel != null) {
-      final bRaw = (_abcModel?['belief'] ?? '') as String;
-      _bList = bRaw
+    List<String> parseBelief(dynamic raw) {
+      if (raw is List) {
+        return raw
+            .map((e) => e.toString().trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
+      }
+      final s = (raw ?? '').toString();
+      return s
           .split(',')
           .map((e) => e.trim())
-          .whereType<String>()
           .where((e) => e.isNotEmpty)
           .toList();
-      final remainB = _bList.where((b) => !_bScores.containsKey(b)).toList();
-      _currentB = remainB.isNotEmpty
-          ? remainB.first
-          : (_bList.isNotEmpty ? _bList.first : '');
+    }
+
+    // 1) 인자로 받은 목록 우선
+    if (widget.bListInput.isNotEmpty) {
+      _bList =
+          widget.bListInput
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toList();
+    }
+    // 2) 비어 있으면 모델에서 파싱
+    if (_bList.isEmpty && _abcModel != null) {
+      _bList = parseBelief(_abcModel?['belief']);
+    }
+    // 3) 남은 목록 중 아직 점수 안 준 첫 항목 선택
+    final remainB = _bList.where((b) => !_bScores.containsKey(b)).toList();
+    if (remainB.isNotEmpty) {
+      _currentB = remainB.first;
+    } else if (_bList.isNotEmpty) {
+      _currentB = _bList.first;
     } else {
-      _bList = [];
       _currentB = '';
     }
     _sliderValue = 5.0;
   }
 
   void _onNext() {
-    setState(() {
-      _bScores[_currentB] = _sliderValue;
-    });
+    // 현재 B가 비어 있으면 보정
+    if (_currentB.isEmpty && _bList.isNotEmpty) {
+      final firstNonEmpty = _bList.firstWhere(
+        (e) => e.trim().isNotEmpty,
+        orElse: () => '',
+      );
+      if (firstNonEmpty.isNotEmpty) _currentB = firstNonEmpty;
+    }
+    if (_currentB.isNotEmpty) {
+      setState(() {
+        _bScores[_currentB] = _sliderValue;
+      });
+    }
     final List<String> remainingBList =
-    _bList.where((b) => !_bScores.containsKey(b)).toList();
+        _bList.where((b) => !_bScores.containsKey(b)).toList();
 
     final bool isFromAnxietyScreen = widget.isFromAnxietyScreen;
+
+    // 실시간 real oddness 저장(누적 스코어 병합)
+    // 항상 현재 화면에서 로드한 최신 일기의 ID를 사용
+    final diaryId = _abcModel?['diaryId']?.toString();
+    if (diaryId != null && diaryId.isNotEmpty) {
+      final entries =
+          _bScores.entries
+              .map((e) => {'belief': e.key.trim(), 'before': e.value.round()})
+              .toList();
+      // 서버가 배열을 통째로 대체할 수 있으므로, 클라이언트에서 병합 후 전체 배열을 전송
+      final List<dynamic> existing =
+          (_abcModel?['realOddness'] is List)
+              ? List.from(_abcModel!['realOddness'])
+              : <dynamic>[];
+      final Map<String, Map<String, dynamic>> byBelief = {};
+      for (final e in existing) {
+        if (e is Map && e['belief'] != null) {
+          byBelief[e['belief'].toString().trim()] = e.map(
+            (k, v) => MapEntry(k.toString(), v),
+          );
+        }
+      }
+      for (final e in entries) {
+        final key = e['belief'].toString();
+        final prev = byBelief[key];
+        byBelief[key] = {
+          if (prev != null) ...prev,
+          ...e, // before 값 갱신
+        };
+      }
+      final merged = byBelief.values.toList();
+      _abcModel ??= {};
+      _abcModel!['realOddness'] = merged;
+      _diariesApi
+          .updateDiary(diaryId, {'realOddness': merged})
+          .catchError((_) => <String, dynamic>{});
+    }
 
     Navigator.push(
       context,
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => Week4ClassificationResultScreen(
-          bScores: _bScores.values.toList(),
-          bList: _bScores.keys.toList(),
-          beforeSud: widget.beforeSud ?? 0,
-          remainingBList: remainingBList,
-          allBList: widget.allBList,
-          alternativeThoughts: widget.alternativeThoughts,
-          isFromAnxietyScreen: isFromAnxietyScreen,
-          existingAlternativeThoughts: widget.existingAlternativeThoughts,
-          abcId: widget.abcId,
-          loopCount: widget.loopCount,
-        ),
+        pageBuilder:
+            (_, __, ___) => Week4ClassificationResultScreen(
+              bScores: _bScores.values.toList(),
+              bList: _bScores.keys.toList(),
+              beforeSud: widget.beforeSud ?? 0,
+              remainingBList: remainingBList,
+              allBList: widget.allBList,
+              alternativeThoughts: widget.alternativeThoughts,
+              isFromAnxietyScreen: isFromAnxietyScreen,
+              existingAlternativeThoughts: widget.existingAlternativeThoughts,
+              abcId: _abcModel?['diaryId']?.toString(),
+              loopCount: widget.loopCount,
+            ),
         transitionDuration: Duration.zero,
         reverseTransitionDuration: Duration.zero,
       ),
@@ -199,17 +250,15 @@ class Week4ClassificationScreenState extends State<Week4ClassificationScreen> {
       height: 160,
       child: Center(child: CircularProgressIndicator()),
     );
-    final Widget topError = (_error == null)
-        ? const SizedBox.shrink()
-        : SizedBox(
-      height: 160,
-      child: Center(
-        child: Text(
-          _error!,
-          style: const TextStyle(color: Colors.red),
-        ),
-      ),
-    );
+    final Widget topError =
+        (_error == null)
+            ? const SizedBox.shrink()
+            : SizedBox(
+              height: 160,
+              child: Center(
+                child: Text(_error!, style: const TextStyle(color: Colors.red)),
+              ),
+            );
 
     // Top 패널 내용
     Widget buildTopPanel() {
@@ -217,7 +266,8 @@ class Week4ClassificationScreenState extends State<Week4ClassificationScreen> {
       if (_error != null) return topError;
 
       // 데이터 없음 안내
-      if ((_abcModel == null || (_currentB.isEmpty && widget.bListInput.isEmpty))) {
+      if ((_abcModel == null ||
+          (_currentB.isEmpty && widget.bListInput.isEmpty))) {
         return const SizedBox(
           height: 160,
           child: Center(
@@ -226,9 +276,10 @@ class Week4ClassificationScreenState extends State<Week4ClassificationScreen> {
         );
       }
 
-      final displayB = _currentB.isNotEmpty
-          ? _currentB
-          : (widget.bListInput.isNotEmpty ? widget.bListInput.first : '');
+      final displayB =
+          _currentB.isNotEmpty
+              ? _currentB
+              : (widget.bListInput.isNotEmpty ? widget.bListInput.first : '');
 
       return Column(
         mainAxisSize: MainAxisSize.min,
@@ -339,7 +390,8 @@ class Week4ClassificationScreenState extends State<Week4ClassificationScreen> {
       onNext: _onNext,
       topChild: buildTopPanel(),
       bottomChild: buildBottomPanel(),
-      middleBannerText: '지금은 위 생각에 대해 \n얼마나 강하게 믿고 계시나요? 아래 슬라이더를 조정하고 [ 다음 ]을 눌러주세요.',
+      middleBannerText:
+          '지금은 위 생각에 대해 \n얼마나 강하게 믿고 계시나요? 아래 슬라이더를 조정하고 [ 다음 ]을 눌러주세요.',
       panelsGap: 2,
     );
   }

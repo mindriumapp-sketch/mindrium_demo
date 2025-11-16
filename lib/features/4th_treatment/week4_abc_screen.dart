@@ -1,15 +1,17 @@
 // lib/features/4th_treatment/week4_abc_screen.dart
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 
 import 'package:gad_app_team/data/user_provider.dart';
 import 'package:gad_app_team/features/4th_treatment/week4_imagination_screen.dart';
 import 'package:gad_app_team/features/4th_treatment/week4_concentration_screen.dart';
+import 'package:gad_app_team/features/4th_treatment/week4_before_sud_screen.dart';
 
 // ✅ 튜토리얼/적용하기 공용 레이아웃 (BlueWhiteCard 기반)
 import 'package:gad_app_team/widgets/tutorial_design.dart'; // ApplyDesign
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/diaries_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 class Week4AbcScreen extends StatefulWidget {
   final String? abcId;
@@ -27,45 +29,30 @@ class _Week4AbcScreenState extends State<Week4AbcScreen> {
   bool _isLoading = true;
   String? _error;
   List<String> _bList = [];
+  late final ApiClient _client;
+  late final DiariesApi _diariesApi;
 
   @override
   void initState() {
     super.initState();
-    final id = widget.abcId;
-    if (id != null && id.isNotEmpty) {
-      _fetchAbcModelById(id);
-    } else {
-      _fetchLatestAbcModel();
-    }
+    _client = ApiClient(tokens: TokenStorage());
+    _diariesApi = DiariesApi(_client);
+    // 요구사항: 항상 "가장 최근" 일기를 기준으로 시작
+    // (abcId가 전달되더라도 이 화면에서는 최신 일기 우선)
+    _fetchLatestDiary();
   }
 
-  Future<void> _fetchLatestAbcModel() async {
+  Future<void> _fetchLatestDiary() async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('로그인 정보 없음');
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('abc_models')
-          .orderBy('createdAt', descending: true)
-          .limit(1)
-          .get();
-
-      if (snapshot.docs.isEmpty) {
-        setState(() {
-          _abcModel = null;
-          _isLoading = false;
-        });
-        return;
-      }
-
+      // 서버에서 마지막 일기를 바로 반환
+      final latest = await _diariesApi.getLatestDiary();
       setState(() {
-        _abcModel = snapshot.docs.first.data();
-        _bList = _parseBeliefToList(_abcModel?['belief']);
+        _abcModel = latest;
+        _bList = _parseBeliefToList(latest['belief']);
         _isLoading = false;
       });
     } catch (_) {
@@ -77,39 +64,31 @@ class _Week4AbcScreenState extends State<Week4AbcScreen> {
   }
 
   List<String> _parseBeliefToList(dynamic raw) {
+    if (raw is List) {
+      return raw
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
     final s = (raw ?? '').toString();
-    return s.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    return s
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
   }
 
-  Future<void> _fetchAbcModelById(String abcId) async {
+  Future<void> _fetchDiaryById(String diaryId) async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('로그인 정보 없음');
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('abc_models')
-          .doc(abcId)
-          .get();
-
-      if (!doc.exists) {
-        if (!mounted) return;
-        setState(() {
-          _abcModel = null;
-          _bList = [];
-          _isLoading = false;
-          _error = '해당 ABC모델을 찾을 수 없습니다.';
-        });
-        return;
-      }
+      final res = await _diariesApi.getDiary(diaryId);
       if (!mounted) return;
       setState(() {
-        _abcModel = doc.data();
-        _bList = _parseBeliefToList(_abcModel?['belief']);
+        _abcModel = res;
+        _bList = _parseBeliefToList(res['belief']);
         _isLoading = false;
       });
     } catch (_) {
@@ -150,7 +129,8 @@ class _Week4AbcScreenState extends State<Week4AbcScreen> {
       cardTitle: '최근 ABC 모델 확인',
       onBack: () => Navigator.pop(context),
       onNext: () {
-        final id = widget.abcId;
+        // 항상 현재 화면에서 로드한 최신 일기의 ID를 사용
+        final id = _abcModel?['diaryId']?.toString();
 
         if (id == null || id.isEmpty) {
           Navigator.push(
@@ -164,15 +144,30 @@ class _Week4AbcScreenState extends State<Week4AbcScreen> {
           return;
         }
 
+        // SUD(before)가 없는 경우 먼저 4주차 전용 Before SUD 화면으로 이동
+        if (sud == null) {
+          Navigator.push(
+            context,
+            PageRouteBuilder(
+              pageBuilder:
+                  (_, __, ___) =>
+                      Week4BeforeSudScreen(loopCount: widget.loopCount),
+              transitionDuration: Duration.zero,
+              reverseTransitionDuration: Duration.zero,
+            ),
+          );
+          return;
+        }
+
         setState(() => _isLoading = true);
-        final beforeSudValue = sud ?? 0;
+        final beforeSudValue = sud;
 
         if (_bList.isEmpty) {
           setState(() => _isLoading = false);
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('B(생각) 데이터가 없습니다.')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('B(생각) 데이터가 없습니다.')));
           return;
         }
 
@@ -180,13 +175,14 @@ class _Week4AbcScreenState extends State<Week4AbcScreen> {
         Navigator.push(
           context,
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => Week4ConcentrationScreen(
-              bListInput: _bList,
-              beforeSud: beforeSudValue,
-              allBList: _bList,
-              abcId: widget.abcId,
-              loopCount: widget.loopCount,
-            ),
+            pageBuilder:
+                (_, __, ___) => Week4ConcentrationScreen(
+                  bListInput: _bList,
+                  beforeSud: beforeSudValue,
+                  allBList: _bList,
+                  abcId: id, // 최신 일기의 ID 전달
+                  loopCount: widget.loopCount,
+                ),
             transitionDuration: Duration.zero,
             reverseTransitionDuration: Duration.zero,
           ),
@@ -212,25 +208,34 @@ class _Week4AbcScreenState extends State<Week4AbcScreen> {
     }
     if (_abcModel == null) {
       return const Center(
-        child: Text(
-          '최근에 작성한 ABC모델이 없습니다.',
-          style: TextStyle(fontSize: 16),
-        ),
+        child: Text('최근에 작성한 ABC모델이 없습니다.', style: TextStyle(fontSize: 16)),
       );
     }
 
-    final a = _abcModel?['activatingEvent'] ?? '';
-    final b = _abcModel?['belief'] ?? '';
-    final cPhysical = _abcModel?['consequence_physical'] ?? '';
-    final cEmotion = _abcModel?['consequence_emotion'] ?? '';
-    final cBehavior = _abcModel?['consequence_behavior'] ?? '';
+    final a =
+        _abcModel?['activating_events'] ?? _abcModel?['activatingEvent'] ?? '';
+    // belief는 리스트일 수 있음 → 표시용으로 쉼표 연결
+    final beliefRaw = _abcModel?['belief'];
+    final b =
+        (beliefRaw is List)
+            ? beliefRaw.whereType<String>().join(', ')
+            : (beliefRaw?.toString() ?? '');
+    final cPhysical =
+        _abcModel?['consequence_p'] ?? _abcModel?['consequence_physical'] ?? '';
+    final cEmotion =
+        _abcModel?['consequence_e'] ?? _abcModel?['consequence_emotion'] ?? '';
+    final cBehavior =
+        _abcModel?['consequence_b'] ?? _abcModel?['consequence_behavior'] ?? '';
     final userName = Provider.of<UserProvider>(context, listen: false).userName;
 
     // 날짜
     String formattedDate = '';
-    if (_abcModel?['createdAt'] != null) {
-      final timestamp = _abcModel!['createdAt'] as Timestamp;
-      final date = timestamp.toDate();
+    final createdAt = _abcModel?['createdAt'];
+    if (createdAt != null) {
+      final DateTime date =
+          createdAt is DateTime
+              ? createdAt
+              : DateTime.tryParse(createdAt.toString()) ?? DateTime.now();
       formattedDate = '${date.year}년 ${date.month}월 ${date.day}일에 작성된 걱정일기';
     }
 
@@ -272,10 +277,7 @@ class _Week4AbcScreenState extends State<Week4AbcScreen> {
               const SizedBox(height: 16),
               const Text(
                 '최근에 작성하신 ABC 걱정일기를\n확인해 볼까요?',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -288,7 +290,7 @@ class _Week4AbcScreenState extends State<Week4AbcScreen> {
         Text.rich(
           TextSpan(
             children: [
-              TextSpan(text: "${userName ?? '사용자'}님은 "),
+              TextSpan(text: "$userName님은 "),
               WidgetSpan(child: _highlightedText("'$a'")),
               const TextSpan(text: " 상황에서 "),
               WidgetSpan(child: _highlightedText("'$b'")),

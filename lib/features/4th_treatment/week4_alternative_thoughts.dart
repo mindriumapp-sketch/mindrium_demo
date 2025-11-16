@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 // ✅ 공용 레이아웃 & 칩 에디터
 import 'package:gad_app_team/widgets/top_btm_card.dart';
@@ -8,6 +6,9 @@ import 'package:gad_app_team/widgets/chips_editor.dart';
 
 // 다음 화면 (기존 로직 유지)
 import 'week4_alternative_thoughts_display_screen.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/diaries_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 class Week4AlternativeThoughtsScreen extends StatefulWidget {
   final List<String> previousChips;
@@ -43,71 +44,40 @@ class _Week4AlternativeThoughtsScreenState
   // ▶ 칩 에디터 상태 & 값
   final _chipsKey = GlobalKey<ChipsEditorState>();
   List<String> _chips = [];
+  late final ApiClient _client;
+  late final DiariesApi _diariesApi;
 
   @override
   void initState() {
     super.initState();
     // 화면에는 현재 작성 중(새로 입력) 대체생각만 보여주고 저장 시 합쳐서 저장
+    _client = ApiClient(tokens: TokenStorage());
+    _diariesApi = DiariesApi(_client);
   }
 
-  // ───────────────────── Firebase 저장 (기존 로직 유지) ─────────────────────
-  Future<void> _saveAlternativeThoughtsToFirebase() async {
+  // ───────────────────── FastAPI/Mongo 저장 ─────────────────────
+  Future<void> _saveAlternativeThoughts() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        debugPrint('❌ 저장 실패: 사용자가 로그인하지 않았습니다.');
-        return;
-      }
-
       final current = _chipsKey.currentState?.values ?? _chips;
-      debugPrint('✅ 저장 시작 - User ID: ${user.uid}');
-      debugPrint('✅ 현재 chips: $current');
-      debugPrint('✅ 기존 thoughts: ${widget.existingAlternativeThoughts}');
-
       final allAlternativeThoughts = [
         ...?widget.existingAlternativeThoughts,
         ...current,
       ];
-      debugPrint('✅ 저장할 전체 thoughts: $allAlternativeThoughts');
 
-      String targetAbcId;
-
+      String diaryId;
       if (widget.abcId == null || widget.abcId!.isEmpty) {
-        debugPrint('⚠️ abcId가 없습니다. 최신 ABC 모델을 찾습니다...');
-        final snapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('abc_models')
-            .orderBy('createdAt', descending: true)
-            .limit(1)
-            .get();
-
-        if (snapshot.docs.isEmpty) {
-          debugPrint('❌ ABC 모델이 없습니다. 저장을 중단합니다.');
-          return;
-        }
-        targetAbcId = snapshot.docs.first.id;
-        debugPrint('✅ 최신 ABC 모델을 찾았습니다: $targetAbcId');
+        final list = await _diariesApi.listDiaries();
+        if (list.isEmpty) return;
+        diaryId = (list.first['diaryId'] ?? '').toString();
+        if (diaryId.isEmpty) return;
       } else {
-        targetAbcId = widget.abcId!;
-        debugPrint('✅ 전달받은 ABC ID 사용: $targetAbcId');
+        diaryId = widget.abcId!;
       }
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('abc_models')
-          .doc(targetAbcId)
-          .set({
-        'alternative_thoughts': allAlternativeThoughts,
-        'week4_completed': true,
-        'week4_completed_at': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      debugPrint('✅ 도움이 되는 생각이 Firebase에 저장되었습니다!');
-      debugPrint('   경로: users/${user.uid}/abc_models/$targetAbcId');
+      await _diariesApi.updateDiary(diaryId, {
+        'alternativeThoughts': allAlternativeThoughts,
+      });
     } catch (e, st) {
-      debugPrint('❌ Firebase 저장 오류: $e');
+      debugPrint('❌ 대체생각 저장 오류: $e');
       debugPrint('❌ Stack trace: $st');
     }
   }
@@ -131,7 +101,7 @@ class _Week4AlternativeThoughtsScreenState
         onNext: _chips.isNotEmpty
             ? () async {
           // 저장
-          await _saveAlternativeThoughtsToFirebase();
+          await _saveAlternativeThoughts();
 
           // 항상 현재 B(생각)을 명확히 전달
           final bToShow = widget.previousChips.isNotEmpty
@@ -140,47 +110,29 @@ class _Week4AlternativeThoughtsScreenState
               ? widget.remainingBList.first
               : '');
 
-          if (widget.abcId != null && widget.abcId!.isNotEmpty) {
-            final routeArgs =
-                ModalRoute.of(context)?.settings.arguments as Map? ?? {};
-            final origin = (routeArgs['origin'] as String?) ?? 'etc';
-            final diary = routeArgs['diary'];
-            debugPrint('[alt_thought] origin=$origin, diary=$diary');
-
-            Navigator.pushNamed(
-              context,
-              '/alt_thought',
-              arguments: {
-                'abcId': widget.abcId,
-                'origin': origin,
-                if (diary != null) 'diary': diary,
-                'loopCount': widget.loopCount,
-              },
-            );
-          } else {
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder: (_, __, ___) =>
-                    Week4AlternativeThoughtsDisplayScreen(
-                      alternativeThoughts:
-                      _chipsKey.currentState?.values ?? _chips,
-                      previousB: bToShow,
-                      beforeSud: widget.beforeSud ?? 0,
-                      remainingBList: widget.remainingBList,
-                      allBList: widget.allBList,
-                      existingAlternativeThoughts:
-                      widget.existingAlternativeThoughts,
-                      isFromAnxietyScreen: widget.isFromAnxietyScreen,
-                      originalBList: widget.originalBList,
-                      abcId: widget.abcId,
-                      loopCount: widget.loopCount,
-                    ),
-                transitionDuration: Duration.zero,
-                reverseTransitionDuration: Duration.zero,
-              ),
-            );
-          }
+          // 항상 표시 화면을 거쳐 Agreement(슬라이더)로 이어지도록 고정
+          Navigator.push(
+            context,
+            PageRouteBuilder(
+              pageBuilder: (_, __, ___) =>
+                  Week4AlternativeThoughtsDisplayScreen(
+                    alternativeThoughts:
+                    _chipsKey.currentState?.values ?? _chips,
+                    previousB: bToShow,
+                    beforeSud: widget.beforeSud ?? 0,
+                    remainingBList: widget.remainingBList,
+                    allBList: widget.allBList,
+                    existingAlternativeThoughts:
+                    widget.existingAlternativeThoughts,
+                    isFromAnxietyScreen: widget.isFromAnxietyScreen,
+                    originalBList: widget.originalBList,
+                    abcId: widget.abcId,
+                    loopCount: widget.loopCount,
+                  ),
+              transitionDuration: Duration.zero,
+              reverseTransitionDuration: Duration.zero,
+            ),
+          );
         }
             : null,
 

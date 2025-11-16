@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/features/4th_treatment/week4_concentration_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 // ✅ 새로 쓰는 공용 디자인
 import 'package:gad_app_team/widgets/tutorial_design.dart'; // ApplyDesign
 import 'package:gad_app_team/widgets/blue_banner.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/diaries_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
+import 'package:gad_app_team/data/api/sud_api.dart';
 
 class Week4BeforeSudScreen extends StatefulWidget {
   final int loopCount;
@@ -19,25 +21,46 @@ class Week4BeforeSudScreen extends StatefulWidget {
 class _Week4BeforeSudScreenState extends State<Week4BeforeSudScreen> {
   int _sud = 5;
   bool _isLoading = false;
+  ApiClient? _client;
+  DiariesApi? _diariesApi;
+  SudApi? _sudApi;
 
-  Future<List<String>> _fetchBListFromFirestore() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) throw Exception('로그인 정보 없음');
-    final snapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('abc_models')
-        .orderBy('createdAt', descending: true)
-        .limit(1)
-        .get();
-    if (snapshot.docs.isEmpty) return [];
-    final abcModel = snapshot.docs.first.data();
-    final bRaw = (abcModel['belief'] ?? '') as String;
-    return bRaw
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
+  DiariesApi get _api {
+    _client ??= ApiClient(tokens: TokenStorage());
+    _diariesApi ??= DiariesApi(_client!);
+    return _diariesApi!;
+  }
+  SudApi get _sudApiGetter {
+    _client ??= ApiClient(tokens: TokenStorage());
+    _sudApi ??= SudApi(_client!);
+    return _sudApi!;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // 지연 초기화 보장 (핫리로드/재사용 시 안전하게 동작)
+    _client ??= ApiClient(tokens: TokenStorage());
+    _diariesApi ??= DiariesApi(_client!);
+    _sudApi ??= SudApi(_client!);
+  }
+
+  List<String> _parseBelief(dynamic raw) {
+    if (raw is List) {
+      return raw.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
+    }
+    final s = (raw ?? '').toString();
+    return s.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+  }
+
+  Future<List<String>> _fetchBList() async {
+    final latest = await _api.getLatestDiary();
+    return _parseBelief(latest['belief']);
+  }
+
+  Future<String?> _getLatestDiaryId() async {
+    final latest = await _api.getLatestDiary();
+    return latest['diaryId']?.toString();
   }
 
   Color get _trackColor =>
@@ -53,7 +76,17 @@ class _Week4BeforeSudScreenState extends State<Week4BeforeSudScreen> {
         setState(() => _isLoading = true);
         final beforeSudValue = _sud;
         try {
-          final actualBList = await _fetchBListFromFirestore();
+          // 1) 최신 일기 ID 확보
+          final diaryId = await _getLatestDiaryId();
+          if (diaryId != null && diaryId.isNotEmpty) {
+            // 2) SUD(before) 기록 (after는 미입력)
+            await _sudApiGetter.createSudScore(
+              diaryId: diaryId,
+              beforeScore: beforeSudValue,
+            );
+          }
+
+          final actualBList = await _fetchBList();
           if (actualBList.isEmpty) {
             setState(() => _isLoading = false);
             if (!mounted) return;
