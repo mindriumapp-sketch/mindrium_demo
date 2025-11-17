@@ -178,7 +178,9 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
     setState(() => _isSaving = true);
 
     try {
-      final activatingEvents = widget.activatingEventChips.map((e) => e.label).join(', ');
+      final activatingEvents = widget.activatingEventChips
+          .map((e) => e.label)
+          .join(', ');
       final beliefList = widget.beliefChips.map((e) => e.label).toList();
       final emotionList = List<String>.from(widget.selectedEmotionChips);
       final physicalList = List<String>.from(widget.selectedPhysicalChips);
@@ -219,7 +221,7 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
       }
 
       final diary = await _diariesApi.createDiary(
-        groupId: 0,
+        groupId: 1, // 기본 그룹 (캐릭터 1)으로 할당
         activatingEvents: activatingEvents,
         belief: beliefList,
         consequenceE: emotionList,
@@ -285,51 +287,32 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
 
     return consent;
   }
+
   // ──────────────────────────────────────────────
   // ✅ 저장 완료 안내 팝업
   // ──────────────────────────────────────────────
-  void _showSavedPopup(
-    BuildContext context, {
-    String? diaryId,
-    String? label,
-  }) {
+  void _showSavedPopup(BuildContext context, {String? diaryId, String? label}) {
     final resolvedDiaryId = diaryId ?? widget.abcId;
     final resolvedLabel =
         label ?? widget.activatingEventChips.map((e) => e.label).join(', ');
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogCtx) {
-        return CustomPopupDesign(
-          title: '일기가 저장되었습니다',
-          message: '기록해 주셔서 감사합니다. 계속 진행하시겠어요?',
-          positiveText: '알림 설정하기',
-          negativeText: '홈으로',
-          onPositivePressed: () {
-            Navigator.pop(dialogCtx);
-            final args = <String, dynamic>{};
-            if (resolvedDiaryId != null && resolvedDiaryId.isNotEmpty) {
-              args['abcId'] = resolvedDiaryId;
-            }
-            if (resolvedLabel.isNotEmpty) {
-              args['label'] = resolvedLabel;
-            }
-            if (widget.origin != null) {
-              args['origin'] = widget.origin;
-            }
-            Navigator.pushNamed(
-              context,
-              '/noti_select',
-              arguments: args.isEmpty ? null : args,
-            );
-          },
-          onNegativePressed: () {
-            Navigator.pop(dialogCtx);
-            Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
-          },
-        );
-      },
+    // 팝업 없이 바로 알림 설정 화면으로 이동
+    final args = <String, dynamic>{};
+    if (resolvedDiaryId != null && resolvedDiaryId.isNotEmpty) {
+      args['abcId'] = resolvedDiaryId;
+    }
+    if (resolvedLabel.isNotEmpty) {
+      args['label'] = resolvedLabel;
+    }
+    if (widget.origin != null) {
+      args['origin'] = widget.origin;
+    }
+
+    if (!mounted) return;
+    Navigator.pushNamed(
+      context,
+      '/noti_select',
+      arguments: args.isEmpty ? null : args,
     );
   }
 }

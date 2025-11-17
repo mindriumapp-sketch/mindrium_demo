@@ -44,18 +44,26 @@ class UserDataApi {
   }
 
   Future<List<Map<String, dynamic>>> getArchivedGroups() async {
-    final res = await _client.dio.get('/users/me/worry-groups/archived');
+    final res = await _client.dio.get(
+      '/users/me/worry-groups',
+      queryParameters: {'include_archived': true},
+    );
     final data = res.data;
     if (data is List) {
-      final mapped = data
-          .whereType<Map>()
-          .map((raw) => raw.map((key, value) => MapEntry(key.toString(), value)))
-          .toList();
+      final mapped =
+          data
+              .whereType<Map>()
+              .map(
+                (raw) =>
+                    raw.map((key, value) => MapEntry(key.toString(), value)),
+              )
+              .where((group) => group['archived'] == true) // 아카이브된 것만 필터링
+              .toList();
       return mapped.cast<Map<String, dynamic>>();
     }
     throw DioException(
       requestOptions: res.requestOptions,
-      message: 'Invalid /users/me/worry-groups/archived response',
+      message: 'Invalid /users/me/worry-groups response',
     );
   }
 
@@ -65,7 +73,9 @@ class UserDataApi {
     if (data is List) {
       return data
           .whereType<Map>()
-          .map((raw) => raw.map((key, value) => MapEntry(key.toString(), value)))
+          .map(
+            (raw) => raw.map((key, value) => MapEntry(key.toString(), value)),
+          )
           .toList()
           .cast<Map<String, dynamic>>();
     }
@@ -81,10 +91,7 @@ class UserDataApi {
   }) async {
     final res = await _client.dio.post(
       '/users/me/custom-tags',
-      data: {
-        'text': text,
-        'type': type,
-      },
+      data: {'text': text, 'type': type},
     );
     final data = res.data;
     if (data is Map<String, dynamic>) return data;

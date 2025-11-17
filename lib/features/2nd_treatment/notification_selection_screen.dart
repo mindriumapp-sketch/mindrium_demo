@@ -9,6 +9,9 @@ import 'package:gad_app_team/common/constants.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/widgets/map_picker.dart';
+import 'package:gad_app_team/widgets/custom_popup_design.dart';
+import 'package:gad_app_team/features/2nd_treatment/abc_group_add.dart'
+    show AbcGroupAddScreen;
 
 // ✅ UI 위젯 (업로드한 파일 경로에 맞게 import 경로 조정)
 import 'package:gad_app_team/widgets/notification_selection_ui.dart';
@@ -72,16 +75,18 @@ class _NotificationSelectionScreenState
       repeat = RepeatOption.weekly;
     }
 
-    final weekDays = (alarm['weekDays'] as List?)
+    final weekDays =
+        (alarm['weekDays'] as List?)
             ?.map((e) => e is num ? e.toInt() : int.tryParse('$e') ?? 0)
             .where((e) => e > 0)
             .toList() ??
         const [];
 
     final reminderRaw = alarm['reminder_minutes'];
-    final reminder = reminderRaw is num
-        ? reminderRaw.toInt()
-        : int.tryParse(reminderRaw?.toString() ?? '');
+    final reminder =
+        reminderRaw is num
+            ? reminderRaw.toInt()
+            : int.tryParse(reminderRaw?.toString() ?? '');
 
     return NotificationSetting(
       id: alarm['alarmId']?.toString(),
@@ -99,14 +104,16 @@ class _NotificationSelectionScreenState
   }
 
   Map<String, dynamic> _alarmPayload(NotificationSetting setting) {
-    final weekDays = setting.repeatOption == RepeatOption.weekly
-        ? (List<int>.from(setting.weekdays)..sort())
-        : <int>[];
+    final weekDays =
+        setting.repeatOption == RepeatOption.weekly
+            ? (List<int>.from(setting.weekdays)..sort())
+            : <int>[];
 
     final map = <String, dynamic>{
-      'time': setting.time == null
-          ? null
-          : '${setting.time!.hour.toString().padLeft(2, '0')}:${setting.time!.minute.toString().padLeft(2, '0')}',
+      'time':
+          setting.time == null
+              ? null
+              : '${setting.time!.hour.toString().padLeft(2, '0')}:${setting.time!.minute.toString().padLeft(2, '0')}',
       'location_desc': setting.location ?? setting.description,
       'repeat_option':
           setting.repeatOption == RepeatOption.weekly ? 'weekly' : 'daily',
@@ -158,7 +165,9 @@ class _NotificationSelectionScreenState
           '"$label" 제목으로 저장된 일기를 찾지 못했습니다. 일기 제목을 확인하거나 일기 저장 후 다시 시도해주세요.';
     } on DioException catch (e) {
       final message =
-          e.response?.data is Map ? e.response?.data['detail']?.toString() : e.message;
+          e.response?.data is Map
+              ? e.response?.data['detail']?.toString()
+              : e.message;
       _lastDiaryResolveMessage = '일기 목록을 불러오지 못했습니다: ${message ?? '알 수 없는 오류'}';
       debugPrint(_lastDiaryResolveMessage);
     } catch (e) {
@@ -188,9 +197,9 @@ class _NotificationSelectionScreenState
         });
         final reason = _lastDiaryResolveMessage;
         if (reason != null && reason.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(reason)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(reason)));
         }
       }
       return;
@@ -220,7 +229,8 @@ class _NotificationSelectionScreenState
       for (final alarm in alarms) {
         final setting = _settingFromAlarm(alarm);
         final hasLocation =
-            setting.notifyEnter || setting.notifyExit ||
+            setting.notifyEnter ||
+            setting.notifyExit ||
             (setting.location?.isNotEmpty ?? false);
         final hasTime = setting.time != null;
 
@@ -256,11 +266,16 @@ class _NotificationSelectionScreenState
         _draftLocation = locationSetting;
         _selectedWeekdays
           ..clear()
-          ..addAll(weekSet.isNotEmpty
-              ? weekSet
-              : (timeSetting?.weekdays ?? locationSetting?.weekdays ?? const []));
+          ..addAll(
+            weekSet.isNotEmpty
+                ? weekSet
+                : (timeSetting?.weekdays ??
+                    locationSetting?.weekdays ??
+                    const []),
+          );
         _repeatOption =
-            (locationSetting ?? timeSetting)?.repeatOption ?? RepeatOption.daily;
+            (locationSetting ?? timeSetting)?.repeatOption ??
+            RepeatOption.daily;
         _reminderDuration = reminder ?? _reminderDuration;
         _noNotification = false;
       });
@@ -276,9 +291,9 @@ class _NotificationSelectionScreenState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('알림 정보를 불러오지 못했습니다: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('알림 정보를 불러오지 못했습니다: $e')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -776,6 +791,7 @@ class _NotificationSelectionScreenState
     if (_isSaving) return;
     _syncRepeatIntoDrafts();
 
+    debugPrint('🔵 알림 저장 시작: _noNotification=$_noNotification');
     setState(() => _isSaving = true);
 
     try {
@@ -798,14 +814,20 @@ class _NotificationSelectionScreenState
 
       // 1) “알림을 설정하지 않을래요”
       if (_noNotification) {
-        if (widget.notificationId != null && widget.notificationId!.isNotEmpty) {
-          await _diariesApi.deleteAlarm(resolvedDiaryId, widget.notificationId!);
+        debugPrint('🟡 알림 안 받을래요 선택됨');
+        if (widget.notificationId != null &&
+            widget.notificationId!.isNotEmpty) {
+          await _diariesApi.deleteAlarm(
+            resolvedDiaryId,
+            widget.notificationId!,
+          );
         } else {
           await _deleteAllAlarms(resolvedDiaryId);
         }
 
         if (!mounted) return;
-        Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+        debugPrint('🟢 그룹 선택 팝업 호출 (알림 없음)');
+        _showGroupSelectionPopup(resolvedDiaryId);
         return;
       }
 
@@ -846,7 +868,10 @@ class _NotificationSelectionScreenState
           result = await _diariesApi.createAlarm(resolvedDiaryId, payload);
         }
 
-        final updated = _settingFromAlarm({...result, 'diaryId': resolvedDiaryId});
+        final updated = _settingFromAlarm({
+          ...result,
+          'diaryId': resolvedDiaryId,
+        });
         if (identical(setting, _draftTime)) {
           _draftTime = updated;
         }
@@ -864,18 +889,20 @@ class _NotificationSelectionScreenState
       }
 
       if (!mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+
+      debugPrint('🟢 그룹 선택 팝업 호출 (알림 설정 완료)');
+      // 그룹 선택 팝업 표시
+      _showGroupSelectionPopup(resolvedDiaryId);
     } on DioException catch (e, st) {
       debugPrint('알림 저장 중 오류: $e\n$st');
-      final message = e.response?.data is Map
-          ? e.response?.data['detail']?.toString()
-          : e.message;
+      final message =
+          e.response?.data is Map
+              ? e.response?.data['detail']?.toString()
+              : e.message;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              message ?? '알림을 저장하는 중 오류가 발생했습니다. 다시 시도해주세요.',
-            ),
+            content: Text(message ?? '알림을 저장하는 중 오류가 발생했습니다. 다시 시도해주세요.'),
           ),
         );
       }
@@ -893,6 +920,45 @@ class _NotificationSelectionScreenState
         _isSaving = false;
       }
     }
+  }
+
+  // ====== 그룹 선택 팝업 ======
+  void _showGroupSelectionPopup(String diaryId) {
+    debugPrint('💜 _showGroupSelectionPopup 호출됨: diaryId=$diaryId');
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (dialogCtx) => CustomPopupDesign(
+            title: "걱정그룹에 추가하시겠습니까?",
+            message: "작성한 걱정일기를 다른 그룹으로 변경하시겠습니까?",
+            positiveText: "예",
+            negativeText: "아니요",
+            iconAsset: "assets/image/popup1.png",
+            backgroundAsset: "assets/image/sea_bg_3d.png",
+            onPositivePressed: () {
+              Navigator.pop(dialogCtx);
+              // abc_group_add.dart로 이동
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (_) => AbcGroupAddScreen(
+                        origin: widget.origin ?? 'etc',
+                        abcId: diaryId,
+                        label: widget.label,
+                      ),
+                ),
+              );
+            },
+            onNegativePressed: () {
+              Navigator.pop(dialogCtx);
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil('/home', (_) => false);
+            },
+          ),
+    );
   }
 
   // ====== 빌드: 배경/레이아웃은 제공한 형식으로, 본문은 NotificationSelectionUI 사용 ======
@@ -918,46 +984,49 @@ class _NotificationSelectionScreenState
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(AppSizes.padding),
-              child: _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : NotificationSelectionUI(
-                      label: widget.label,
-                      draftTime: _draftTime,
-                      draftLocation: _draftLocation,
-                      noNotification: _noNotification,
-                      repeatOption: _repeatOption,
-                      selectedWeekdays: _selectedWeekdays,
-                      reminderDuration: _reminderDuration,
-                      onTapTime: _showTimeSheet,
-                      onTapLocation: _showLocationSheet,
-                      onTapRepeat: _showRepeatSheet,
-                      onTapReminder: _showReminderSheet,
-                      onToggleNone: (v) {
-                        setState(() {
-                          _noNotification = v;
-                          if (_noNotification) {
-                            _draftTime = null;
-                            _draftLocation = null;
-                          }
-                        });
-                      },
-                      onSave: _isSaving ? () {} : _onSavePressed,
-                      onHelp: _showHelpDialog,
-                      onToggleEnter: (v) => setState(() {
-                        if (_draftLocation != null) {
-                          _draftLocation = _draftLocation!.copyWith(
-                            notifyEnter: v,
-                          );
-                        }
-                      }),
-                      onToggleExit: (v) => setState(() {
-                        if (_draftLocation != null) {
-                          _draftLocation = _draftLocation!.copyWith(
-                            notifyExit: v,
-                          );
-                        }
-                      }),
-                    ),
+              child:
+                  _loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : NotificationSelectionUI(
+                        label: widget.label,
+                        draftTime: _draftTime,
+                        draftLocation: _draftLocation,
+                        noNotification: _noNotification,
+                        repeatOption: _repeatOption,
+                        selectedWeekdays: _selectedWeekdays,
+                        reminderDuration: _reminderDuration,
+                        onTapTime: _showTimeSheet,
+                        onTapLocation: _showLocationSheet,
+                        onTapRepeat: _showRepeatSheet,
+                        onTapReminder: _showReminderSheet,
+                        onToggleNone: (v) {
+                          setState(() {
+                            _noNotification = v;
+                            if (_noNotification) {
+                              _draftTime = null;
+                              _draftLocation = null;
+                            }
+                          });
+                        },
+                        onSave: _isSaving ? () {} : _onSavePressed,
+                        onHelp: _showHelpDialog,
+                        onToggleEnter:
+                            (v) => setState(() {
+                              if (_draftLocation != null) {
+                                _draftLocation = _draftLocation!.copyWith(
+                                  notifyEnter: v,
+                                );
+                              }
+                            }),
+                        onToggleExit:
+                            (v) => setState(() {
+                              if (_draftLocation != null) {
+                                _draftLocation = _draftLocation!.copyWith(
+                                  notifyExit: v,
+                                );
+                              }
+                            }),
+                      ),
             ),
           ),
         ],

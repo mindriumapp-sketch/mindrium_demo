@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/widgets/primary_action_button.dart';
+import 'package:gad_app_team/common/constants.dart';
 import '../../data/notification_provider.dart'; // NotificationSetting, RepeatOption
-import 'package:gad_app_team/utils/edu_progress.dart';
 
 class NotificationSelectionUI extends StatelessWidget {
   final String? label;
@@ -89,8 +89,11 @@ class NotificationSelectionUI extends StatelessWidget {
                       const SizedBox(width: 4),
                       IconButton(
                         onPressed: onHelp,
-                        icon: const Icon(Icons.help_outline,
-                            size: 22, color: deepNavy),
+                        icon: const Icon(
+                          Icons.help_outline,
+                          size: 22,
+                          color: deepNavy,
+                        ),
                         splashRadius: 20,
                         padding: EdgeInsets.zero,
                         visualDensity: VisualDensity.compact,
@@ -103,7 +106,9 @@ class NotificationSelectionUI extends StatelessWidget {
                   if (label != null && label!.trim().isNotEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 14),
+                        horizontal: 18,
+                        vertical: 14,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
@@ -119,8 +124,11 @@ class NotificationSelectionUI extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           const SizedBox(width: 10),
-                          const Icon(Icons.label_important_outline,
-                              color: oceanBlue, size: 22),
+                          const Icon(
+                            Icons.label_important_outline,
+                            color: oceanBlue,
+                            size: 22,
+                          ),
                           const SizedBox(width: 20),
                           Expanded(
                             child: Column(
@@ -145,7 +153,7 @@ class NotificationSelectionUI extends StatelessWidget {
                                 ),
                               ],
                             ),
-                          )
+                          ),
                         ],
                       ),
                     ),
@@ -183,8 +191,7 @@ class NotificationSelectionUI extends StatelessWidget {
                         // 위치 있을 때만 입장/퇴장 보이기
                         if (draftLocation != null)
                           Padding(
-                            padding:
-                            const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                             child: Row(
                               children: [
                                 Expanded(
@@ -193,26 +200,29 @@ class NotificationSelectionUI extends StatelessWidget {
                                     visualDensity: VisualDensity.compact,
                                     title: const Text('들어갈 때'),
                                     value: draftLocation!.notifyEnter,
-                                    onChanged: (noNotification || hasTime)
-                                        ? null
-                                        : (v) =>
-                                        onToggleEnter?.call(v ?? false),
+                                    onChanged:
+                                        (noNotification || hasTime)
+                                            ? null
+                                            : (v) =>
+                                                onToggleEnter?.call(v ?? false),
                                   ),
                                 ),
                                 Container(
-                                    width: 1,
-                                    height: 28,
-                                    color: Colors.grey.shade300),
+                                  width: 1,
+                                  height: 28,
+                                  color: Colors.grey.shade300,
+                                ),
                                 Expanded(
                                   child: CheckboxListTile(
                                     dense: true,
                                     visualDensity: VisualDensity.compact,
                                     title: const Text('나올 때'),
                                     value: draftLocation!.notifyExit,
-                                    onChanged: (noNotification || hasTime)
-                                        ? null
-                                        : (v) =>
-                                        onToggleExit?.call(v ?? false),
+                                    onChanged:
+                                        (noNotification || hasTime)
+                                            ? null
+                                            : (v) =>
+                                                onToggleExit?.call(v ?? false),
                                   ),
                                 ),
                               ],
@@ -221,8 +231,7 @@ class NotificationSelectionUI extends StatelessWidget {
 
                         const Padding(
                           padding: EdgeInsets.fromLTRB(70, 0, 20, 0),
-                          child: Divider(
-                              height: 1, color: Color(0xFFE8EDF5)),
+                          child: Divider(height: 1, color: Color(0xFFE8EDF5)),
                         ),
 
                         // 시간 행
@@ -266,8 +275,7 @@ class NotificationSelectionUI extends StatelessWidget {
                         ),
                         const Padding(
                           padding: EdgeInsets.fromLTRB(70, 0, 20, 0),
-                          child: Divider(
-                              height: 1, color: Color(0xFFE8EDF5)),
+                          child: Divider(height: 1, color: Color(0xFFE8EDF5)),
                         ),
                         _rowItem(
                           title: "다시 알림",
@@ -288,9 +296,10 @@ class NotificationSelectionUI extends StatelessWidget {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: noNotification
-                            ? oceanBlue
-                            : const Color(0xFFE0E6F0),
+                        color:
+                            noNotification
+                                ? oceanBlue
+                                : const Color(0xFFE0E6F0),
                         width: 1.3,
                       ),
                       boxShadow: [
@@ -306,7 +315,8 @@ class NotificationSelectionUI extends StatelessWidget {
                         scale: 1.2,
                         child: Checkbox(
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(5)),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
                           activeColor: oceanBlue,
                           value: noNotification,
                           onChanged: (v) => onToggleNone(v ?? false),
@@ -331,23 +341,42 @@ class NotificationSelectionUI extends StatelessWidget {
           ),
 
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: PrimaryActionButton(
-              text: "저장하기",
-              onPressed: () async {
-                try {
-                  // 1️⃣ 기존 저장 로직
-                  //await EduProgress.markWeekDone(2);
-                  onSave();
-
-                  // 4️⃣ 홈으로 복귀 (진행도 및 잠금 상태 자동 갱신)
-                  if (context.mounted) {
-                    Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
-                  }
-                } catch (e) {
-                  debugPrint("❌ 저장 실패: $e");
-                }
-              },
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.all(16),
+                      side: const BorderSide(color: AppColors.indigo, width: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppSizes.borderRadius,
+                        ),
+                      ),
+                    ),
+                    child: const Text(
+                      '이전',
+                      style: TextStyle(
+                        fontSize: AppSizes.fontSize,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.indigo,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: PrimaryActionButton(
+                    text: "다음",
+                    onPressed: () {
+                      onSave();
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -435,8 +464,11 @@ class NotificationSelectionUI extends StatelessWidget {
               ),
             ),
             if (!disabled)
-              const Icon(Icons.chevron_right_rounded,
-                  color: Color(0xFF9EA9B8), size: 24),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF9EA9B8),
+                size: 24,
+              ),
           ],
         ),
       ),

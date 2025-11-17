@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../widgets/custom_appbar.dart';
 import '../../widgets/custom_popup_design.dart';
-import 'package:gad_app_team/utils/edu_progress.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/worry_groups_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 class AbcGroupAddScreen1 extends StatefulWidget {
   final String? abcId;
@@ -18,9 +18,9 @@ class _AbcGroupAddScreen1State extends State<AbcGroupAddScreen1> {
   int? _selectedCharacterIndex;
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   final ScrollController _scrollController = ScrollController();
+  late final ApiClient _apiClient;
+  late final WorryGroupsApi _worryGroupsApi;
 
   List<Map<String, dynamic>> availableCharacters = [];
   double _currentPage = 0.0;
@@ -28,6 +28,9 @@ class _AbcGroupAddScreen1State extends State<AbcGroupAddScreen1> {
   @override
   void initState() {
     super.initState();
+    final tokens = TokenStorage();
+    _apiClient = ApiClient(tokens: tokens);
+    _worryGroupsApi = WorryGroupsApi(_apiClient);
     _loadAvailableCharacters();
     _scrollController.addListener(_onScroll);
   }
@@ -51,34 +54,42 @@ class _AbcGroupAddScreen1State extends State<AbcGroupAddScreen1> {
   }
 
   Future<void> _loadAvailableCharacters() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+    try {
+      // 기존 그룹 조회 (보관된 것 포함)
+      final groups = await _worryGroupsApi.listWorryGroups(
+        includeArchived: true,
+      );
 
-    final userId = user.uid;
-    final usedCharacterDocs = await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('abc_group')
-        .get();
+      // character_id 또는 group_id를 사용해서 이미 사용된 캐릭터 확인
+      final usedCharacterIds =
+          groups.map((group) {
+            // character_id가 있으면 그것을 사용, 없으면 group_id 사용
+            final charId = group['character_id'] ?? group['group_id'];
+            return int.tryParse(charId?.toString() ?? '') ?? -1;
+          }).toSet();
 
-    final usedCharacterIds = usedCharacterDocs.docs
-        .map((doc) => int.tryParse('${doc['group_id']}') ?? -1)
-        .toSet();
+      debugPrint('🔍 사용된 캐릭터 IDs: $usedCharacterIds');
 
-    final allCharacters = List.generate(
-      20,
-          (index) => {
-        'id': index + 1,
-        'name': '캐릭터 ${index + 1}',
-        'image': 'assets/image/character${index + 1}.png',
-      },
-    );
+      final allCharacters = List.generate(
+        20,
+        (index) => {
+          'id': index + 1,
+          'name': '캐릭터 ${index + 1}',
+          'image': 'assets/image/character${index + 1}.png',
+        },
+      );
 
-    setState(() {
-      availableCharacters = allCharacters
-          .where((char) => !usedCharacterIds.contains(char['id']))
-          .toList();
-    });
+      setState(() {
+        availableCharacters =
+            allCharacters
+                .where((char) => !usedCharacterIds.contains(char['id']))
+                .toList();
+      });
+
+      debugPrint('✅ 사용 가능한 캐릭터: ${availableCharacters.length}개');
+    } catch (e) {
+      debugPrint('❌ 캐릭터 목록 로드 실패: $e');
+    }
   }
 
   Widget _buildPageIndicator() {
@@ -107,17 +118,19 @@ class _AbcGroupAddScreen1State extends State<AbcGroupAddScreen1> {
             width: isActive ? 24 : 8,
             height: 8,
             decoration: BoxDecoration(
-              color: isActive
-                  ? const Color(0xFF5B9FD3)
-                  : const Color(0xFFB0BEC5),
+              color:
+                  isActive ? const Color(0xFF5B9FD3) : const Color(0xFFB0BEC5),
               borderRadius: BorderRadius.circular(4),
-              boxShadow: isActive ? [
-                BoxShadow(
-                  color: const Color(0xFF5B9FD3).withOpacity(0.4),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ] : null,
+              boxShadow:
+                  isActive
+                      ? [
+                        BoxShadow(
+                          color: const Color(0xFF5B9FD3).withOpacity(0.4),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                      : null,
             ),
           );
         }),
@@ -126,11 +139,6 @@ class _AbcGroupAddScreen1State extends State<AbcGroupAddScreen1> {
   }
 
   Future<void> _addGroupToFirebase() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
-
-    final userId = user.uid;
-
     if (_selectedCharacterIndex == null ||
         titleController.text.isEmpty ||
         descriptionController.text.isEmpty) {
@@ -150,33 +158,31 @@ class _AbcGroupAddScreen1State extends State<AbcGroupAddScreen1> {
     final selectedCharacter = availableCharacters[_selectedCharacterIndex!];
 
     try {
-      await _firestore.collection("users").doc(userId).collection("abc_group").add({
-        'userId': userId,
-        'group_id': selectedCharacter['id'].toString(),
-        'group_title': titleController.text,
-        'group_contents': descriptionController.text,
-        'archived': null,
-        'archived_at': null,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      await _worryGroupsApi.createWorryGroup(
+        groupId: selectedCharacter['id'].toString(),
+        groupTitle: titleController.text,
+        groupContents: descriptionController.text,
+        characterId: selectedCharacter['id'],
+      );
 
       if (mounted) {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (ctx) => CustomPopupDesign(
-            title: '그룹 추가 완료',
-            message: '그룹이 성공적으로 추가되었습니다!',
-            positiveText: '확인',
-            // 수정:
-            onPositivePressed: () async {
-              Navigator.pop(ctx);
-              Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
-            },
-          ),
+          builder:
+              (ctx) => CustomPopupDesign(
+                title: '그룹 추가 완료',
+                message: '그룹이 성공적으로 추가되었습니다!',
+                positiveText: '확인',
+                onPositivePressed: () async {
+                  Navigator.pop(ctx); // 다이얼로그 닫기
+                  Navigator.pop(context, true); // 이전 화면(그룹 선택)으로 돌아가며 true 반환
+                },
+              ),
         );
       }
     } catch (e) {
+      debugPrint('❌ 그룹 추가 실패: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -194,9 +200,6 @@ class _AbcGroupAddScreen1State extends State<AbcGroupAddScreen1> {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
-
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
@@ -207,14 +210,15 @@ class _AbcGroupAddScreen1State extends State<AbcGroupAddScreen1> {
         onBack: () async {
           final shouldExit = await showDialog<bool>(
             context: context,
-            builder: (_) => CustomPopupDesign(
-              title: '그룹 추가 취소',
-              message: '작성 중인 내용이 저장되지 않습니다.\n정말 나가시겠습니까?',
-              positiveText: '나가기',
-              negativeText: '취소',
-              onPositivePressed: () => Navigator.pop(context, true),
-              onNegativePressed: () => Navigator.pop(context, false),
-            ),
+            builder:
+                (_) => CustomPopupDesign(
+                  title: '그룹 추가 취소',
+                  message: '작성 중인 내용이 저장되지 않습니다.\n정말 나가시겠습니까?',
+                  positiveText: '나가기',
+                  negativeText: '취소',
+                  onPositivePressed: () => Navigator.pop(context, true),
+                  onNegativePressed: () => Navigator.pop(context, false),
+                ),
           );
 
           if (shouldExit == true && mounted) {
@@ -230,10 +234,7 @@ class _AbcGroupAddScreen1State extends State<AbcGroupAddScreen1> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.asset(
-                  'assets/image/eduhome.png',
-                  fit: BoxFit.cover,
-                ),
+                Image.asset('assets/image/eduhome.png', fit: BoxFit.cover),
                 Container(
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
@@ -249,226 +250,264 @@ class _AbcGroupAddScreen1State extends State<AbcGroupAddScreen1> {
 
           /// 📝 컨텐츠
           SafeArea(
-            child: availableCharacters.isEmpty
-                ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF5B9FD3),
-              ),
-            )
-                : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 캐릭터 선택 섹션
-                  const Text(
-                    '캐릭터 선택',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                      color: Color(0xFF0E2C48),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    '걱정 그룹을 대표할 캐릭터를 선택해주세요',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF546E7A),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 260,
-                    child: GridView.builder(
-                      controller: _scrollController,
-                      scrollDirection: Axis.horizontal,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 10,
-                        crossAxisSpacing: 10,
-                        childAspectRatio: 0.82,
+            child:
+                availableCharacters.isEmpty
+                    ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF5B9FD3),
                       ),
-                      itemCount: availableCharacters.length,
-                      itemBuilder: (context, index) {
-                        final character = availableCharacters[index];
-                        final isSelected = _selectedCharacterIndex == index;
-                        return GestureDetector(
-                          onTap: () => setState(() => _selectedCharacterIndex = index),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: isSelected ? const Color(0xFFF8FBFF) : Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isSelected
-                                    ? const Color(0xFF90CAF9)
-                                    : const Color(0xFFE3F2FD),
-                                width: isSelected ? 2.2 : 1.2,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: isSelected
-                                      ? const Color(0xFF90CAF9).withOpacity(0.25)
-                                      : Colors.black.withOpacity(0.04),
-                                  blurRadius: isSelected ? 10 : 6,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 78,
-                                  height: 78,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE3F2FD).withOpacity(0.25),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Image.asset(
-                                      character['image'],
-                                      fit: BoxFit.contain,
-                                    ),
-                                  ),
-                                ),
-                                // 🚨 캐릭터 넘버링 텍스트 위젯 제거
-                                // const SizedBox(height: 8),
-                                // Text(
-                                //   '${character['id']}',
-                                //   textAlign: TextAlign.center,
-                                //   style: TextStyle(
-                                //     fontWeight: FontWeight.w700,
-                                //     fontSize: 13,
-                                //     color: isSelected
-                                //         ? const Color(0xFF5B9FD3)
-                                //         : const Color(0xFF455A64),
-                                //   ),
-                                // ),
-                              ],
+                    )
+                    : SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 캐릭터 선택 섹션
+                          const Text(
+                            '캐릭터 선택',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 18,
+                              color: Color(0xFF0E2C48),
                             ),
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 13),
-                  Center(child: _buildPageIndicator()),
-                  const SizedBox(height: 22),
+                          const SizedBox(height: 4),
+                          const Text(
+                            '걱정 그룹을 대표할 캐릭터를 선택해주세요',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF546E7A),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            height: 260,
+                            child: GridView.builder(
+                              controller: _scrollController,
+                              scrollDirection: Axis.horizontal,
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    mainAxisSpacing: 10,
+                                    crossAxisSpacing: 10,
+                                    childAspectRatio: 0.82,
+                                  ),
+                              itemCount: availableCharacters.length,
+                              itemBuilder: (context, index) {
+                                final character = availableCharacters[index];
+                                final isSelected =
+                                    _selectedCharacterIndex == index;
+                                return GestureDetector(
+                                  onTap:
+                                      () => setState(
+                                        () => _selectedCharacterIndex = index,
+                                      ),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color:
+                                          isSelected
+                                              ? const Color(0xFFF8FBFF)
+                                              : Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color:
+                                            isSelected
+                                                ? const Color(0xFF90CAF9)
+                                                : const Color(0xFFE3F2FD),
+                                        width: isSelected ? 2.2 : 1.2,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color:
+                                              isSelected
+                                                  ? const Color(
+                                                    0xFF90CAF9,
+                                                  ).withOpacity(0.25)
+                                                  : Colors.black.withOpacity(
+                                                    0.04,
+                                                  ),
+                                          blurRadius: isSelected ? 10 : 6,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          width: 78,
+                                          height: 78,
+                                          decoration: BoxDecoration(
+                                            color: const Color(
+                                              0xFFE3F2FD,
+                                            ).withOpacity(0.25),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            child: Image.asset(
+                                              character['image'],
+                                              fit: BoxFit.contain,
+                                            ),
+                                          ),
+                                        ),
+                                        // 🚨 캐릭터 넘버링 텍스트 위젯 제거
+                                        // const SizedBox(height: 8),
+                                        // Text(
+                                        //   '${character['id']}',
+                                        //   textAlign: TextAlign.center,
+                                        //   style: TextStyle(
+                                        //     fontWeight: FontWeight.w700,
+                                        //     fontSize: 13,
+                                        //     color: isSelected
+                                        //         ? const Color(0xFF5B9FD3)
+                                        //         : const Color(0xFF455A64),
+                                        //   ),
+                                        // ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 13),
+                          Center(child: _buildPageIndicator()),
+                          const SizedBox(height: 22),
 
-                  // 그룹 제목 섹션
-                  const Text(
-                    '그룹 제목',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF0E2C48),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: titleController,
-                    decoration: InputDecoration(
-                      hintText: '그룹 제목을 입력하세요',
-                      hintStyle: const TextStyle(color: Color(0xFFB0BEC5)),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE3F2FD)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE3F2FD)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Color(0xFF5B9FD3),
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
+                          // 그룹 제목 섹션
+                          const Text(
+                            '그룹 제목',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0E2C48),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: titleController,
+                            decoration: InputDecoration(
+                              hintText: '그룹 제목을 입력하세요',
+                              hintStyle: const TextStyle(
+                                color: Color(0xFFB0BEC5),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFFE3F2FD),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFFE3F2FD),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFF5B9FD3),
+                                  width: 1.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
 
-                  // 그룹 설명 섹션
-                  const Text(
-                    '그룹 설명',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF0E2C48),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: descriptionController,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      hintText: '그룹 설명을 입력하세요',
-                      hintStyle: const TextStyle(color: Color(0xFFB0BEC5)),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE3F2FD)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE3F2FD)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Color(0xFF5B9FD3),
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
+                          // 그룹 설명 섹션
+                          const Text(
+                            '그룹 설명',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0E2C48),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: descriptionController,
+                            maxLines: 4,
+                            decoration: InputDecoration(
+                              hintText: '그룹 설명을 입력하세요',
+                              hintStyle: const TextStyle(
+                                color: Color(0xFFB0BEC5),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFFE3F2FD),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFFE3F2FD),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFF5B9FD3),
+                                  width: 1.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 32),
 
-                  // 추가 버튼
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF7BB8E8),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        shadowColor: const Color(0xFF7BB8E8).withOpacity(0.4),
-                      ),
-                      onPressed: _addGroupToFirebase,
-                      child: const Text(
-                        '그룹 추가',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.3,
-                        ),
+                          // 추가 버튼
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF7BB8E8),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                shadowColor: const Color(
+                                  0xFF7BB8E8,
+                                ).withOpacity(0.4),
+                              ),
+                              onPressed: _addGroupToFirebase,
+                              child: const Text(
+                                '그룹 추가',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
           ),
         ],
       ),
