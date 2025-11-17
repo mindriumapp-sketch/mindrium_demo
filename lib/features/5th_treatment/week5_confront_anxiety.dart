@@ -10,7 +10,15 @@ import 'week5_visual_screen.dart';
 
 class Week5ConfrontAnxietyScreen extends StatefulWidget {
   final List<String> previousChips;
-  const Week5ConfrontAnxietyScreen({super.key, required this.previousChips});
+  final List<Map<String, dynamic>>? quizResults;
+  final int? correctCount;
+
+  const Week5ConfrontAnxietyScreen({
+    super.key,
+    required this.previousChips,
+    this.quizResults,
+    this.correctCount,
+  });
   static double cardWidth = 200;
 
   @override
@@ -110,6 +118,8 @@ class _Week5ConfrontAnxietyScreenState
               pageBuilder: (_, __, ___) => Week5VisualScreen(
                 previousChips: widget.previousChips,
                 alternativeChips: values,
+                quizResults: widget.quizResults,
+                correctCount: widget.correctCount,
               ),
               transitionDuration: Duration.zero,
               reverseTransitionDuration: Duration.zero,

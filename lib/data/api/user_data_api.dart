@@ -94,34 +94,34 @@ class UserDataApi {
     );
   }
 
-  Future<Map<String, dynamic>> createSelfTalkSession({
+  Future<Map<String, dynamic>> createPracticeSession({
     required int weekNumber,
-    required List<String> unhelpfulThoughts,
-    required List<String> helpfulThoughts,
+    required List<String> negativeItems,
+    required List<String> positiveItems,
     Map<String, dynamic>? classificationQuiz,
   }) async {
     final payload = <String, dynamic>{
       'week_number': weekNumber,
-      'unhelpful_thoughts': unhelpfulThoughts,
-      'helpful_thoughts': helpfulThoughts,
+      'negative_items': negativeItems,
+      'positive_items': positiveItems,
       if (classificationQuiz != null) 'classification_quiz': classificationQuiz,
     };
 
     final res = await _client.dio.post(
-      '/users/me/self-talk-sessions',
+      '/users/me/practice-sessions',
       data: payload,
     );
     final data = res.data;
     if (data is Map<String, dynamic>) return data;
     throw DioException(
       requestOptions: res.requestOptions,
-      message: 'Invalid /users/me/self-talk-sessions (POST) response',
+      message: 'Invalid /users/me/practice-sessions (POST) response',
     );
   }
 
-  Future<List<Map<String, dynamic>>> getSelfTalkSessions({int? weekNumber}) async {
+  Future<List<Map<String, dynamic>>> getPracticeSessions({int? weekNumber}) async {
     final res = await _client.dio.get(
-      '/users/me/self-talk-sessions',
+      '/users/me/practice-sessions',
       queryParameters: {
         if (weekNumber != null) 'week_number': weekNumber,
       },
@@ -136,7 +136,7 @@ class UserDataApi {
     }
     throw DioException(
       requestOptions: res.requestOptions,
-      message: 'Invalid /users/me/self-talk-sessions response',
+      message: 'Invalid /users/me/practice-sessions response',
     );
   }
 }

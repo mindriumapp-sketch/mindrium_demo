@@ -98,20 +98,20 @@ class ClassificationQuiz(BaseModel):
     wrong_list: List[Dict[str, Any]]
 
 
-class SelfTalkSessionCreate(BaseModel):
-    """3주차 Self Talk 세션 생성 요청"""
+class PracticeSessionCreate(BaseModel):
+    """주차별 연습 세션 생성 요청 (3주차, 5주차 등)"""
     week_number: int = Field(..., ge=1, le=8, description="주차 (1-8)")
-    unhelpful_thoughts: List[str] = Field(default_factory=list, description="도움이 되지 않는 생각")
-    helpful_thoughts: List[str] = Field(default_factory=list, description="도움이 되는 생각")
+    negative_items: List[str] = Field(default_factory=list, description="부정적 항목 (3주차: 도움이 되지 않는 생각, 5주차: 회피 행동)")
+    positive_items: List[str] = Field(default_factory=list, description="긍정적 항목 (3주차: 도움이 되는 생각, 5주차: 직면 행동)")
     classification_quiz: Optional[ClassificationQuiz] = Field(None, description="분류 퀴즈 결과")
 
 
-class SelfTalkSessionResponse(BaseModel):
-    """3주차 Self Talk 세션 응답"""
+class PracticeSessionResponse(BaseModel):
+    """주차별 연습 세션 응답"""
     session_id: str
     week_number: int
-    unhelpful_thoughts: List[str]
-    helpful_thoughts: List[str]
+    negative_items: List[str]
+    positive_items: List[str]
     classification_quiz: Optional[ClassificationQuiz] = None
     created_at: datetime
     updated_at: datetime
@@ -507,22 +507,22 @@ async def update_week_progress(
 
 
 @router.post(
-    "/self-talk-sessions",
-    response_model=SelfTalkSessionResponse,
+    "/practice-sessions",
+    response_model=PracticeSessionResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="3주차 Self Talk 세션 추가",
+    summary="주차별 연습 세션 추가",
 )
-async def create_self_talk_session(
-    session: SelfTalkSessionCreate,
+async def create_practice_session(
+    session: PracticeSessionCreate,
     current_user: dict = Depends(get_current_user),
     db = Depends(get_db)
 ):
     """
-    3주차 Self Talk 세션을 추가합니다.
+    주차별 연습 세션을 추가합니다 (3주차, 5주차 등).
     
     - **week_number**: 주차 (1-8)
-    - **unhelpful_thoughts**: 도움이 되지 않는 생각 리스트
-    - **helpful_thoughts**: 도움이 되는 생각 리스트
+    - **negative_items**: 부정적 항목 리스트 (3주차: 도움이 되지 않는 생각, 5주차: 회피 행동)
+    - **positive_items**: 긍정적 항목 리스트 (3주차: 도움이 되는 생각, 5주차: 직면 행동)
     - **classification_quiz**: 분류 퀴즈 결과 (선택사항)
     """
     user_id = current_user["_id"]
@@ -532,40 +532,40 @@ async def create_self_talk_session(
     session_doc = {
         "session_id": session_id,
         "week_number": session.week_number,
-        "unhelpful_thoughts": session.unhelpful_thoughts,
-        "helpful_thoughts": session.helpful_thoughts,
+        "negative_items": session.negative_items,
+        "positive_items": session.positive_items,
         "classification_quiz": session.classification_quiz.dict() if session.classification_quiz else None,
         "created_at": now,
         "updated_at": now,
     }
     
-    user = await db[USER_COLLECTION].find_one({"_id": user_id}, {"self_talk_sessions": 1})
+    user = await db[USER_COLLECTION].find_one({"_id": user_id}, {"practice_sessions": 1})
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
     
-    sessions = list(user.get("self_talk_sessions", []))
+    sessions = list(user.get("practice_sessions", []))
     sessions.append(session_doc)
     
     await db[USER_COLLECTION].update_one(
         {"_id": user_id},
-        {"$set": {"self_talk_sessions": sessions}},
+        {"$set": {"practice_sessions": sessions}},
     )
     
-    return SelfTalkSessionResponse(**session_doc)
+    return PracticeSessionResponse(**session_doc)
 
 
 @router.get(
-    "/self-talk-sessions",
-    response_model=List[SelfTalkSessionResponse],
-    summary="3주차 Self Talk 세션 목록 조회",
+    "/practice-sessions",
+    response_model=List[PracticeSessionResponse],
+    summary="주차별 연습 세션 목록 조회",
 )
-async def get_self_talk_sessions(
+async def get_practice_sessions(
     week_number: Optional[int] = None,
     current_user: dict = Depends(get_current_user),
     db = Depends(get_db)
 ):
     """
-    3주차 Self Talk 세션 목록을 조회합니다.
+    주차별 연습 세션 목록을 조회합니다 (3주차, 5주차 등).
     
     - **week_number**: 주차로 필터링 (선택사항, 없으면 전체 조회)
     - 최신순으로 정렬되어 반환
@@ -576,7 +576,7 @@ async def get_self_talk_sessions(
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
     
-    sessions = user.get("self_talk_sessions", [])
+    sessions = user.get("practice_sessions", [])
     
     # 주차 필터링
     if week_number is not None:
@@ -598,4 +598,4 @@ async def get_self_talk_sessions(
         reverse=True
     )
     
-    return [SelfTalkSessionResponse(**s) for s in sessions]
+    return [PracticeSessionResponse(**s) for s in sessions]

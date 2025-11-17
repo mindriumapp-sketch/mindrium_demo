@@ -71,10 +71,10 @@ class _Week3VisualScreenState extends State<Week3VisualScreen> {
         };
       }
 
-      await _userDataApi.createSelfTalkSession(
+      await _userDataApi.createPracticeSession(
         weekNumber: 3,
-        unhelpfulThoughts: widget.previousChips,
-        helpfulThoughts: widget.alternativeChips,
+        negativeItems: widget.previousChips,
+        positiveItems: widget.alternativeChips,
         classificationQuiz: classificationQuiz,
       );
     } catch (e) {

@@ -69,7 +69,7 @@ async def signup(payload: SignupRequest, db=Depends(get_db)):
         "relaxation_tasks": [],
         "surveys": [],
         "custom_tags": [],
-        "self_talk_sessions": [],
+        "practice_sessions": [],
         "email_verified": False,
         "created_at": datetime.now(timezone.utc),
     }
