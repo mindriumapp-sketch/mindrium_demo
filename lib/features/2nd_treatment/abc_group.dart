@@ -958,6 +958,13 @@ class _AbcGroupScreenState extends State<AbcGroupScreen> {
     print('📊 SUD 계산 시작: ${diaries.length}개 일기');
     int sum = 0, cnt = 0;
 
+    int? _parseScore(dynamic raw) {
+      if (raw is int) return raw;
+      if (raw is num) return raw.toInt();
+      if (raw is String) return int.tryParse(raw);
+      return null;
+    }
+
     for (final diary in diaries) {
       final sudScores = diary['sudScores'] as List?;
       print('  일기 ${diary['diaryId']}: sudScores = $sudScores');
@@ -979,22 +986,15 @@ class _AbcGroupScreenState extends State<AbcGroupScreen> {
 
       if (scores.isEmpty) continue;
       final latestScore = scores.last;
-      final afterSud = latestScore['after_sud'];
-      print('    최신 after_sud: $afterSud (타입: ${afterSud.runtimeType})');
+      final dynamic afterSud = latestScore['after_sud'] ?? latestScore['afterSud'];
+      final dynamic beforeSud = latestScore['before_sud'] ?? latestScore['beforeSud'];
+      final int? scoreValue = _parseScore(afterSud) ?? _parseScore(beforeSud);
+      print('    최신 after_sud: $afterSud, before_sud: $beforeSud -> 사용점수: $scoreValue');
 
-      int? afterValue;
-      if (afterSud is int) {
-        afterValue = afterSud;
-      } else if (afterSud is num) {
-        afterValue = afterSud.toInt();
-      } else if (afterSud is String) {
-        afterValue = int.tryParse(afterSud);
-      }
-
-      if (afterValue != null) {
-        sum += afterValue.clamp(0, 10);
+      if (scoreValue != null) {
+        sum += scoreValue.clamp(0, 10);
         cnt++;
-        print('    ✅ 점수: $afterValue');
+        print('    ✅ 점수: $scoreValue');
       } else {
         print('    ❌ 점수 파싱 실패');
       }
