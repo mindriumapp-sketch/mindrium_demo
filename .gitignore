@@ -1,0 +1,117 @@
+build/
+.dart_tool/
+build/
+.dart_tool/
+*.apk
+*.ipa
+
+# Mindrium Flutter 앱용 .gitignore
+# 위험한 비밀키/인증서와 불필요한 빌드 산출물/IDE 캐시를 제외합니다.
+# 필요시 아래 '선택적(Firebase 설정 파일)' 섹션의 주석을 해제해 사용하세요.
+
+##### 공통(OS/IDE) #####
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+*.iml
+.vscode/
+
+##### Dart / Flutter #####
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+.pub/
+.pub-cache/
+build/
+coverage/
+lib/generated_plugin_registrant.dart
+
+##### Android #####
+**/android/**/.gradle/
+**/android/**/local.properties
+**/android/**/captures/
+**/android/**/build/
+**/android/**/app/build/
+**/android/**/generated/
+**/android/**/outputs/
+**/android/**/intermediates/
+# 서명/키(민감)
+**/android/**/key.properties
+*.jks
+*.keystore
+# Flutter 생성 파일
+**/android/**/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+
+##### iOS / macOS (Xcode/CocoaPods) #####
+**/ios/**/Flutter/.last_build_id
+**/ios/**/Flutter/Generated.xcconfig
+**/ios/**/Flutter/flutter_export_environment.sh
+**/ios/**/.symlinks/
+**/ios/**/Pods/
+**/ios/**/DerivedData/
+**/ios/**/build/
+**/ios/**/Runner/GeneratedPluginRegistrant.*
+**/ios/**/**/*.xcuserstate
+**/ios/**/**/*.xcuserdata/
+**/ios/**/**/*.xcworkspace/
+# macOS
+**/macos/**/Flutter/.last_build_id
+**/macos/**/Flutter/Generated.xcconfig
+**/macos/**/flutter_export_environment.sh
+**/macos/**/Pods/
+**/macos/**/.symlinks/
+**/macos/**/DerivedData/
+**/macos/**/build/
+**/macos/**/Flutter/ephemeral/
+**/macos/**/Runner/GeneratedPluginRegistrant.swift
+
+##### Windows / Linux 데스크톱 #####
+**/windows/**/flutter/ephemeral/
+**/linux/**/flutter/ephemeral/
+
+##### 배포 산출물 #####
+*.apk
+*.aab
+*.ipa
+
+##### 비밀/인증서/환경변수(민감) #####
+.env
+.env.*
+.envrc
+*.pem
+*.p12
+*.cer
+*.crt
+*.key
+*.der
+secrets/
+.keys/
+**/serviceAccount*.json
+**/*-service-account*.json
+**/firebase_app_id_file.json
+
+##### 선택적(Firebase 설정 파일) #####
+# 보안상 민감 정보는 아니지만, 저장소에 올리고 싶지 않다면 아래 주석을 해제하세요.
+# **/android/**/app/google-services.json
+# **/ios/**/Runner/GoogleService-Info.plist
+
+##### Python Backend #####
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+**/*.so
+.Python
+**/venv/
+**/.venv/
+**/ENV/
+**/env/
+**/.env
+**/.env.local
+**/test_db.py
+**/pip-log.txt
+**/pip-delete-this-directory.txt
+**/.pytest_cache/
+clean_clone/

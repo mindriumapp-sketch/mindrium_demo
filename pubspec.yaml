@@ -1,0 +1,244 @@
+name: gad_app_team
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.7.2 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase (임시 유지 - 로그인/회원가입은 MongoDB 사용)
+  firebase_core: ^3.8.1
+  cloud_firestore: ^5.6.0
+  firebase_auth: ^5.3.4
+  firebase_storage: ^12.3.8
+
+  flutter_secure_storage: ^9.0.0
+  dio: ^5.4.0
+
+  # 나머지 기존 그대로
+  provider: ^6.1.1
+  flutter_riverpod: ^2.4.9
+  cupertino_icons: ^1.0.8
+  intl: 0.20.2
+  uuid: ^4.3.3
+  shared_preferences: ^2.2.2
+  connectivity_plus: ^6.1.4
+  flutter_localizations:
+    sdk: flutter
+  fl_chart: ^1.0.0
+  table_calendar: ^3.0.9
+  audioplayers: ^6.4.0
+  image_picker: ^1.0.7
+  cached_network_image: ^3.3.1
+  path_provider: ^2.1.1
+  path: ^1.8.3
+  rive: ^0.14.0-dev.9
+  flutter_map: ^8.1.1
+  latlong2: ^0.9.0
+  http: ^1.4.0
+  geolocator: ^14.0.1
+  geocoding: ^4.0.0
+  geofence_service: ^6.0.0
+  flutter_local_notifications: ^19.2.1
+  timezone: ^0.10.1
+  permission_handler: ^12.0.0+1
+  google_fonts: ^6.2.1
+  lottie: ^3.3.1
+
+  # [추가/확인] TTS (Text-to-Speech) 패키지
+  flutter_tts: ^4.0.0
+  # [추가/확인] STT (Speech-to-Text) 패키지
+  speech_to_text: ^7.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_native_splash: ^2.3.2
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/image/11.png
+    - assets/image/Background_wave.png
+    - assets/image/activating event.png
+    - assets/image/alternative thoughts.png
+    - assets/image/anxiety_character.png
+    - assets/image/attack.png
+    - assets/image/belief.png
+    - assets/image/character1.png
+    - assets/image/character2.png
+    - assets/image/character2_mid.png
+    - assets/image/character2_last.png
+    - assets/image/character3.png
+    - assets/image/character4.png
+    - assets/image/character4_mid.png
+    - assets/image/character4_last.png
+    - assets/image/character5.png
+    - assets/image/character5_mid.png
+    - assets/image/character5_last.png
+    - assets/image/character6.png
+    - assets/image/character7.png
+    - assets/image/character8.png
+    - assets/image/character9.png
+    - assets/image/character10.png
+    - assets/image/character11.png
+    - assets/image/character12.png
+    - assets/image/character13.png
+    - assets/image/character14.png
+    - assets/image/character15.png
+    - assets/image/character16.png
+    - assets/image/character17.png
+    - assets/image/character18.png
+    - assets/image/character19.png
+    - assets/image/character20.png
+    - assets/image/completion.png
+    - assets/image/congrats.png
+    - assets/image/consequence.png
+    - assets/image/coral_green.png
+    - assets/image/coral_pink.png
+    - assets/image/coral_yellow.png
+    - assets/image/correct.png
+    - assets/image/daily_diary.png
+    - assets/image/delete.png
+    - assets/image/delete2.png
+    - assets/image/done.png
+    - assets/image/eduhome.png
+    - assets/image/ending.png
+    - assets/image/finish.png
+    - assets/image/home.png
+    - assets/image/imagination.png
+    - assets/image/intro1.png
+    - assets/image/intro2.png
+    - assets/image/intro3.png
+    - assets/image/jellyfish.png
+    - assets/image/jellyfish_good_aquarium.png
+    - assets/image/jellyfish_smart.png
+    - assets/image/jellyfish_8th.png
+    - assets/image/jellyfish_pink.png
+    - assets/image/jellyfish_blue.png
+    - assets/image/jellyfish_blue_congrats.png
+    - assets/image/logo.png
+    - assets/image/memo.png
+    - assets/image/men.png
+    - assets/image/battle_scene_bg.png
+    - assets/image/nice.png
+    - assets/image/otter_sushi.png
+    - assets/image/photo.png
+    - assets/image/pink1.png
+    - assets/image/pink2.png
+    - assets/image/pink3.png
+    - assets/image/popup1.png
+    - assets/image/popup2.png
+    - assets/image/progressing.png
+    - assets/image/question_icon.png
+    - assets/image/ranking_illustration.png
+    - assets/image/scenario_1.png
+    - assets/image/scenario_2.png
+    - assets/image/scenario_3.png
+    - assets/image/spring.png
+    - assets/image/undone.png
+    - assets/image/weekly_diary.png
+    - assets/image/wrong.png
+    - assets/image/think_blue.png
+    - assets/image/aquarium_background.png
+    - assets/image/coral1.png
+    - assets/image/coral2.png
+    - assets/image/coral3.png
+    - assets/image/coral4.png
+    - assets/image/coral5.png
+    - assets/image/sea_archive_bg.png
+    - assets/image/edu_book1.jpg
+    - assets/image/edu_book2.jpg
+    - assets/image/edu_book3.jpg
+    - assets/image/edu_book4.jpg
+    - assets/image/edu_book5.jpg
+    - assets/image/edu_book6.jpg
+    - assets/image/week2_scenario1.jpg
+    - assets/image/week2_scenario2.jpg
+    - assets/image/week2_scenario3.jpg
+    - assets/image/week5_scenario1.jpg
+    - assets/image/week5_scenario2.jpg
+    - assets/image/week5_scenario3.jpg
+
+
+
+    # 1주차 part1
+    - assets/education_data/week1_part1_1.json
+    - assets/education_data/week1_part1_2.json
+    - assets/education_data/week1_part1_3.json
+    - assets/education_data/week1_part1_4.json
+    - assets/education_data/week1_part1_5.json
+    - assets/education_data/week1_part1_6.json
+
+    # 1주차 part2
+    - assets/education_data/week1_part2_1.json
+    - assets/education_data/week1_part2_2.json
+    - assets/education_data/week1_part2_3.json
+
+    # 1주차 part3
+    - assets/education_data/week1_part3_1.json
+    - assets/education_data/week1_part3_2.json
+    - assets/education_data/week1_part3_3.json
+    - assets/education_data/week1_part3_4.json
+    - assets/education_data/week1_part3_5.json
+    - assets/education_data/week1_part3_6.json
+    - assets/education_data/week1_part3_7.json
+    - assets/education_data/week1_part3_8.json
+    - assets/education_data/week1_part3_9.json
+
+    # 1주차 part4
+    - assets/education_data/week1_part4_1.json
+    - assets/education_data/week1_part4_2.json
+    - assets/education_data/week1_part4_3.json
+    - assets/education_data/week1_part4_4.json
+    - assets/education_data/week1_part4_5.json
+    - assets/education_data/week1_part4_6.json
+
+    # 1주차 part5
+    - assets/education_data/week1_part5_1.json
+    - assets/education_data/week1_part5_2.json
+    - assets/education_data/week1_part5_3.json
+    - assets/education_data/week1_part5_4.json
+    - assets/education_data/week1_part5_5.json
+    - assets/education_data/week1_part5_6.json
+    - assets/education_data/week1_part5_7.json
+
+    # 1주차 part6
+    - assets/education_data/week1_part6_1.json
+    - assets/education_data/week1_part6_2.json
+    - assets/education_data/week1_part6_3.json
+    - assets/education_data/week1_part6_4.json
+
+    - assets/education_data/week1_relaxation_1.json
+    - assets/education_data/week1_relaxation_2.json
+    - assets/education_data/week1_relaxation_3.json
+    - assets/education_data/week1_relaxation_4.json
+    - assets/education_data/week1_relaxation_5.json
+
+    - assets/relaxation/week1.riv
+    - assets/relaxation/week1.mp3
+    - assets/relaxation/week4.riv
+    - assets/relaxation/week4.mp3
+    - assets/relaxation/noti.riv
+    - assets/relaxation/noti.mp3
+
+    - assets/image/alternative thoughts.png
+    - assets/image/imagination.png
+
+    # chatbot assets
+    - assets/images/
+    - assets/data/
+
+flutter_native_splash:
+  color: "#F9F5F9"
+  image: assets/image/logo.png
+  android: true
+  ios: true
+  fullscreen: true
