@@ -62,8 +62,9 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
 
       try {
         final coreValueRes = await _userDataApi.getCoreValue();
-        coreValueController.text =
-            (coreValueRes?['core_value'] as String?) ?? '';
+        final rawValue =
+            coreValueRes?['value_goal'] ?? coreValueRes?['core_value'];
+        coreValueController.text = (rawValue as String?) ?? '';
       } catch (_) {
         coreValueController.text = '';
       }

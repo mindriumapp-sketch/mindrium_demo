@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/widgets/tutorial_design.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:gad_app_team/data/user_data_model.dart';
-import 'package:gad_app_team/data/user_data_storage.dart';
+import 'package:provider/provider.dart';
+
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/user_data_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
+import 'package:gad_app_team/data/user_provider.dart';
 import 'package:gad_app_team/features/menu/education/education_page.dart';
+import 'package:gad_app_team/widgets/tutorial_design.dart';
 
 class Week1ValueGoalScreen extends StatefulWidget {
   const Week1ValueGoalScreen({super.key});
@@ -18,43 +20,34 @@ class _Week1ValueGoalScreenState extends State<Week1ValueGoalScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   String? _userName;
+  late final ApiClient _client;
+  late final UserDataApi _userDataApi;
 
   @override
   void initState() {
     super.initState();
+    _client = ApiClient(tokens: TokenStorage());
+    _userDataApi = UserDataApi(_client);
     _loadUserName();
   }
 
-  Future<void> _loadUserName() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final doc =
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(user.uid)
-                .get();
-        final data = doc.data();
-        setState(() => _userName = data?['name'] ?? '사용자');
-      } else {
-        setState(() => _userName = '사용자');
-      }
-    } catch (_) {
-      setState(() => _userName = '사용자');
-    }
+  void _loadUserName() {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    setState(() => _userName = userProvider.userName);
   }
 
   Future<void> _saveUserData() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      final userData = UserData(
-        name: _userName ?? '사용자',
-        coreValue: _controller.text.trim(),
-        createdAt: DateTime.now(),
-      );
-      await UserDataStorage.saveUserData(userData);
+      await _userDataApi.updateCoreValue(_controller.text.trim());
       if (mounted) _showEducationDialog();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('저장에 실패했습니다: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -165,6 +158,11 @@ class _Week1ValueGoalScreenState extends State<Week1ValueGoalScreen> {
                 return null;
               },
             ),
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: Center(child: CircularProgressIndicator()),
+              ),
           ],
         ),
       ),
