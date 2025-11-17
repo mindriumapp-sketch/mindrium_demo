@@ -93,4 +93,50 @@ class UserDataApi {
       message: 'Invalid /users/me/custom-tags (POST) response',
     );
   }
+
+  Future<Map<String, dynamic>> createSelfTalkSession({
+    required int weekNumber,
+    required List<String> unhelpfulThoughts,
+    required List<String> helpfulThoughts,
+    Map<String, dynamic>? classificationQuiz,
+  }) async {
+    final payload = <String, dynamic>{
+      'week_number': weekNumber,
+      'unhelpful_thoughts': unhelpfulThoughts,
+      'helpful_thoughts': helpfulThoughts,
+      if (classificationQuiz != null) 'classification_quiz': classificationQuiz,
+    };
+
+    final res = await _client.dio.post(
+      '/users/me/self-talk-sessions',
+      data: payload,
+    );
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    throw DioException(
+      requestOptions: res.requestOptions,
+      message: 'Invalid /users/me/self-talk-sessions (POST) response',
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getSelfTalkSessions({int? weekNumber}) async {
+    final res = await _client.dio.get(
+      '/users/me/self-talk-sessions',
+      queryParameters: {
+        if (weekNumber != null) 'week_number': weekNumber,
+      },
+    );
+    final data = res.data;
+    if (data is List) {
+      return data
+          .whereType<Map>()
+          .map((raw) => raw.map((key, value) => MapEntry(key.toString(), value)))
+          .toList()
+          .cast<Map<String, dynamic>>();
+    }
+    throw DioException(
+      requestOptions: res.requestOptions,
+      message: 'Invalid /users/me/self-talk-sessions response',
+    );
+  }
 }

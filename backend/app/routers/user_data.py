@@ -82,6 +82,41 @@ class CustomTagResponse(BaseModel):
     created_at: datetime
 
 
+class ClassificationQuizResult(BaseModel):
+    """분류 퀴즈 결과"""
+    text: str
+    correct_type: str
+    user_choice: str
+    is_correct: bool
+
+
+class ClassificationQuiz(BaseModel):
+    """분류 퀴즈 전체 결과"""
+    correct_count: int
+    total_count: int
+    results: List[ClassificationQuizResult]
+    wrong_list: List[Dict[str, Any]]
+
+
+class SelfTalkSessionCreate(BaseModel):
+    """3주차 Self Talk 세션 생성 요청"""
+    week_number: int = Field(..., ge=1, le=8, description="주차 (1-8)")
+    unhelpful_thoughts: List[str] = Field(default_factory=list, description="도움이 되지 않는 생각")
+    helpful_thoughts: List[str] = Field(default_factory=list, description="도움이 되는 생각")
+    classification_quiz: Optional[ClassificationQuiz] = Field(None, description="분류 퀴즈 결과")
+
+
+class SelfTalkSessionResponse(BaseModel):
+    """3주차 Self Talk 세션 응답"""
+    session_id: str
+    week_number: int
+    unhelpful_thoughts: List[str]
+    helpful_thoughts: List[str]
+    classification_quiz: Optional[ClassificationQuiz] = None
+    created_at: datetime
+    updated_at: datetime
+
+
 # ============= API Endpoints =============
 
 @router.get("/core-value", response_model=CoreValueResponse, summary="핵심 가치 조회")
@@ -469,3 +504,98 @@ async def update_week_progress(
             return WeekProgress(**week)
     
     raise HTTPException(status_code=500, detail="진행도 업데이트 실패")
+
+
+@router.post(
+    "/self-talk-sessions",
+    response_model=SelfTalkSessionResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="3주차 Self Talk 세션 추가",
+)
+async def create_self_talk_session(
+    session: SelfTalkSessionCreate,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    3주차 Self Talk 세션을 추가합니다.
+    
+    - **week_number**: 주차 (1-8)
+    - **unhelpful_thoughts**: 도움이 되지 않는 생각 리스트
+    - **helpful_thoughts**: 도움이 되는 생각 리스트
+    - **classification_quiz**: 분류 퀴즈 결과 (선택사항)
+    """
+    user_id = current_user["_id"]
+    now = datetime.now(timezone.utc)
+    session_id = f"session_{uuid.uuid4().hex[:8]}"
+    
+    session_doc = {
+        "session_id": session_id,
+        "week_number": session.week_number,
+        "unhelpful_thoughts": session.unhelpful_thoughts,
+        "helpful_thoughts": session.helpful_thoughts,
+        "classification_quiz": session.classification_quiz.dict() if session.classification_quiz else None,
+        "created_at": now,
+        "updated_at": now,
+    }
+    
+    user = await db[USER_COLLECTION].find_one({"_id": user_id}, {"self_talk_sessions": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+    
+    sessions = list(user.get("self_talk_sessions", []))
+    sessions.append(session_doc)
+    
+    await db[USER_COLLECTION].update_one(
+        {"_id": user_id},
+        {"$set": {"self_talk_sessions": sessions}},
+    )
+    
+    return SelfTalkSessionResponse(**session_doc)
+
+
+@router.get(
+    "/self-talk-sessions",
+    response_model=List[SelfTalkSessionResponse],
+    summary="3주차 Self Talk 세션 목록 조회",
+)
+async def get_self_talk_sessions(
+    week_number: Optional[int] = None,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    3주차 Self Talk 세션 목록을 조회합니다.
+    
+    - **week_number**: 주차로 필터링 (선택사항, 없으면 전체 조회)
+    - 최신순으로 정렬되어 반환
+    """
+    user_id = current_user["_id"]
+    user = await db[USER_COLLECTION].find_one({"_id": user_id})
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+    
+    sessions = user.get("self_talk_sessions", [])
+    
+    # 주차 필터링
+    if week_number is not None:
+        sessions = [s for s in sessions if s.get("week_number") == week_number]
+    
+    # 최신순 정렬
+    def _parse_date(v):
+        if isinstance(v, datetime):
+            return v
+        if isinstance(v, str):
+            try:
+                return datetime.fromisoformat(v.replace('Z', '+00:00'))
+            except Exception:
+                pass
+        return datetime.fromutc(datetime(1970, 1, 1), timezone.utc)
+    
+    sessions.sort(
+        key=lambda s: _parse_date(s.get("created_at") or s.get("updated_at")),
+        reverse=True
+    )
+    
+    return [SelfTalkSessionResponse(**s) for s in sessions]

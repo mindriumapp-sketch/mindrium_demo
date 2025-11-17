@@ -6,16 +6,22 @@ import 'package:gad_app_team/widgets/thought_card.dart';        // ThoughtCard /
 import 'package:gad_app_team/widgets/detail_popup.dart';        // 자세히 보기 팝업
 import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
-import 'package:gad_app_team/utils/edu_progress.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/user_data_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 class Week3VisualScreen extends StatefulWidget {
   final List<String> previousChips;    // 도움이 되지 않는 생각
   final List<String> alternativeChips; // 도움이 되는 생각
+  final List<Map<String, dynamic>>? quizResults; // 퀴즈 결과
+  final int? correctCount; // 정답 개수
 
   const Week3VisualScreen({
     super.key,
     required this.previousChips,
     required this.alternativeChips,
+    this.quizResults,
+    this.correctCount,
   });
 
   @override
@@ -23,6 +29,64 @@ class Week3VisualScreen extends StatefulWidget {
 }
 
 class _Week3VisualScreenState extends State<Week3VisualScreen> {
+  late final ApiClient _client;
+  late final UserDataApi _userDataApi;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _client = ApiClient(tokens: TokenStorage());
+    _userDataApi = UserDataApi(_client);
+  }
+
+  Future<void> _saveSession() async {
+    if (_isSaving) return;
+    
+    setState(() => _isSaving = true);
+    
+    try {
+      // 퀴즈 결과 변환
+      Map<String, dynamic>? classificationQuiz;
+      if (widget.quizResults != null && widget.quizResults!.isNotEmpty && widget.correctCount != null) {
+        final wrongList = widget.quizResults!
+            .where((item) => item['isCorrect'] == false)
+            .map((item) => {
+                  'text': item['text'],
+                  'user_choice': item['userChoice'],
+                  'correct_type': item['correctType'],
+                })
+            .toList();
+        
+        classificationQuiz = {
+          'correct_count': widget.correctCount,
+          'total_count': widget.quizResults!.length,
+          'results': widget.quizResults!.map((r) => {
+                'text': r['text'],
+                'correct_type': r['correctType'],
+                'user_choice': r['userChoice'],
+                'is_correct': r['isCorrect'],
+              }).toList(),
+          'wrong_list': wrongList,
+        };
+      }
+
+      await _userDataApi.createSelfTalkSession(
+        weekNumber: 3,
+        unhelpfulThoughts: widget.previousChips,
+        helpfulThoughts: widget.alternativeChips,
+        classificationQuiz: classificationQuiz,
+      );
+    } catch (e) {
+      // 에러 발생 시에도 팝업은 표시
+      debugPrint('세션 저장 실패: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
   void _showFinishDialog() {
     showDialog(
       context: context,
@@ -35,7 +99,9 @@ class _Week3VisualScreenState extends State<Week3VisualScreen> {
           negativeText: null,
           onNegativePressed: null,
           onPositivePressed: () async {
-            //await EduProgress.markWeekDone(3);
+            // 세션 저장 후 홈으로 이동
+            await _saveSession();
+            if (!mounted) return;
             Navigator.of(context, rootNavigator: true).pop();
             Navigator.of(context)
                 .pushNamedAndRemoveUntil('/home', (route) => false);
