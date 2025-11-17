@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
@@ -6,7 +5,6 @@ import 'package:gad_app_team/widgets/blue_banner.dart';
 import 'package:gad_app_team/widgets/q_quiz_card.dart';
 import 'package:gad_app_team/widgets/q_jellyfish_notice.dart';
 import 'package:gad_app_team/widgets/choice_card_button.dart';
-import 'package:gad_app_team/widgets/behavior_confirm_dialog.dart';
 import 'package:gad_app_team/features/3rd_treatment/week3_classification_result_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -116,20 +114,6 @@ class Week3ClassificationScreenState extends State<Week3ClassificationScreen> {
     });
   }
 
-  void _showWrongDialog(String message) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return BehaviorConfirmDialog.singleButton(
-          titleText: '알림',
-          messageText: message,
-          onConfirm: () => Navigator.of(context).pop(),
-        );
-      },
-    );
-  }
-
   void _checkAnswer(String selected) {
     if (answered) return;
 
@@ -149,18 +133,6 @@ class Week3ClassificationScreenState extends State<Week3ClassificationScreen> {
             ? '도움이 되는 생각이라고 하셨군요.\n하지만 이건 도움이 되지 않는 생각쪽에 \n가깝습니다.'
             : '도움이 되지 않는 생각이라고 하셨군요. \n하지만 이건 도움이 되는 생각쪽에 \n가깝습니다.';
         feedbackColor = const Color(0xFFFF5252);
-
-        String dialogMsg = '';
-        if (shuffledSentences[currentIndex]['type'] == 'anxious' &&
-            selected == 'healthy') {
-          dialogMsg =
-          '도움이 된다고 생각하셨군요.\n일시적으로 이런 생각이 불안을 줄일 수는 있겠습니다만 장기적으로는 불안을 유지시켜서 도움이 되지 않는 생각에 가깝습니다.';
-        } else if (shuffledSentences[currentIndex]['type'] == 'healthy' &&
-            selected == 'anxious') {
-          dialogMsg =
-          '도움이 되지 않는다고 생각하셨군요.\n일시적으로 이런 생각이 불안을 높일 수는 있겠습니다만 장기적으로는 불안을 완화시켜서 도움이 되는 생각에 가깝습니다.';
-        }
-        // 필요 시 _showWrongDialog(dialogMsg) 다시 연결 가능
       }
 
       quizResults.add({

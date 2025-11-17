@@ -1,16 +1,21 @@
 // lib/features/3rd_treatment/week3_imagination.dart
 
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/chips_editor.dart';
-import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'week3_explain_alternative_thoughts.dart';
 
 // ⭐ 우리가 방금 쓰기로 한 더블 카드 레이아웃
 import 'package:gad_app_team/widgets/top_btm_card.dart';
 
 class Week3ImaginationScreen extends StatefulWidget {
-  const Week3ImaginationScreen({super.key});
+  final List<Map<String, dynamic>>? quizResults;
+  final int? correctCount;
+
+  const Week3ImaginationScreen({
+    super.key,
+    this.quizResults,
+    this.correctCount,
+  });
 
   @override
   State<Week3ImaginationScreen> createState() =>
@@ -102,8 +107,11 @@ class _Week3ImaginationScreenState extends State<Week3ImaginationScreen> {
     Navigator.push(
       context,
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) =>
-            Week3ExplainAlternativeThoughtsScreen(chips: values),
+        pageBuilder: (_, __, ___) => Week3ExplainAlternativeThoughtsScreen(
+          chips: values,
+          quizResults: widget.quizResults,
+          correctCount: widget.correctCount,
+        ),
         transitionDuration: Duration.zero,
         reverseTransitionDuration: Duration.zero,
       ),

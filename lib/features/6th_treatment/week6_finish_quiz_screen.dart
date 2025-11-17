@@ -3,8 +3,9 @@ import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:provider/provider.dart';
 import 'package:gad_app_team/data/user_provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/diaries_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 // 💙 공용 UI 위젯
 import 'package:gad_app_team/widgets/quiz_card.dart';
@@ -29,62 +30,51 @@ class _Week6FinishQuizScreenState extends State<Week6FinishQuizScreen> {
   // 인덱스별 사용자가 고른 답: 'face' | 'avoid'
   final Map<int, String> _answers = {};
 
-  Map<String, dynamic>? _abcModel;
-  String? _abcModelId; // 가장 최근 ABC 모델 문서 ID
+  String? _diaryId; // 최신 일기 ID
   bool _isLoading = true;
   String? _error;
 
   List<String> _behaviorList = [];
   String _currentBehavior = '';
+  late final ApiClient _client;
+  late final DiariesApi _diariesApi;
 
   @override
   void initState() {
     super.initState();
-    _fetchLatestAbcModel();
+    _client = ApiClient(tokens: TokenStorage());
+    _diariesApi = DiariesApi(_client);
+    _fetchLatestDiary();
   }
 
-  // 🔹 abc_models에서 최신 한 개만 읽어와서 행동 리스트 만들기
-  Future<void> _fetchLatestAbcModel() async {
+  // 🔹 최신 일기에서 행동 리스트 만들기
+  Future<void> _fetchLatestDiary() async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('로그인 정보 없음');
-
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('abc_models')
-          .orderBy('createdAt', descending: true)
-          .limit(1)
-          .get();
-
-      if (snapshot.docs.isEmpty) {
-        setState(() {
-          _abcModel = null;
-          _isLoading = false;
-        });
-        return;
+      // 최신 일기 불러오기
+      final latest = await _diariesApi.getLatestDiary();
+      final consequenceB = latest['consequence_b'] ?? [];
+      
+      List<String> behaviorList = [];
+      if (consequenceB is List) {
+        behaviorList = consequenceB
+            .map((e) => e.toString().trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
+      } else if (consequenceB is String && consequenceB.isNotEmpty) {
+        behaviorList = consequenceB
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
       }
 
-      final data = snapshot.docs.first.data();
-      final docId = snapshot.docs.first.id;
-
-      // 원래 코드대로 ', ' 로 split
-      final consequenceBehavior =
-      (data['consequence_behavior'] ?? '').toString();
-      final list = consequenceBehavior
-          .split(', ')
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
-
       setState(() {
-        _abcModel = data;
-        _abcModelId = docId;
-        _behaviorList = list;
+        _diaryId = latest['diaryId']?.toString();
+        _behaviorList = behaviorList;
         _currentBehavior = _behaviorList.isNotEmpty ? _behaviorList.first : '';
         _isLoading = false;
       });
@@ -98,29 +88,29 @@ class _Week6FinishQuizScreenState extends State<Week6FinishQuizScreen> {
 
   // 🔹 저장만 하는 함수로 변경 (네비게이션 X)
   Future<void> _saveBehaviorClassifications() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) throw Exception('로그인 정보 없음');
+    if (_diaryId == null) {
+      throw Exception('일기 ID가 없습니다.');
+    }
 
-    // 인덱스 → 행동명 → '직면'/'회피'
-    final Map<String, String> behaviorClassifications = {};
+    // confront_avoid_logs 형태로 변환
+    final now = DateTime.now().toUtc().toIso8601String();
+    final List<Map<String, dynamic>> logs = [];
 
     for (int i = 0; i < _behaviorList.length; i++) {
       if (_answers.containsKey(i)) {
         final behavior = _behaviorList[i];
-        final classification = _answers[i] == 'face' ? '직면' : '회피';
-        behaviorClassifications[behavior] = classification;
+        final type = _answers[i] == 'face' ? 'confronted' : 'avoided';
+        logs.add({
+          'type': type,
+          'comment': behavior,
+          'created_at': now,
+        });
       }
     }
 
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('abc_models')
-        .doc(_abcModelId)
-        .update({
-      'behavior_classifications': behaviorClassifications,
-      'week6_completed': true,
-      'week6_completed_at': FieldValue.serverTimestamp(),
+    // 일기 업데이트
+    await _diariesApi.updateDiary(_diaryId!, {
+      'confrontAvoidLogs': logs,
     });
   }
 

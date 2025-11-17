@@ -179,6 +179,8 @@ def _serialize_diary(doc: dict, *, array_index: int | None = None) -> dict:
         "consequence_b": doc.get("consequence_b", []),
         "sudScores": [_serialize_sud_entry(entry) for entry in sud_entries],
         "alternativeThoughts": doc.get("alternativeThoughts", []),
+        "realOddness": doc.get("realOddness", []),
+        "confrontAvoidLogs": doc.get("confrontAvoidLogs", []),
         "alarms": [AlarmResponse(**_serialize_alarm(alarm_doc)) for alarm_doc in alarms_raw],
         "latitude": doc.get("latitude"),
         "longitude": doc.get("longitude"),
@@ -238,6 +240,8 @@ async def create_diary(
         "consequence_b": payload.consequence_b,
         "sudScores": _normalize_sud_scores(payload.sud_scores),
         "alternativeThoughts": payload.alternative_thoughts,
+        "realOddness": payload.real_oddness,
+        "confrontAvoidLogs": payload.confront_avoid_logs,
         "alarms": _normalize_alarms(payload.alarms),
         "latitude": payload.latitude,
         "longitude": payload.longitude,
@@ -297,6 +301,60 @@ async def get_latest_diary(
     return DiaryResponse(**_serialize_diary(latest, array_index=len(diaries) - 1))
 
 
+@router.get("/confront-avoid-logs", response_model=List[Dict])
+async def get_all_confront_avoid_logs(
+    db=Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+):
+    """
+    모든 일기에서 confrontAvoidLogs를 수집하여 반환합니다.
+    7주차에서 사용자가 분류한 모든 행동(직면/회피)을 조회할 때 사용됩니다.
+    
+    반환 형식:
+    [
+        {
+            "type": "confronted" | "avoided",
+            "comment": "행동 내용",
+            "created_at": "2025-07-15T10:20:00Z",
+            "diary_id": "diary_xxx"  // 어느 일기에서 온 것인지
+        },
+        ...
+    ]
+    """
+    user = await _get_user_or_404(db, user_id)
+    diaries = user.get("diaries", [])
+    
+    all_logs = []
+    for diary in diaries:
+        diary_id = diary.get("diary_id")
+        logs = diary.get("confrontAvoidLogs", [])
+        if isinstance(logs, list):
+            for log in logs:
+                if isinstance(log, dict):
+                    # diary_id 추가하여 어느 일기에서 온 것인지 표시
+                    log_with_diary = dict(log)
+                    log_with_diary["diary_id"] = diary_id
+                    all_logs.append(log_with_diary)
+    
+    # created_at 기준으로 최신순 정렬
+    def _parse_date(v):
+        if isinstance(v, datetime):
+            return _ensure_tz(v)
+        if isinstance(v, str):
+            try:
+                return datetime.fromisoformat(v.replace('Z', '+00:00'))
+            except Exception:
+                pass
+        return datetime(1970, 1, 1, tzinfo=timezone.utc)
+    
+    all_logs.sort(
+        key=lambda log: _parse_date(log.get("created_at") or log.get("createdAt")),
+        reverse=True
+    )
+    
+    return all_logs
+
+
 @router.get("/{diary_id}", response_model=DiaryResponse)
 async def get_diary(
     diary_id: str,
@@ -334,6 +392,18 @@ async def update_diary(
     updated_diary = None
     for idx, diary in enumerate(diaries):
         if diary.get("diary_id") == diary_id:
+            # alternativeThoughts는 배열에 누적
+            if "alternativeThoughts" in update_data:
+                incoming = update_data.pop("alternativeThoughts") or []
+                existing = list(diary.get("alternativeThoughts", []))
+                # 중복 제거를 위해 set 사용 (문자열인 경우)
+                if isinstance(incoming, list):
+                    for item in incoming:
+                        if item not in existing:
+                            existing.append(item)
+                diary["alternativeThoughts"] = existing
+                diary["updatedAt"] = now
+            
             # realOddness는 belief 기준 병합
             if "realOddness" in update_data:
                 incoming = update_data.pop("realOddness") or []
@@ -355,10 +425,37 @@ async def update_diary(
                 merged_real = list(by_belief.values())
                 diary["realOddness"] = merged_real
                 diary["updatedAt"] = now
-                # 나머지 필드(있다면) 평범 병합
-                diaries[idx] = {**diary, **update_data}
-            else:
-                diaries[idx] = {**diary, **update_data}
+            
+            # confrontAvoidLogs는 comment 기준으로 업데이트/추가 (옵션 B)
+            if "confrontAvoidLogs" in update_data:
+                incoming = update_data.pop("confrontAvoidLogs") or []
+                existing = list(diary.get("confrontAvoidLogs", []))
+                by_comment: Dict[str, dict] = {}
+                # 기존 로그를 comment 기준으로 인덱싱
+                for e in existing:
+                    if isinstance(e, dict) and e.get("comment"):
+                        comment_key = str(e.get("comment")).strip()
+                        by_comment[comment_key] = dict(e)
+                # 새로운 로그 처리: 같은 comment가 있으면 업데이트, 없으면 추가
+                for e in incoming:
+                    if isinstance(e, dict) and e.get("comment"):
+                        comment_key = str(e.get("comment")).strip()
+                        # 같은 comment가 있으면 type과 created_at 업데이트
+                        if comment_key in by_comment:
+                            by_comment[comment_key]["type"] = e.get("type")
+                            by_comment[comment_key]["created_at"] = e.get("created_at", now)
+                        else:
+                            # 새로운 comment는 추가
+                            by_comment[comment_key] = {
+                                "type": e.get("type"),
+                                "comment": comment_key,
+                                "created_at": e.get("created_at", now)
+                            }
+                diary["confrontAvoidLogs"] = list(by_comment.values())
+                diary["updatedAt"] = now
+            
+            # 나머지 필드(있다면) 평범 병합
+            diaries[idx] = {**diary, **update_data}
             updated_diary = diaries[idx]
             updated = True
             break

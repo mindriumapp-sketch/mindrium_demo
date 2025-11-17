@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:gad_app_team/features/6th_treatment/week6_classfication_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:gad_app_team/data/user_provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/diaries_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 // ✅ 새로 정의된 디자인 위젯 불러오기
 import 'package:gad_app_team/widgets/ruled_paragraph.dart';
@@ -28,47 +29,32 @@ class Week6ConcentrationScreen extends StatefulWidget {
 class _Week6ConcentrationScreenState extends State<Week6ConcentrationScreen> {
   bool _isNextEnabled = false;
   int _secondsLeft = 10;
-  Map<String, dynamic>? _abcModel;
+  Map<String, dynamic>? _diary;
   bool _isLoading = true;
   bool _showSituation = true;
+  late final ApiClient _client;
+  late final DiariesApi _diariesApi;
 
   @override
   void initState() {
     super.initState();
+    _client = ApiClient(tokens: TokenStorage());
+    _diariesApi = DiariesApi(_client);
     _startCountdown();
-    _fetchLatestAbcModel();
+    _fetchLatestDiary();
   }
 
-  Future<void> _fetchLatestAbcModel() async {
+  Future<void> _fetchLatestDiary() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('로그인 정보 없음');
-
-      final snapshot =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .collection('abc_models')
-              .orderBy('createdAt', descending: true)
-              .limit(1)
-              .get();
-
-      if (snapshot.docs.isEmpty) {
-        setState(() {
-          _abcModel = null;
-          _isLoading = false;
-        });
-        return;
-      }
-
-      final data = snapshot.docs.first.data();
+      // 최신 일기 불러오기
+      final latest = await _diariesApi.getLatestDiary();
       setState(() {
-        _abcModel = data;
+        _diary = latest;
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
-        _abcModel = null;
+        _diary = null;
         _isLoading = false;
       });
     }
@@ -163,9 +149,9 @@ class _Week6ConcentrationScreenState extends State<Week6ConcentrationScreen> {
                   const SizedBox(height: 20),
                   RuledParagraph(
                     text: _showSituation
-                        ? _abcModel != null
-                        ? '$userName님, "${_abcModel!['activatingEvent'] ?? ''}" (이)라는 상황에서\n'
-                        '"${_getFirstBehavior(_abcModel!['consequence_behavior'])}"(이)라고 행동을 하였습니다.\n\n그때의 상황에 집중해보세요.'
+                        ? _diary != null
+                        ? '$userName님, "${_diary!['activating_events'] ?? ''}" (이)라는 상황에서\n'
+                        '"${_getFirstBehavior(_diary!['consequence_b'])}"(이)라고 행동을 하였습니다.\n\n그때의 상황에 집중해보세요.'
                         : '이때의 상황을 자세히 떠올려보세요.'
                         : '앞서 보셨던 행동이 불안을 \n직면한 행동인지, 회피한 행동인지 함께 살펴볼게요.',
                     textAlign: TextAlign.center,

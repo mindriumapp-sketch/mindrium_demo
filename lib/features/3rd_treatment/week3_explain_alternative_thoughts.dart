@@ -7,7 +7,15 @@ import 'package:gad_app_team/features/3rd_treatment/week3_alternative_thoughts.d
 
 class Week3ExplainAlternativeThoughtsScreen extends StatelessWidget {
   final List<String> chips;
-  const Week3ExplainAlternativeThoughtsScreen({super.key, required this.chips});
+  final List<Map<String, dynamic>>? quizResults;
+  final int? correctCount;
+
+  const Week3ExplainAlternativeThoughtsScreen({
+    super.key,
+    required this.chips,
+    this.quizResults,
+    this.correctCount,
+  });
 
   // 강조 박스
   Widget highlightedText(String text) {
@@ -171,8 +179,11 @@ class Week3ExplainAlternativeThoughtsScreen extends StatelessWidget {
         Navigator.push(
           context,
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) =>
-                Week3AlternativeThoughtsScreen(previousChips: chips),
+            pageBuilder: (_, __, ___) => Week3AlternativeThoughtsScreen(
+              previousChips: chips,
+              quizResults: quizResults,
+              correctCount: correctCount,
+            ),
             transitionDuration: Duration.zero,
             reverseTransitionDuration: Duration.zero,
           ),

@@ -140,4 +140,22 @@ class DiariesApi {
   Future<void> deleteAlarm(String diaryId, String alarmId) async {
     await _client.dio.delete('/diaries/$diaryId/alarms/$alarmId');
   }
+
+  /// 모든 일기에서 confrontAvoidLogs를 수집하여 반환합니다.
+  /// 7주차에서 사용자가 분류한 모든 행동(직면/회피)을 조회할 때 사용됩니다.
+  Future<List<Map<String, dynamic>>> getAllConfrontAvoidLogs() async {
+    final res = await _client.dio.get('/diaries/confront-avoid-logs');
+    final data = res.data;
+    if (data is List) {
+      return data
+          .whereType<Map>()
+          .map((raw) => raw.map((k, v) => MapEntry(k.toString(), v)))
+          .toList()
+          .cast<Map<String, dynamic>>();
+    }
+    throw DioException(
+      requestOptions: res.requestOptions,
+      message: 'Invalid /diaries/confront-avoid-logs response',
+    );
+  }
 }

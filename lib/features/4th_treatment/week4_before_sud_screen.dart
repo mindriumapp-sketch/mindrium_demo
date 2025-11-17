@@ -7,7 +7,6 @@ import 'package:gad_app_team/widgets/blue_banner.dart';
 import 'package:gad_app_team/data/api/api_client.dart';
 import 'package:gad_app_team/data/api/diaries_api.dart';
 import 'package:gad_app_team/data/storage/token_storage.dart';
-import 'package:gad_app_team/data/api/sud_api.dart';
 
 class Week4BeforeSudScreen extends StatefulWidget {
   final int loopCount;
@@ -23,17 +22,11 @@ class _Week4BeforeSudScreenState extends State<Week4BeforeSudScreen> {
   bool _isLoading = false;
   ApiClient? _client;
   DiariesApi? _diariesApi;
-  SudApi? _sudApi;
 
   DiariesApi get _api {
     _client ??= ApiClient(tokens: TokenStorage());
     _diariesApi ??= DiariesApi(_client!);
     return _diariesApi!;
-  }
-  SudApi get _sudApiGetter {
-    _client ??= ApiClient(tokens: TokenStorage());
-    _sudApi ??= SudApi(_client!);
-    return _sudApi!;
   }
 
   @override
@@ -42,7 +35,6 @@ class _Week4BeforeSudScreenState extends State<Week4BeforeSudScreen> {
     // 지연 초기화 보장 (핫리로드/재사용 시 안전하게 동작)
     _client ??= ApiClient(tokens: TokenStorage());
     _diariesApi ??= DiariesApi(_client!);
-    _sudApi ??= SudApi(_client!);
   }
 
   List<String> _parseBelief(dynamic raw) {
@@ -58,11 +50,6 @@ class _Week4BeforeSudScreenState extends State<Week4BeforeSudScreen> {
     return _parseBelief(latest['belief']);
   }
 
-  Future<String?> _getLatestDiaryId() async {
-    final latest = await _api.getLatestDiary();
-    return latest['diaryId']?.toString();
-  }
-
   Color get _trackColor =>
       _sud <= 2 ? Colors.green : (_sud >= 8 ? Colors.red : Colors.amber);
 
@@ -76,16 +63,7 @@ class _Week4BeforeSudScreenState extends State<Week4BeforeSudScreen> {
         setState(() => _isLoading = true);
         final beforeSudValue = _sud;
         try {
-          // 1) 최신 일기 ID 확보
-          final diaryId = await _getLatestDiaryId();
-          if (diaryId != null && diaryId.isNotEmpty) {
-            // 2) SUD(before) 기록 (after는 미입력)
-            await _sudApiGetter.createSudScore(
-              diaryId: diaryId,
-              beforeScore: beforeSudValue,
-            );
-          }
-
+          // 4주차는 Before SUD를 저장하지 않고, After SUD에서만 저장
           final actualBList = await _fetchBList();
           if (actualBList.isEmpty) {
             setState(() => _isLoading = false);

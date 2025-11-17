@@ -118,7 +118,10 @@ class Week5ClassificationResultScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         PageRouteBuilder(
-                          pageBuilder: (_, __, ___) => const Week5ImaginationScreen(),
+                          pageBuilder: (_, __, ___) => Week5ImaginationScreen(
+                            quizResults: quizResults,
+                            correctCount: correctCount,
+                          ),
                           transitionDuration: Duration.zero,
                           reverseTransitionDuration: Duration.zero,
                         ),

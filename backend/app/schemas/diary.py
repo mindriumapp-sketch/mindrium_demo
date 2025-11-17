@@ -14,6 +14,8 @@ class DiaryBase(BaseModel):
     alternative_thoughts: List[Any] = Field(default_factory=list, alias="alternativeThoughts")
     # real oddness(실제 믿음 강도) 기록: [{belief: str, before:int, after:int?, created_at, updated_at}]
     real_oddness: List[Any] = Field(default_factory=list, alias="realOddness")
+    # 6주차: 행동 분류 로그 [{type: "confronted"|"avoided", comment: str, created_at: datetime}]
+    confront_avoid_logs: List[Any] = Field(default_factory=list, alias="confrontAvoidLogs")
     alarms: List[Any] = Field(default_factory=list)
     latitude: Optional[float] = None
     longitude: Optional[float] = None
@@ -37,6 +39,7 @@ class DiaryUpdate(BaseModel):
     sud_scores: Optional[List[Any]] = Field(None, alias="sudScores")
     alternative_thoughts: Optional[List[Any]] = Field(None, alias="alternativeThoughts")
     real_oddness: Optional[List[Any]] = Field(None, alias="realOddness")
+    confront_avoid_logs: Optional[List[Any]] = Field(None, alias="confrontAvoidLogs")
     alarms: Optional[List[Any]] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None

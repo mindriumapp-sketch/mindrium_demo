@@ -100,4 +100,50 @@ class UserDataApi {
       message: 'Invalid /users/me/custom-tags (POST) response',
     );
   }
+
+  Future<Map<String, dynamic>> createPracticeSession({
+    required int weekNumber,
+    required List<String> negativeItems,
+    required List<String> positiveItems,
+    Map<String, dynamic>? classificationQuiz,
+  }) async {
+    final payload = <String, dynamic>{
+      'week_number': weekNumber,
+      'negative_items': negativeItems,
+      'positive_items': positiveItems,
+      if (classificationQuiz != null) 'classification_quiz': classificationQuiz,
+    };
+
+    final res = await _client.dio.post(
+      '/users/me/practice-sessions',
+      data: payload,
+    );
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    throw DioException(
+      requestOptions: res.requestOptions,
+      message: 'Invalid /users/me/practice-sessions (POST) response',
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getPracticeSessions({int? weekNumber}) async {
+    final res = await _client.dio.get(
+      '/users/me/practice-sessions',
+      queryParameters: {
+        if (weekNumber != null) 'week_number': weekNumber,
+      },
+    );
+    final data = res.data;
+    if (data is List) {
+      return data
+          .whereType<Map>()
+          .map((raw) => raw.map((key, value) => MapEntry(key.toString(), value)))
+          .toList()
+          .cast<Map<String, dynamic>>();
+    }
+    throw DioException(
+      requestOptions: res.requestOptions,
+      message: 'Invalid /users/me/practice-sessions response',
+    );
+  }
 }

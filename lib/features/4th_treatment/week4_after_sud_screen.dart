@@ -7,6 +7,7 @@ import 'week4_finish_screen.dart';
 import 'week4_skip_choice_screen.dart';
 import 'package:gad_app_team/data/api/api_client.dart';
 import 'package:gad_app_team/data/api/sud_api.dart';
+import 'package:gad_app_team/data/api/diaries_api.dart';
 import 'package:gad_app_team/data/storage/token_storage.dart';
 
 class Week4AfterSudScreen extends StatefulWidget {
@@ -42,6 +43,7 @@ class _Week4AfterSudScreenState extends State<Week4AfterSudScreen> {
   List<String> _allAlternativeThoughts = [];
   late final ApiClient _client;
   late final SudApi _sudApi;
+  late final DiariesApi _diariesApi;
   String? _diaryIdFromRoute;
   bool _didReadArgs = false;
 
@@ -50,6 +52,7 @@ class _Week4AfterSudScreenState extends State<Week4AfterSudScreen> {
     super.initState();
     _client = ApiClient(tokens: TokenStorage());
     _sudApi = SudApi(_client);
+    _diariesApi = DiariesApi(_client);
     _collectAllAlternativeThoughts();
   }
 
@@ -76,40 +79,33 @@ class _Week4AfterSudScreenState extends State<Week4AfterSudScreen> {
     });
   }
 
-  void _handleNext() {
-    // SUD(after) 저장: 기존 엔트리(before만 있는 최신)를 찾아 업데이트
-    final id = _diaryIdFromRoute;
+  Future<void> _handleNext() async {
+    // SUD(after) 저장: 항상 새 항목으로 추가 (배열 누적 방식)
+    String? id = _diaryIdFromRoute;
+    
+    // abcId가 없으면 최신 일기 가져오기
+    if (id == null || id.isEmpty) {
+      try {
+        final latest = await _diariesApi.getLatestDiary();
+        id = latest['diaryId']?.toString();
+      } catch (_) {
+        // 최신 일기를 가져오지 못해도 화면 전환은 진행
+      }
+    }
+    
     if (id != null && id.isNotEmpty) {
-      _sudApi
-          .listSudScores(id)
-          .then((list) async {
-            // after_sud가 null인 가장 최신 항목 선택
-            Map<String, dynamic>? target;
-            for (final e in list.reversed) {
-              final m = e as Map<String, dynamic>;
-              if ((m['after_sud'] == null) || (m['after_sud']?.toString().isEmpty ?? true)) {
-                target = m;
-                break;
-              }
-            }
-            if (target != null && target['sud_id'] != null) {
-              await _sudApi.updateSudScore(
-                diaryId: id,
-                sudId: target['sud_id'].toString(),
-                afterScore: _sud,
-              );
-            } else {
-              // 안전장치: 없으면 새로 생성(두 값 모두)
-              await _sudApi.createSudScore(
-                diaryId: id,
-                beforeScore: widget.beforeSud,
-                afterScore: _sud,
-              );
-            }
-          })
-          .catchError((_) {});
+      try {
+        await _sudApi.createSudScore(
+          diaryId: id,
+          beforeScore: widget.beforeSud,
+          afterScore: _sud,
+        );
+      } catch (_) {
+        // 에러 발생 시에도 화면 전환은 진행
+      }
     }
 
+    if (!mounted) return;
     if (_sud < widget.beforeSud) {
       // 낮아짐 → 종료 화면
       Navigator.pushReplacement(

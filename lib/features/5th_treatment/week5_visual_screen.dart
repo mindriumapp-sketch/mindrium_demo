@@ -3,15 +3,22 @@ import 'package:gad_app_team/widgets/top_btm_card.dart';
 import 'package:gad_app_team/widgets/thought_card.dart';
 import 'package:gad_app_team/widgets/custom_popup_design.dart';
 import 'package:gad_app_team/widgets/detail_popup.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/user_data_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 class Week5VisualScreen extends StatefulWidget {
   final List<String> previousChips;     // 불안을 회피하는 행동
   final List<String> alternativeChips;  // 불안을 직면하는 행동
+  final List<Map<String, dynamic>>? quizResults; // 퀴즈 결과
+  final int? correctCount; // 정답 개수
 
   const Week5VisualScreen({
     super.key,
     required this.previousChips,
     required this.alternativeChips,
+    this.quizResults,
+    this.correctCount,
   });
 
   @override
@@ -19,6 +26,64 @@ class Week5VisualScreen extends StatefulWidget {
 }
 
 class _Week5VisualScreenState extends State<Week5VisualScreen> {
+  late final ApiClient _client;
+  late final UserDataApi _userDataApi;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _client = ApiClient(tokens: TokenStorage());
+    _userDataApi = UserDataApi(_client);
+  }
+
+  Future<void> _saveSession() async {
+    if (_isSaving) return;
+    
+    setState(() => _isSaving = true);
+    
+    try {
+      // 퀴즈 결과 변환
+      Map<String, dynamic>? classificationQuiz;
+      if (widget.quizResults != null && widget.quizResults!.isNotEmpty && widget.correctCount != null) {
+        final wrongList = widget.quizResults!
+            .where((item) => item['isCorrect'] == false)
+            .map((item) => {
+                  'text': item['text'],
+                  'user_choice': item['userChoice'],
+                  'correct_type': item['correctType'],
+                })
+            .toList();
+        
+        classificationQuiz = {
+          'correct_count': widget.correctCount,
+          'total_count': widget.quizResults!.length,
+          'results': widget.quizResults!.map((r) => {
+                'text': r['text'],
+                'correct_type': r['correctType'],
+                'user_choice': r['userChoice'],
+                'is_correct': r['isCorrect'],
+              }).toList(),
+          'wrong_list': wrongList,
+        };
+      }
+
+      await _userDataApi.createPracticeSession(
+        weekNumber: 5,
+        negativeItems: widget.previousChips,
+        positiveItems: widget.alternativeChips,
+        classificationQuiz: classificationQuiz,
+      );
+    } catch (e) {
+      // 에러 발생 시에도 팝업은 표시
+      debugPrint('세션 저장 실패: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
   void _showFinishDialog() {
     showDialog(
       context: context,
@@ -29,7 +94,10 @@ class _Week5VisualScreenState extends State<Week5VisualScreen> {
         positiveText: '홈으로 돌아가기',
         negativeText: null,
         onNegativePressed: null,
-        onPositivePressed: () {
+        onPositivePressed: () async {
+          // 세션 저장 후 홈으로 이동
+          await _saveSession();
+          if (!mounted) return;
           Navigator.of(context, rootNavigator: true).pop();
           Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
         },

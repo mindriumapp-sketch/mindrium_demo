@@ -1,9 +1,7 @@
 // lib/features/3rd_treatment/week3_alternative_thoughts.dart
 
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/chips_editor.dart';
-import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/features/3rd_treatment/week3_visual_screen.dart';
 
 // ⭐ 5주차에서 썼던 더블 카드 레이아웃
@@ -11,10 +9,14 @@ import 'package:gad_app_team/widgets/top_btm_card.dart';
 
 class Week3AlternativeThoughtsScreen extends StatefulWidget {
   final List<String> previousChips;
+  final List<Map<String, dynamic>>? quizResults;
+  final int? correctCount;
 
   const Week3AlternativeThoughtsScreen({
     super.key,
     required this.previousChips,
+    this.quizResults,
+    this.correctCount,
   });
 
   @override
@@ -111,6 +113,8 @@ class _Week3AlternativeThoughtsScreenState
         pageBuilder: (_, __, ___) => Week3VisualScreen(
           previousChips: widget.previousChips,
           alternativeChips: values,
+          quizResults: widget.quizResults,
+          correctCount: widget.correctCount,
         ),
         transitionDuration: Duration.zero,
         reverseTransitionDuration: Duration.zero,

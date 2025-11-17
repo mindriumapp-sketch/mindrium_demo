@@ -247,6 +247,7 @@ class _Week4AfterAgreementScreenState extends State<Week4AfterAgreementScreen> {
                   isFromAnxietyScreen: widget.isFromAnxietyScreen,
                   originalBList: widget.originalBList,
                   loopCount: widget.loopCount,
+                  abcId: widget.abcId,
                 ),
             transitionDuration: Duration.zero,
             reverseTransitionDuration: Duration.zero,

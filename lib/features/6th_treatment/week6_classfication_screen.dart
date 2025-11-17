@@ -1,10 +1,11 @@
 // 📘 week6_classification_screen.dart
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 
 import 'package:gad_app_team/data/user_provider.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/diaries_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/widgets/quiz_card.dart';
@@ -29,7 +30,7 @@ class Week6ClassificationScreen extends StatefulWidget {
 }
 
 class _Week6ClassificationScreenState extends State<Week6ClassificationScreen> {
-  Map<String, dynamic>? _abcModel;
+  Map<String, dynamic>? _diary;
   bool _isLoading = true;
   String? _error;
 
@@ -37,40 +38,27 @@ class _Week6ClassificationScreenState extends State<Week6ClassificationScreen> {
   late String _currentBehavior;
   final Map<String, double> _behaviorScores = {};
   String? _selectedFeedback;
+  late final ApiClient _client;
+  late final DiariesApi _diariesApi;
 
   @override
   void initState() {
     super.initState();
-    _fetchLatestAbcModel();
+    _client = ApiClient(tokens: TokenStorage());
+    _diariesApi = DiariesApi(_client);
+    _fetchLatestDiary();
   }
 
-  Future<void> _fetchLatestAbcModel() async {
+  Future<void> _fetchLatestDiary() async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('로그인 정보 없음');
-
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('abc_models')
-          .orderBy('createdAt', descending: true)
-          .limit(1)
-          .get();
-
-      if (snapshot.docs.isEmpty) {
-        setState(() {
-          _abcModel = null;
-          _isLoading = false;
-        });
-        return;
-      }
-
+      // 최신 일기 불러오기 (실제로는 behaviorListInput을 사용하지만 일관성을 위해)
+      final latest = await _diariesApi.getLatestDiary();
       setState(() {
-        _abcModel = snapshot.docs.first.data();
+        _diary = latest;
         _behaviorList = widget.behaviorListInput;
         _currentBehavior =
         _behaviorList.isNotEmpty ? _behaviorList.first : '행동이 없습니다.';
@@ -166,10 +154,10 @@ class _Week6ClassificationScreenState extends State<Week6ClassificationScreen> {
                         style: const TextStyle(color: Colors.red),
                       ),
                     )
-                        : (_abcModel == null)
+                        : (_diary == null)
                         ? const Center(
                       child: Text(
-                        '최근에 작성한 ABC모델이 없습니다.',
+                        '최근에 작성한 일기가 없습니다.',
                         style: TextStyle(fontSize: 16),
                       ),
                     )

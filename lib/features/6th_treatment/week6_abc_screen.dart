@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:gad_app_team/data/user_provider.dart';
 import 'package:gad_app_team/features/6th_treatment/week6_concentration_screen.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/diaries_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 class Week6AbcScreen extends StatefulWidget {
   const Week6AbcScreen({super.key});
@@ -17,39 +18,27 @@ class _Week6AbcScreenState extends State<Week6AbcScreen> {
   Map<String, dynamic>? _abcModel;
   bool _isLoading = true;
   String? _error;
+  late final ApiClient _client;
+  late final DiariesApi _diariesApi;
 
   @override
   void initState() {
     super.initState();
-    _fetchLatestAbcModel();
+    _client = ApiClient(tokens: TokenStorage());
+    _diariesApi = DiariesApi(_client);
+    _fetchLatestDiary();
   }
 
-  Future<void> _fetchLatestAbcModel() async {
+  Future<void> _fetchLatestDiary() async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('로그인 정보 없음');
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('abc_models')
-          .orderBy('createdAt', descending: true)
-          .limit(1)
-          .get();
-
-      if (snapshot.docs.isEmpty) {
-        setState(() {
-          _abcModel = null;
-          _isLoading = false;
-        });
-        return;
-      }
-
+      // 최신 일기 불러오기
+      final latest = await _diariesApi.getLatestDiary();
       setState(() {
-        _abcModel = snapshot.docs.first.data();
+        _abcModel = latest;
         _isLoading = false;
       });
     } catch (e) {
@@ -86,11 +75,17 @@ class _Week6AbcScreenState extends State<Week6AbcScreen> {
       cardTitle: '최근 ABC 모델 확인',
       onBack: () => Navigator.pop(context),
       onNext: () {
-        final behaviorData = _abcModel?['consequence_behavior'] ?? '';
+        // 일기의 consequence_b (행동 리스트) 추출
+        final consequenceB = _abcModel?['consequence_b'] ?? [];
         List<String> behaviorList = [];
 
-        if (behaviorData is String && behaviorData.isNotEmpty) {
-          behaviorList = behaviorData
+        if (consequenceB is List) {
+          behaviorList = consequenceB
+              .map((e) => e.toString().trim())
+              .where((e) => e.isNotEmpty)
+              .toList();
+        } else if (consequenceB is String && consequenceB.isNotEmpty) {
+          behaviorList = consequenceB
               .split(',')
               .map((e) => e.trim())
               .where((e) => e.isNotEmpty)
@@ -133,11 +128,15 @@ class _Week6AbcScreenState extends State<Week6AbcScreen> {
             );
           }
 
-          final a = _abcModel?['activatingEvent'] ?? '';
-          final b = _abcModel?['belief'] ?? '';
-          final cPhysical = _abcModel?['consequence_physical'] ?? '';
-          final cEmotion = _abcModel?['consequence_emotion'] ?? '';
-          final cBehavior = _abcModel?['consequence_behavior'] ?? '';
+          final a = _abcModel?['activating_events'] ?? '';
+          final bList = _abcModel?['belief'] ?? [];
+          final b = bList is List ? bList.join(', ') : (bList.toString());
+          final cPhysical = _abcModel?['consequence_p'] ?? [];
+          final cPhysicalStr = cPhysical is List ? cPhysical.join(', ') : (cPhysical.toString());
+          final cEmotion = _abcModel?['consequence_e'] ?? [];
+          final cEmotionStr = cEmotion is List ? cEmotion.join(', ') : (cEmotion.toString());
+          final cBehavior = _abcModel?['consequence_b'] ?? [];
+          final cBehaviorStr = cBehavior is List ? cBehavior.join(', ') : (cBehavior.toString());
           final userName = Provider.of<UserProvider>(
             context,
             listen: false,
@@ -145,8 +144,15 @@ class _Week6AbcScreenState extends State<Week6AbcScreen> {
 
           String formattedDate = '';
           if (_abcModel?['createdAt'] != null) {
-            final timestamp = _abcModel!['createdAt'] as Timestamp;
-            final date = timestamp.toDate();
+            final createdAt = _abcModel!['createdAt'];
+            DateTime date;
+            if (createdAt is DateTime) {
+              date = createdAt;
+            } else if (createdAt is String) {
+              date = DateTime.parse(createdAt);
+            } else {
+              date = DateTime.now();
+            }
             formattedDate =
                 '${date.year}년 ${date.month}월 ${date.day}일에 작성된 걱정일기';
           }
@@ -206,21 +212,21 @@ class _Week6AbcScreenState extends State<Week6AbcScreen> {
                     const TextSpan(text: " 상황에서 "),
                     WidgetSpan(child: _highlightedText("'$b'")),
                     const TextSpan(text: " 생각을 하였습니다.\n\n"),
-                    if (cPhysical.isNotEmpty ||
-                        cEmotion.isNotEmpty ||
-                        cBehavior.isNotEmpty) ...[
+                    if (cPhysicalStr.isNotEmpty ||
+                        cEmotionStr.isNotEmpty ||
+                        cBehaviorStr.isNotEmpty) ...[
                       const TextSpan(text: "그 결과 "),
-                      if (cPhysical.isNotEmpty) ...[
+                      if (cPhysicalStr.isNotEmpty) ...[
                         const TextSpan(text: "신체적으로 "),
-                        WidgetSpan(child: _highlightedText("'$cPhysical'")),
+                        WidgetSpan(child: _highlightedText("'$cPhysicalStr'")),
                         const TextSpan(text: " 증상이 나타났고, "),
                       ],
-                      if (cEmotion.isNotEmpty) ...[
-                        WidgetSpan(child: _highlightedText("'$cEmotion'")),
+                      if (cEmotionStr.isNotEmpty) ...[
+                        WidgetSpan(child: _highlightedText("'$cEmotionStr'")),
                         const TextSpan(text: " 감정을 느끼셨으며, "),
                       ],
-                      if (cBehavior.isNotEmpty) ...[
-                        WidgetSpan(child: _highlightedText("'$cBehavior'")),
+                      if (cBehaviorStr.isNotEmpty) ...[
+                        WidgetSpan(child: _highlightedText("'$cBehaviorStr'")),
                         const TextSpan(text: "\n행동을 하였습니다.\n\n"),
                       ],
                     ],
