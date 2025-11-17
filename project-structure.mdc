@@ -1,0 +1,33 @@
+// cursor/rules
+
+# 프로젝트 구조 가이드
+
+이 플러터 프로젝트는 정신건강 관리 및 노출치료, 일기, 감정 기록 등 다양한 기능을 제공합니다.
+
+## 주요 폴더 및 역할
+
+- [lib/main.dart](mdc:lib/main.dart): 앱의 엔트리포인트, Provider 등 전역 상태 관리 등록
+- [lib/app.dart](mdc:lib/app.dart): MaterialApp, 라우트, 테마 등 앱의 전체 구조 정의
+- [lib/features/](mdc:lib/features): 주요 기능별 화면 및 로직
+  - [features/menu/diary/](mdc:lib/features/menu/diary): 일기 관련 화면 및 기능
+  - [features/menu/exposure/](mdc:lib/features/menu/exposure): 노출치료, 불안 시각화, 감정 선택 등
+  - [features/menu/education/](mdc:lib/features/menu/education): 교육 콘텐츠
+  - [features/menu/relaxation/](mdc:lib/features/menu/relaxation): 이완 훈련
+  - [features/auth/](mdc:lib/features/auth): 인증 관련 화면
+  - [features/other/](mdc:lib/features/other): 튜토리얼, 스플래시 등 기타 화면
+- [lib/data/](mdc:lib/data): Provider, 데이터 모델, 상태 관리 클래스
+- [lib/widgets/](mdc:lib/widgets): 재사용 가능한 커스텀 위젯, UI 컴포넌트
+- [lib/common/](mdc:lib/common): 상수, 테마, 공통 유틸리티
+- [lib/navigation/](mdc:lib/navigation): 네비게이션 관련 화면 및 로직
+- [lib/utils/](mdc:lib/utils): 유틸리티 함수
+
+## 전역 상태 관리
+- Provider 패턴을 사용하여 사용자, 일기, 노출치료, 리포트 등 다양한 상태를 전역적으로 관리
+- 주요 Provider는 [lib/data/](mdc:lib/data)에 위치하며, MultiProvider로 앱 전체에 주입됨
+
+## 리포트/통계 기능 확장
+- 사용자의 불안, 감정, 노출치료 기록 등은 Provider를 통해 전역적으로 관리되어 리포트, 통계, 히스토리 등 다양한 화면에서 활용 가능
+
+## 참고
+- 각 기능별 폴더는 화면, 상태, 위젯, 데이터 모델을 모듈화하여 유지보수와 확장에 용이하게 설계됨
+- Firebase 등 외부 서비스 연동은 [lib/data/](mdc:lib/data) 및 각 기능별 Provider에서 처리

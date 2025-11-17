@@ -1,0 +1,10 @@
+<!-- android/app/src/main/res/xml/home_widget_provider.xml -->
+<appwidget-provider
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="72dp"
+    android:minHeight="72dp"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/home_widget"
+    android:resizeMode="none"
+    android:widgetCategory="home_screen">
+</appwidget-provider>
