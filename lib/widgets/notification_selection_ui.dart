@@ -336,14 +336,7 @@ class NotificationSelectionUI extends StatelessWidget {
               text: "저장하기",
               onPressed: () async {
                 try {
-                  // 1️⃣ 기존 저장 로직
-                  //await EduProgress.markWeekDone(2);
                   onSave();
-
-                  // 4️⃣ 홈으로 복귀 (진행도 및 잠금 상태 자동 갱신)
-                  if (context.mounted) {
-                    Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
-                  }
                 } catch (e) {
                   debugPrint("❌ 저장 실패: $e");
                 }

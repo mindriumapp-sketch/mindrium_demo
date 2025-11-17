@@ -320,6 +320,220 @@ async def create_custom_tag(
     return CustomTagResponse(**tag_doc)
 
 
+@router.get("/worry-groups", summary="걱정 그룹 목록 조회")
+async def get_worry_groups(
+    include_archived: bool = False,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    사용자의 걱정 그룹 목록을 반환합니다.
+    
+    - **include_archived**: True면 아카이브된 그룹도 포함
+    """
+    user_id = current_user["_id"]
+    user = await db[USER_COLLECTION].find_one({"_id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+
+    def _iso(value):
+        if isinstance(value, datetime):
+            return value.isoformat()
+        return value
+
+    groups = []
+    for group in user.get("worry_groups", []):
+        if not include_archived and group.get("archived"):
+            continue
+        groups.append({
+            "group_id": group.get("group_id"),
+            "group_title": group.get("group_name") or group.get("group_title"),
+            "group_contents": group.get("description") or group.get("group_contents"),
+            "character_id": group.get("character_id"),
+            "created_at": _iso(group.get("created_at")),
+            "archived": group.get("archived", False),
+            "archived_at": _iso(group.get("archived_at")),
+        })
+
+    groups.sort(
+        key=lambda g: g.get("created_at") or "",
+        reverse=False,
+    )
+    return groups
+
+
+@router.get("/worry-groups/{group_id}", summary="특정 걱정 그룹 조회")
+async def get_worry_group(
+    group_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    특정 걱정 그룹의 상세 정보를 반환합니다.
+    """
+    user_id = current_user["_id"]
+    user = await db[USER_COLLECTION].find_one({"_id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+
+    for group in user.get("worry_groups", []):
+        if str(group.get("group_id")) == str(group_id):
+            return {
+                "group_id": group.get("group_id"),
+                "group_title": group.get("group_name") or group.get("group_title"),
+                "group_contents": group.get("description") or group.get("group_contents"),
+                "character_id": group.get("character_id"),
+                "created_at": group.get("created_at").isoformat() if isinstance(group.get("created_at"), datetime) else group.get("created_at"),
+                "archived": group.get("archived", False),
+            }
+    
+    raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+
+
+@router.post("/worry-groups", status_code=status.HTTP_201_CREATED, summary="걱정 그룹 생성")
+async def create_worry_group(
+    group_data: dict,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    새로운 걱정 그룹을 생성합니다.
+    """
+    user_id = current_user["_id"]
+    
+    new_group = {
+        "group_id": group_data.get("group_id"),
+        "group_title": group_data.get("group_title", ""),
+        "group_contents": group_data.get("group_contents", ""),
+        "character_id": group_data.get("character_id"),
+        "created_at": datetime.now(timezone.utc),
+        "archived": False,
+    }
+    
+    result = await db[USER_COLLECTION].update_one(
+        {"_id": user_id},
+        {"$push": {"worry_groups": new_group}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+    
+    return {
+        "group_id": new_group["group_id"],
+        "group_title": new_group["group_title"],
+        "group_contents": new_group["group_contents"],
+        "character_id": new_group.get("character_id"),
+        "created_at": new_group["created_at"].isoformat(),
+        "archived": False,
+    }
+
+
+@router.put("/worry-groups/{group_id}", summary="걱정 그룹 수정")
+async def update_worry_group(
+    group_id: str,
+    updates: dict,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    걱정 그룹 정보를 수정합니다.
+    """
+    user_id = current_user["_id"]
+    user = await db[USER_COLLECTION].find_one({"_id": user_id})
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+    
+    worry_groups = list(user.get("worry_groups", []))
+    group_found = False
+    
+    for i, group in enumerate(worry_groups):
+        if str(group.get("group_id")) == str(group_id):
+            if "group_title" in updates:
+                worry_groups[i]["group_title"] = updates["group_title"]
+            if "group_contents" in updates:
+                worry_groups[i]["group_contents"] = updates["group_contents"]
+            if "character_id" in updates:
+                worry_groups[i]["character_id"] = updates["character_id"]
+            
+            worry_groups[i]["updated_at"] = datetime.now(timezone.utc)
+            group_found = True
+            
+            result = await db[USER_COLLECTION].update_one(
+                {"_id": user_id},
+                {"$set": {"worry_groups": worry_groups}}
+            )
+            
+            return {
+                "group_id": worry_groups[i].get("group_id"),
+                "group_title": worry_groups[i].get("group_title"),
+                "group_contents": worry_groups[i].get("group_contents"),
+                "character_id": worry_groups[i].get("character_id"),
+                "created_at": worry_groups[i].get("created_at").isoformat() if isinstance(worry_groups[i].get("created_at"), datetime) else worry_groups[i].get("created_at"),
+                "archived": worry_groups[i].get("archived", False),
+            }
+    
+    if not group_found:
+        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+
+
+@router.post("/worry-groups/{group_id}/archive", summary="걱정 그룹 아카이브")
+async def archive_worry_group(
+    group_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    걱정 그룹을 아카이브합니다 (소프트 삭제).
+    """
+    user_id = current_user["_id"]
+    user = await db[USER_COLLECTION].find_one({"_id": user_id})
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+    
+    worry_groups = list(user.get("worry_groups", []))
+    
+    for i, group in enumerate(worry_groups):
+        if str(group.get("group_id")) == str(group_id):
+            worry_groups[i]["archived"] = True
+            worry_groups[i]["archived_at"] = datetime.now(timezone.utc)
+            
+            await db[USER_COLLECTION].update_one(
+                {"_id": user_id},
+                {"$set": {"worry_groups": worry_groups}}
+            )
+            
+            return {
+                "group_id": worry_groups[i].get("group_id"),
+                "group_title": worry_groups[i].get("group_title"),
+                "archived": True,
+                "archived_at": worry_groups[i]["archived_at"].isoformat(),
+            }
+    
+    raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+
+
+@router.delete("/worry-groups/{group_id}", status_code=status.HTTP_204_NO_CONTENT, summary="걱정 그룹 삭제")
+async def delete_worry_group(
+    group_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    걱정 그룹을 완전히 삭제합니다 (하드 삭제).
+    """
+    user_id = current_user["_id"]
+    
+    result = await db[USER_COLLECTION].update_one(
+        {"_id": user_id},
+        {"$pull": {"worry_groups": {"group_id": group_id}}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+
+
 @router.get("/worry-groups/archived", summary="아카이브된 걱정 그룹 조회")
 async def get_archived_worry_groups(
     current_user: dict = Depends(get_current_user),
@@ -469,3 +683,53 @@ async def update_week_progress(
             return WeekProgress(**week)
     
     raise HTTPException(status_code=500, detail="진행도 업데이트 실패")
+
+
+# ============= ABC Models =============
+
+@router.get("/abc-models", summary="ABC 모델 목록 조회")
+async def get_abc_models(
+    group_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    사용자의 ABC 모델 데이터를 조회합니다.
+    
+    - **group_id**: 특정 그룹의 모델만 조회 (선택사항)
+    
+    반환되는 데이터:
+    - **model_id**: 모델 ID
+    - **group_id**: 그룹 ID
+    - **belief**: 비합리적 신념 (문자열 또는 배열)
+    - **alternative_thoughts**: 대체 생각 목록
+    - **created_at**: 생성 시각
+    """
+    user_id = current_user["_id"]
+    user = await db[USER_COLLECTION].find_one({"_id": user_id})
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+    
+    abc_models = user.get("abc_models", [])
+    
+    # group_id 필터링
+    if group_id:
+        abc_models = [
+            model for model in abc_models
+            if str(model.get("group_id")) == str(group_id)
+        ]
+    
+    # 응답 데이터 정리
+    result = []
+    for model in abc_models:
+        result.append({
+            "model_id": model.get("model_id"),
+            "group_id": model.get("group_id"),
+            "belief": model.get("belief"),
+            "alternative_thoughts": model.get("alternative_thoughts", []),
+            "created_at": model.get("created_at"),
+            "updated_at": model.get("updated_at"),
+        })
+    
+    return result

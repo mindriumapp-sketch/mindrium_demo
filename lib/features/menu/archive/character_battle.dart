@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gad_app_team/features/menu/archive/character_battle_asr.dart';
 import 'dart:async';
+import 'package:gad_app_team/data/storage/token_storage.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/worry_groups_api.dart';
 
 class PokemonBattleDeletePage extends StatefulWidget {
   final String groupId;
-  String? characterName;
-  String? characterDescription;
+  final String? characterName;
+  final String? characterDescription;
   final VoidCallback? onGoArchive;
 
   PokemonBattleDeletePage({
@@ -20,12 +21,17 @@ class PokemonBattleDeletePage extends StatefulWidget {
   });
 
   @override
-  _PokemonBattleDeletePageState createState() => _PokemonBattleDeletePageState();
+  _PokemonBattleDeletePageState createState() =>
+      _PokemonBattleDeletePageState();
 }
 
 class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
     with TickerProviderStateMixin {
-  
+  // ========== API 클라이언트 ==========
+  final TokenStorage _tokens = TokenStorage();
+  late final ApiClient _apiClient = ApiClient(tokens: _tokens);
+  late final WorryGroupsApi _worryGroupsApi = WorryGroupsApi(_apiClient);
+
   // ========== 데이터 ==========
   List<String> _skillsList = [];
   List<String> _characterEmotions = [];
@@ -33,7 +39,6 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
   bool _isDefeated = false;
 
   String? _characterName;
-  String? _characterDescription;
 
   // ========== HP ==========
   int _maxHp = 0;
@@ -76,8 +81,8 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
       lowerBound: -4,
       upperBound: 4,
     )..addStatusListener((s) {
-        if (s == AnimationStatus.completed) _shakeController.reverse();
-      });
+      if (s == AnimationStatus.completed) _shakeController.reverse();
+    });
 
     _scoreController = AnimationController(
       vsync: this,
@@ -128,55 +133,46 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
   }
 
   Future<void> _loadCharacterInfo() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
     try {
-      final groupSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('abc_group')
-          .where('group_id', isEqualTo: widget.groupId)
-          .limit(1)
-          .get();
+      // 그룹 정보 조회
+      final groupData = await _worryGroupsApi.getWorryGroup(widget.groupId);
+      _characterName = groupData['group_title']?.toString() ?? '이름 없음';
 
-      if (groupSnapshot.docs.isNotEmpty) {
-        final groupData = groupSnapshot.docs.first.data();
-        _characterName = groupData['group_title']?.toString() ?? '이름 없음';
-        _characterDescription = groupData['group_contents']?.toString() ?? '설명 없음';
-      }
-
-      final modelSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('abc_models')
-          .where('group_id', isEqualTo: widget.groupId)
-          .get();
+      // 그룹의 모든 일기 조회 (belief 정보)
+      final response = await _apiClient.dio.get(
+        '/diaries',
+        queryParameters: {'group_id': int.tryParse(widget.groupId) ?? 0},
+      );
 
       final Set<String> emotions = {};
-      for (final doc in modelSnapshot.docs) {
-        final data = doc.data();
-        final dynamic emotionData = data['belief'];
+      if (response.data is List) {
+        for (final item in response.data) {
+          if (item is! Map) continue;
+          final dynamic emotionData = item['belief'];
 
-        if (emotionData is String && emotionData.trim().isNotEmpty) {
-          emotions.add(emotionData.trim());
-        } else if (emotionData is List) {
-          for (final e in emotionData) {
-            if (e is String && e.trim().isNotEmpty) {
-              emotions.add(e.trim());
+          if (emotionData is String && emotionData.trim().isNotEmpty) {
+            emotions.add(emotionData.trim());
+          } else if (emotionData is List) {
+            for (final e in emotionData) {
+              if (e is String && e.trim().isNotEmpty) {
+                emotions.add(e.trim());
+              }
             }
           }
         }
       }
 
+      // belief를 랜덤으로 섞어서 다양하게 보여주기
+      final emotionsList = emotions.toList();
+      emotionsList.shuffle();
+
       setState(() {
-        _characterEmotions = emotions.isNotEmpty
-            ? emotions.toList()
-            : ['감정 데이터가 없습니다'];
+        _characterEmotions =
+            emotionsList.isNotEmpty ? emotionsList : ['감정 데이터가 없습니다'];
         _currentEmotionIndex = 0;
       });
     } catch (e) {
-      debugPrint('❌ Firestore 감정 불러오기 실패: $e');
+      debugPrint('❌ MongoDB 일기 불러오기 실패: $e');
       setState(() {
         _characterEmotions = ['데이터를 불러오지 못했습니다'];
       });
@@ -184,40 +180,36 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
   }
 
   Future<void> _loadSkillsFromFirestore() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('abc_models')
-          .where('group_id', isEqualTo: widget.groupId)
-          .get();
+      // 그룹의 모든 일기 조회 (alternativeThoughts 정보)
+      final response = await _apiClient.dio.get(
+        '/diaries',
+        queryParameters: {'group_id': int.tryParse(widget.groupId) ?? 0},
+      );
 
       final Set<String> skills = {};
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        final List<dynamic>? alternatives = data['alternative_thoughts'];
-        if (alternatives != null) {
-          for (final item in alternatives) {
-            if (item is String && item.trim().isNotEmpty) {
-              skills.add(item.trim());
+      if (response.data is List) {
+        for (final item in response.data) {
+          if (item is! Map) continue;
+          final List<dynamic>? alternatives = item['alternativeThoughts'];
+          if (alternatives != null) {
+            for (final alt in alternatives) {
+              if (alt is String && alt.trim().isNotEmpty) {
+                skills.add(alt.trim());
+              }
             }
           }
         }
       }
 
       setState(() {
-        _skillsList = skills.isNotEmpty
-            ? skills.toList()
-            : ['대체 생각이 없습니다'];
+        _skillsList = skills.isNotEmpty ? skills.toList() : ['대체 생각이 없습니다'];
         _maxHp = _skillsList.length;
         _targetHp = _maxHp;
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint('❌ Firestore 불러오기 실패: $e');
+      debugPrint('❌ MongoDB 일기 불러오기 실패: $e');
       setState(() {
         _skillsList = ['데이터를 불러오지 못했습니다'];
         _maxHp = 1;
@@ -228,6 +220,59 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
   }
 
   // ========== 음성인식 ==========
+
+  Future<void> _handleAttackButton() async {
+    if (_selectedSkill == null || _isAttacking || _isDefeated) return;
+
+    debugPrint('⚔️ [공격 버튼] 선택된 스킬: $_selectedSkill');
+
+    final skillIndex = _skillsList.indexOf(_selectedSkill!);
+    if (skillIndex == -1 || _shrunkChips.contains(skillIndex)) {
+      debugPrint('❌ 이미 사용된 스킬');
+      return;
+    }
+
+    setState(() {
+      _isAttacking = true;
+      _userBubbleText = _selectedSkill;
+      _isUserBubbleVisible = true;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 1200));
+
+    setState(() {
+      _shrunkChips.add(skillIndex);
+      _targetHp = max(0, _targetHp - 1);
+      _selectedSkill = null;
+    });
+
+    _shakeController.forward(from: 0);
+
+    if (_targetHp <= 0) {
+      await Future.delayed(const Duration(milliseconds: 800));
+      setState(() {
+        _isDefeated = true;
+        _bubbleText = '으악..!';
+      });
+
+      await Future.delayed(const Duration(seconds: 2));
+      await _archiveGroup();
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } else {
+      await Future.delayed(const Duration(milliseconds: 600));
+      setState(() => _isUserBubbleVisible = false);
+
+      await Future.delayed(const Duration(milliseconds: 400));
+      setState(() {
+        _currentEmotionIndex =
+            (_currentEmotionIndex + 1) % _characterEmotions.length;
+        _isAttacking = false;
+      });
+    }
+  }
 
   Future<void> _onMicPressed() async {
     debugPrint('🎤 [마이크 클릭]');
@@ -254,6 +299,7 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
     });
 
     _listenStartedAt = DateTime.now();
+    debugPrint('🎤 [음성인식 시작] ${_listenStartedAt!.toIso8601String()}');
 
     _autoStopTimer?.cancel();
     _autoStopTimer = Timer(const Duration(seconds: 8), () async {
@@ -391,22 +437,23 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
     if (!mounted) return;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('음성인식 오류'),
-        content: const Text(
-          '음성인식을 사용할 수 없습니다.\n\n'
-          '1. 마이크 권한 확인\n'
-          '2. 네트워크 연결 확인\n'
-          '3. 실기기에서 테스트\n\n'
-          '⚠️ 에뮬레이터는 지원되지 않습니다.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('확인'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('음성인식 오류'),
+            content: const Text(
+              '음성인식을 사용할 수 없습니다.\n\n'
+              '1. 마이크 권한 확인\n'
+              '2. 네트워크 연결 확인\n'
+              '3. 실기기에서 테스트\n\n'
+              '⚠️ 에뮬레이터는 지원되지 않습니다.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('확인'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -527,7 +574,7 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
             ),
             const SizedBox(height: 2),
             Text(
-              _characterDescription ?? '불안해하고 있습니다',
+              '불안 캐릭터',
               style: const TextStyle(color: Colors.white70, fontSize: 10),
             ),
             const SizedBox(height: 6),
@@ -604,23 +651,23 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
                   right: 0,
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 600),
-                    child: _isBubbleVisible
-                        ? _buildEmotionBubble(
-                            _bubbleText ?? _characterEmotions[_currentEmotionIndex],
-                            key: ValueKey("visible_$_currentEmotionIndex"),
-                          )
-                        : const SizedBox.shrink(key: ValueKey("hidden")),
+                    child:
+                        _isBubbleVisible
+                            ? _buildEmotionBubble(
+                              _bubbleText ??
+                                  _characterEmotions[_currentEmotionIndex],
+                              key: ValueKey("visible_$_currentEmotionIndex"),
+                            )
+                            : const SizedBox.shrink(key: ValueKey("hidden")),
                   ),
                 ),
               Image.asset(
                 targetChar,
                 height: 160,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.error,
-                  size: 100,
-                  color: Colors.white,
-                ),
+                errorBuilder:
+                    (_, __, ___) =>
+                        const Icon(Icons.error, size: 100, color: Colors.white),
               ),
             ],
           ),
@@ -672,9 +719,10 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
           width: 120,
           height: 120,
           decoration: BoxDecoration(
-            color: _listening
-                ? const Color(0xFF56E0C6).withOpacity(0.9)
-                : const Color.fromARGB(255, 65, 79, 79).withOpacity(0.8),
+            color:
+                _listening
+                    ? const Color(0xFF56E0C6).withOpacity(0.9)
+                    : const Color.fromARGB(255, 65, 79, 79).withOpacity(0.8),
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white30),
           ),
@@ -727,34 +775,69 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
               ),
             ),
             const SizedBox(height: 8),
-            SizedBox(
-              height: 36,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _skillsList.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (context, idx) {
-                  if (_shrunkChips.contains(idx)) {
-                    return const SizedBox.shrink();
-                  }
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 36,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _skillsList.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, idx) {
+                        if (_shrunkChips.contains(idx)) {
+                          return const SizedBox.shrink();
+                        }
 
-                  final skill = _skillsList[idx];
-                  final selected = skill == _selectedSkill;
+                        final skill = _skillsList[idx];
+                        final selected = skill == _selectedSkill;
 
-                  return ChoiceChip(
-                    label: Text(skill),
-                    selected: selected,
-                    onSelected: (v) {
-                      if (!_isAttacking && !_isDefeated && v) {
-                        setState(() => _selectedSkill = skill);
-                      }
-                    },
-                    labelStyle: const TextStyle(color: Colors.black, fontSize: 12),
-                    selectedColor: const Color(0xFF56E0C6),
-                    backgroundColor: Colors.white12,
-                  );
-                },
-              ),
+                        return ChoiceChip(
+                          label: Text(skill),
+                          selected: selected,
+                          onSelected: (v) {
+                            if (!_isAttacking && !_isDefeated && v) {
+                              setState(() => _selectedSkill = skill);
+                            }
+                          },
+                          labelStyle: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 12,
+                          ),
+                          selectedColor: const Color(0xFF56E0C6),
+                          backgroundColor: Colors.white,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed:
+                      (_isAttacking || _isDefeated || _selectedSkill == null)
+                          ? null
+                          : () => _handleAttackButton(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF56E0C6),
+                    disabledBackgroundColor: Colors.grey,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    '공격',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -819,25 +902,19 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
   }
 
   Future<void> _archiveGroup() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
     try {
-      final col = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('abc_group');
-      final qs = await col.where('group_id', isEqualTo: widget.groupId).get();
-
-      for (final doc in qs.docs) {
-        await doc.reference.update({
-          'archived': true,
-          'archived_at': FieldValue.serverTimestamp(),
-        });
-      }
+      await _worryGroupsApi.archiveWorryGroup(widget.groupId);
       debugPrint('✅ [보관함] 그룹 아카이빙 완료');
     } catch (e) {
       debugPrint('❌ [보관함] 아카이빙 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('아카이빙 실패: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 }

@@ -10,18 +10,16 @@ import 'package:gad_app_team/common/constants.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/widgets/map_picker.dart';
+import 'package:gad_app_team/widgets/custom_popup_design.dart';
+import 'package:gad_app_team/features/2nd_treatment/abc_group_add.dart'
+    show AbcGroupAddScreen;
 
 // ✅ UI 위젯 (업로드한 파일 경로에 맞게 import 경로 조정)
 import 'package:gad_app_team/widgets/notification_selection_ui.dart';
 import 'package:gad_app_team/data/storage/token_storage.dart';
 import 'package:gad_app_team/data/api/api_client.dart';
 import 'package:gad_app_team/data/api/diaries_api.dart';
-import 'package:gad_app_team/data/notification_provider.dart'
-    show
-        NotificationProvider,
-        NotificationSetting,
-        RepeatOption,
-        NotificationSettingCopyExt;
+import 'package:gad_app_team/data/notification_provider.dart';
 
 class NotificationSelectionScreen extends StatefulWidget {
   final bool fromDirectory;
@@ -61,6 +59,74 @@ class _NotificationSelectionScreenState
   bool _noNotification = false;
   bool _isSaving = false; // 저장 중 상태
 
+  NotificationSetting _settingFromAlarm(Map<String, dynamic> alarm) {
+    TimeOfDay? tod;
+    final timeRaw = alarm['time']?.toString();
+    if (timeRaw != null && timeRaw.contains(':')) {
+      final parts = timeRaw.split(':');
+      final hour = int.tryParse(parts[0]) ?? 0;
+      final minute = int.tryParse(parts[1]) ?? 0;
+      tod = TimeOfDay(hour: hour, minute: minute);
+    }
+
+    RepeatOption repeat = RepeatOption.daily;
+    final repeatRaw = alarm['repeat_option']?.toString();
+    if (repeatRaw == RepeatOption.weekly.name) {
+      repeat = RepeatOption.weekly;
+    }
+
+    final weekDays =
+        (alarm['weekDays'] as List?)
+            ?.map((e) => e is num ? e.toInt() : int.tryParse('$e') ?? 0)
+            .where((e) => e > 0)
+            .toList() ??
+        const [];
+
+    final reminderRaw = alarm['reminder_minutes'];
+    final reminder =
+        reminderRaw is num
+            ? reminderRaw.toInt()
+            : int.tryParse(reminderRaw?.toString() ?? '');
+
+    return NotificationSetting(
+      id: alarm['alarmId']?.toString(),
+      abcId: alarm['diaryId']?.toString() ?? _abcId,
+      time: tod,
+      repeatOption: repeat,
+      weekdays: weekDays,
+      reminderMinutes: reminder,
+      location: alarm['location_desc']?.toString(),
+      description: alarm['location_desc']?.toString(),
+      notifyEnter: alarm['enter'] == true,
+      notifyExit: alarm['exit'] == true,
+      cause: widget.label,
+    );
+  }
+
+  Map<String, dynamic> _alarmPayload(NotificationSetting setting) {
+    final weekDays =
+        setting.repeatOption == RepeatOption.weekly
+            ? (List<int>.from(setting.weekdays)..sort())
+            : <int>[];
+
+    final map = <String, dynamic>{
+      'time':
+          setting.time == null
+              ? null
+              : '${setting.time!.hour.toString().padLeft(2, '0')}:${setting.time!.minute.toString().padLeft(2, '0')}',
+      'location_desc': setting.location ?? setting.description,
+      'repeat_option':
+          setting.repeatOption == RepeatOption.weekly ? 'weekly' : 'daily',
+      'weekDays': weekDays,
+      'reminder_minutes': setting.reminderMinutes,
+      'enter': setting.notifyEnter,
+      'exit': setting.notifyExit,
+    };
+
+    map.removeWhere((key, value) => value == null);
+    return map;
+  }
+
   Future<String?> _resolveDiaryId() async {
     if (_abcId != null && _abcId!.isNotEmpty) {
       _lastDiaryResolveMessage = null;
@@ -99,7 +165,9 @@ class _NotificationSelectionScreenState
           '"$label" 제목으로 저장된 일기를 찾지 못했습니다. 일기 제목을 확인하거나 일기 저장 후 다시 시도해주세요.';
     } on DioException catch (e) {
       final message =
-          e.response?.data is Map ? e.response?.data['detail']?.toString() : e.message;
+          e.response?.data is Map
+              ? e.response?.data['detail']?.toString()
+              : e.message;
       _lastDiaryResolveMessage = '일기 목록을 불러오지 못했습니다: ${message ?? '알 수 없는 오류'}';
       debugPrint(_lastDiaryResolveMessage);
     } catch (e) {
@@ -113,6 +181,7 @@ class _NotificationSelectionScreenState
   @override
   void initState() {
     super.initState();
+    _noNotification = false;
     _abcId = widget.abcId;
     _loadExisting();
   }
@@ -129,9 +198,9 @@ class _NotificationSelectionScreenState
         });
         final reason = _lastDiaryResolveMessage;
         if (reason != null && reason.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(reason)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(reason)));
         }
       }
       return;
@@ -142,22 +211,90 @@ class _NotificationSelectionScreenState
       _loading = true;
     });
 
-    if (!mounted) return;
-    final provider = context.read<NotificationProvider>();
     try {
-      var settings = await provider.fetchSettings(abcId: diaryId);
+      var alarms = await _diariesApi.listAlarms(diaryId);
       if (widget.notificationId != null && widget.notificationId!.isNotEmpty) {
-        settings = settings
-            .where((s) => s.id == widget.notificationId)
-            .toList();
+        final filtered = alarms.where(
+          (alarm) => alarm['alarmId']?.toString() == widget.notificationId,
+        );
+        if (filtered.isNotEmpty) {
+          alarms = filtered.toList();
+        }
       }
+
+      NotificationSetting? timeSetting;
+      NotificationSetting? locationSetting;
+      final weekSet = <int>{};
+      Duration? reminder;
+
+      for (final alarm in alarms) {
+        final setting = _settingFromAlarm(alarm);
+        final hasLocation =
+            setting.notifyEnter ||
+            setting.notifyExit ||
+            (setting.location?.isNotEmpty ?? false);
+        final hasTime = setting.time != null;
+
+        if (hasLocation) {
+          locationSetting = setting;
+          weekSet.addAll(setting.weekdays);
+        } else if (hasTime && timeSetting == null) {
+          timeSetting = setting;
+          weekSet.addAll(setting.weekdays);
+        }
+
+        if (setting.reminderMinutes != null) {
+          reminder = Duration(minutes: setting.reminderMinutes!);
+        }
+      }
+
+      if (timeSetting == null &&
+          locationSetting != null &&
+          locationSetting.time != null) {
+        final loc = locationSetting;
+        timeSetting = loc.copyWith(
+          latitude: null,
+          longitude: null,
+          location: null,
+          notifyEnter: false,
+          notifyExit: false,
+        );
+      }
+
       if (!mounted) return;
-      _updateDraftsFromSettings(settings);
-    } catch (e) {
+      setState(() {
+        _draftTime = timeSetting;
+        _draftLocation = locationSetting;
+        _selectedWeekdays
+          ..clear()
+          ..addAll(
+            weekSet.isNotEmpty
+                ? weekSet
+                : (timeSetting?.weekdays ??
+                    locationSetting?.weekdays ??
+                    const []),
+          );
+        _repeatOption =
+            (locationSetting ?? timeSetting)?.repeatOption ??
+            RepeatOption.daily;
+        _reminderDuration = reminder ?? _reminderDuration;
+        _noNotification = false;
+      });
+    } on DioException catch (e) {
+      final message =
+          e.response?.data is Map
+              ? e.response?.data['detail']?.toString()
+              : e.message;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('알림 정보를 불러오지 못했습니다: $e')),
+          SnackBar(content: Text('알림 정보를 불러오지 못했습니다: ${message ?? '오류'}')),
         );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('알림 정보를 불러오지 못했습니다: $e')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -469,7 +606,10 @@ class _NotificationSelectionScreenState
     );
 
     if (setting != null && mounted) {
-      setState(() => _draftTime = setting);
+      setState(() {
+        _draftTime = setting;
+        _noNotification = false;
+      });
     }
   }
 
@@ -514,7 +654,20 @@ class _NotificationSelectionScreenState
               ? withId.copyWith(notifyEnter: true)
               : withId;
 
-      setState(() => _draftLocation = withDefault);
+      setState(() {
+        _draftLocation = withDefault;
+        _noNotification = false;
+      });
+    }
+  }
+
+  Future<void> _deleteAllAlarms(String diaryId) async {
+    final alarms = await _diariesApi.listAlarms(diaryId);
+    for (final alarm in alarms) {
+      final alarmId = alarm['alarmId']?.toString();
+      if (alarmId != null && alarmId.isNotEmpty) {
+        await _diariesApi.deleteAlarm(diaryId, alarmId);
+      }
     }
   }
 
@@ -616,43 +769,6 @@ class _NotificationSelectionScreenState
     );
   }
 
-  void _updateDraftsFromSettings(List<NotificationSetting> settings) {
-    NotificationSetting? timeSetting;
-    NotificationSetting? locationSetting;
-    for (final s in settings) {
-      final hasCoords = (s.latitude != null && s.longitude != null);
-      final hasTime = s.time != null;
-      if (hasCoords) {
-        locationSetting ??= s;
-      } else if (hasTime) {
-        timeSetting ??= s;
-      } else if (locationSetting == null) {
-        locationSetting = s;
-      } else {
-        timeSetting ??= s;
-      }
-    }
-    final base = timeSetting ?? locationSetting;
-    setState(() {
-      _draftTime = timeSetting;
-      _draftLocation = locationSetting;
-      _noNotification = settings.isEmpty;
-      if (base != null) {
-        final repeat = base.repeatOption == RepeatOption.none
-            ? RepeatOption.daily
-            : base.repeatOption;
-        _repeatOption = repeat;
-        _selectedWeekdays
-          ..clear()
-          ..addAll(base.weekdays);
-        final reminder = base.reminderMinutes;
-        if (reminder != null && reminder > 0) {
-          _reminderDuration = Duration(minutes: reminder);
-        }
-      }
-    });
-  }
-
   void _syncReminderMinutes() {
     final m = _reminderDuration.inMinutes;
     if (_draftTime != null) {
@@ -678,47 +794,11 @@ class _NotificationSelectionScreenState
     }
   }
 
-  List<Map<String, dynamic>> _buildDiaryAlarmsPayload(
-    List<NotificationSetting> settings,
-  ) {
-    return settings.map((setting) {
-      final time = setting.time;
-      final hasLocation = (setting.location?.trim().isNotEmpty ?? false);
-      final repeat = setting.repeatOption;
-      final normalizedWeekdays =
-          repeat == RepeatOption.weekly ? (setting.weekdays.toSet().toList()..sort()) : <int>[];
-      final reminder = setting.reminderMinutes ?? 0;
-
-      final map = <String, dynamic>{
-        if (time != null)
-          'time': '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
-        'repeat_option': repeat.name,
-        if (normalizedWeekdays.isNotEmpty) 'weekDays': normalizedWeekdays,
-        if (reminder > 0) 'reminder_minutes': reminder,
-        'enter': setting.notifyEnter,
-        'exit': setting.notifyExit,
-      };
-
-      if (hasLocation) {
-        map['location_desc'] = setting.location;
-      }
-      return map;
-    }).toList();
-  }
-
-  Future<void> _updateDiaryAlarms(String diaryId, List<NotificationSetting> settings) async {
-    final alarmsPayload = _buildDiaryAlarmsPayload(settings);
-    try {
-      await _diariesApi.updateDiary(diaryId, {'alarms': alarmsPayload});
-    } catch (e, st) {
-      debugPrint('일기 알림 동기화 실패: $e\n$st');
-    }
-  }
-
   Future<void> _onSavePressed() async {
     if (_isSaving) return;
     _syncRepeatIntoDrafts();
 
+    debugPrint('🔵 알림 저장 시작: _noNotification=$_noNotification');
     setState(() => _isSaving = true);
 
     try {
@@ -743,12 +823,21 @@ class _NotificationSelectionScreenState
 
       // 1) “알림을 설정하지 않을래요”
       if (_noNotification) {
-        await provider.cancelAllSchedules(abcId: resolvedDiaryId);
+        debugPrint('🟡 알림 안 받을래요 선택됨');
+        if (widget.notificationId != null &&
+            widget.notificationId!.isNotEmpty) {
+          await _diariesApi.deleteAlarm(
+            resolvedDiaryId,
+            widget.notificationId!,
+          );
+        } else {
+          await _deleteAllAlarms(resolvedDiaryId);
+        }
 
-        await _updateDiaryAlarms(resolvedDiaryId, const []);
-
+        await provider.applyDiarySetting(null);
         if (!mounted) return;
-        Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+        debugPrint('🟢 알림 없음 처리 완료');
+        _handlePostSaveNavigation(resolvedDiaryId);
         return;
       }
 
@@ -757,9 +846,8 @@ class _NotificationSelectionScreenState
 
       // 위치 + 시간 → 하나의 문서로 합치기
       String? alarmIdToDelete;
-      final List<NotificationSetting> settingsToPersist = [];
       if (_draftTime != null && _draftLocation != null) {
-        final merged = _draftLocation!.copyWith(
+        _draftLocation = _draftLocation!.copyWith(
           time: _draftTime!.time,
           repeatOption: _draftTime!.repeatOption,
           weekdays: _draftTime!.weekdays,
@@ -769,49 +857,73 @@ class _NotificationSelectionScreenState
           notifyExit: false,
         );
 
-        _draftLocation = merged;
-        settingsToPersist.add(merged);
-
         if (_draftTime!.id != null && _draftTime!.id != _draftLocation!.id) {
           alarmIdToDelete = _draftTime!.id;
         }
 
         _draftTime = null;
-      } else {
-        if (_draftTime != null) {
-          settingsToPersist.add(_draftTime!);
-        }
-        if (_draftLocation != null) {
-          settingsToPersist.add(_draftLocation!);
-        }
       }
 
-      final List<NotificationSetting> diarySyncSettings = [];
+      NotificationSetting? scheduledSetting;
 
-      Future<void> saveSetting(NotificationSetting setting) async {
-        final saved = await provider.createSchedule(setting, abcId: resolvedDiaryId);
-        final effective = saved ?? setting;
-        diarySyncSettings.add(effective);
+      Future<NotificationSetting> saveSetting(NotificationSetting setting) async {
+        final payload = _alarmPayload(setting);
+
+        Map<String, dynamic> result;
+        if (setting.id != null && setting.id!.isNotEmpty) {
+          result = await _diariesApi.updateAlarm(
+            resolvedDiaryId,
+            setting.id!,
+            payload,
+          );
+        } else {
+          result = await _diariesApi.createAlarm(resolvedDiaryId, payload);
+        }
+
+        final updated = _settingFromAlarm({
+          ...result,
+          'diaryId': resolvedDiaryId,
+        });
         if (identical(setting, _draftTime)) {
-          _draftTime = effective;
+          _draftTime = updated;
         }
         if (identical(setting, _draftLocation)) {
-          _draftLocation = effective;
+          _draftLocation = updated;
         }
+
+        return updated;
       }
 
-      for (final setting in settingsToPersist) {
-        await saveSetting(setting);
+      final draftTimeLocal = _draftTime;
+      if (draftTimeLocal != null) {
+        scheduledSetting = await saveSetting(draftTimeLocal);
       }
-
+      final draftLocationLocal = _draftLocation;
+      if (draftLocationLocal != null) {
+        scheduledSetting = await saveSetting(draftLocationLocal);
+      }
       if (alarmIdToDelete != null && alarmIdToDelete.isNotEmpty) {
-        await provider.cancelSchedule(id: alarmIdToDelete, abcId: resolvedDiaryId);
+        await _diariesApi.deleteAlarm(resolvedDiaryId, alarmIdToDelete);
       }
-
-      await _updateDiaryAlarms(resolvedDiaryId, diarySyncSettings);
 
       if (!mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+      await provider.applyDiarySetting(scheduledSetting);
+
+      debugPrint('🟢 알림 설정 완료');
+      _handlePostSaveNavigation(resolvedDiaryId);
+    } on DioException catch (e, st) {
+      debugPrint('알림 저장 중 오류: $e\n$st');
+      final message =
+          e.response?.data is Map
+              ? e.response?.data['detail']?.toString()
+              : e.message;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message ?? '알림을 저장하는 중 오류가 발생했습니다. 다시 시도해주세요.'),
+          ),
+        );
+      }
     } catch (e, st) {
       debugPrint('알림 저장 중 오류: $e\n$st');
       if (mounted) {
@@ -826,6 +938,54 @@ class _NotificationSelectionScreenState
         _isSaving = false;
       }
     }
+  }
+
+  void _handlePostSaveNavigation(String diaryId) {
+    if (!mounted) return;
+    if (widget.fromDirectory) {
+      Navigator.of(context).pop(true);
+    } else {
+      _showGroupSelectionPopup(diaryId);
+    }
+  }
+
+  // ====== 그룹 선택 팝업 ======
+  void _showGroupSelectionPopup(String diaryId) {
+    debugPrint('💜 _showGroupSelectionPopup 호출됨: diaryId=$diaryId');
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (dialogCtx) => CustomPopupDesign(
+            title: "걱정그룹에 추가하시겠습니까?",
+            message: "작성한 걱정일기를 다른 그룹으로 변경하시겠습니까?",
+            positiveText: "예",
+            negativeText: "아니요",
+            iconAsset: "assets/image/popup1.png",
+            backgroundAsset: "assets/image/sea_bg_3d.png",
+            onPositivePressed: () {
+              Navigator.pop(dialogCtx);
+              // abc_group_add.dart로 이동
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (_) => AbcGroupAddScreen(
+                        origin: widget.origin ?? 'etc',
+                        abcId: diaryId,
+                        label: widget.label,
+                      ),
+                ),
+              );
+            },
+            onNegativePressed: () {
+              Navigator.pop(dialogCtx);
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil('/home', (_) => false);
+            },
+          ),
+    );
   }
 
   // ====== 빌드: 배경/레이아웃은 제공한 형식으로, 본문은 NotificationSelectionUI 사용 ======

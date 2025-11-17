@@ -490,6 +490,20 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
+  /// Applies a diary-derived notification without touching the remote API.
+  Future<void> applyDiarySetting(NotificationSetting? setting) async {
+    await _ready;
+    await _cancelAll();
+    if (setting == null) {
+      _current = null;
+      notifyListeners();
+      return;
+    }
+    _current = setting;
+    await _applySetting(setting);
+    notifyListeners();
+  }
+
   // ───────────────────────── 스케줄 적용/갱신 ─────────────────────────
   Future<void> _reSchedule(NotificationSetting s) async {
     await _cancelAll();
