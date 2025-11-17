@@ -78,38 +78,20 @@ async def create_sud_score(
         raise HTTPException(status_code=404, detail="Diary not found")
 
     now = datetime.now(timezone.utc)
-    entries = list(diaries[diary_idx].get("sudScores", []))
+    sud_id = f"sud_{uuid.uuid4().hex[:8]}"
+    entry = {
+        "sud_id": sud_id,
+        "diary_id": payload.diary_id,
+        "before_sud": payload.before_sud,
+        "after_sud": payload.after_sud,
+        "latitude": payload.latitude,
+        "longitude": payload.longitude,
+        "created_at": now,
+        "updated_at": now,
+    }
 
-    # 정책: 새로 추가하지 않고 "가장 최근 항목"을 갱신
-    if entries:
-        target_idx = len(entries) - 1
-        updated_entry = {
-            **entries[target_idx],
-            "before_sud": payload.before_sud if payload.before_sud is not None else entries[target_idx].get("before_sud"),
-            "after_sud": payload.after_sud if payload.after_sud is not None else entries[target_idx].get("after_sud"),
-            "latitude": payload.latitude if payload.latitude is not None else entries[target_idx].get("latitude"),
-            "longitude": payload.longitude if payload.longitude is not None else entries[target_idx].get("longitude"),
-            "updated_at": now,
-        }
-        # sud_id/diary_id/created_at 보존
-        updated_entry["sud_id"] = entries[target_idx].get("sud_id") or f"sud_{uuid.uuid4().hex[:8]}"
-        updated_entry["diary_id"] = payload.diary_id
-        updated_entry["created_at"] = entries[target_idx].get("created_at") or now
-        entries[target_idx] = updated_entry
-        entry = updated_entry
-    else:
-        sud_id = f"sud_{uuid.uuid4().hex[:8]}"
-        entry = {
-            "sud_id": sud_id,
-            "diary_id": payload.diary_id,
-            "before_sud": payload.before_sud,
-            "after_sud": payload.after_sud,
-            "latitude": payload.latitude,
-            "longitude": payload.longitude,
-            "created_at": now,
-            "updated_at": now,
-        }
-        entries.append(entry)
+    entries = list(diaries[diary_idx].get("sudScores", []))
+    entries.append(entry)
 
     diaries[diary_idx]["sudScores"] = entries
     diaries[diary_idx]["updatedAt"] = now

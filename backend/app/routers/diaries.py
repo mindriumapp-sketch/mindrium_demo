@@ -334,6 +334,18 @@ async def update_diary(
     updated_diary = None
     for idx, diary in enumerate(diaries):
         if diary.get("diary_id") == diary_id:
+            # alternativeThoughts는 배열에 누적
+            if "alternativeThoughts" in update_data:
+                incoming = update_data.pop("alternativeThoughts") or []
+                existing = list(diary.get("alternativeThoughts", []))
+                # 중복 제거를 위해 set 사용 (문자열인 경우)
+                if isinstance(incoming, list):
+                    for item in incoming:
+                        if item not in existing:
+                            existing.append(item)
+                diary["alternativeThoughts"] = existing
+                diary["updatedAt"] = now
+            
             # realOddness는 belief 기준 병합
             if "realOddness" in update_data:
                 incoming = update_data.pop("realOddness") or []
@@ -355,10 +367,9 @@ async def update_diary(
                 merged_real = list(by_belief.values())
                 diary["realOddness"] = merged_real
                 diary["updatedAt"] = now
-                # 나머지 필드(있다면) 평범 병합
-                diaries[idx] = {**diary, **update_data}
-            else:
-                diaries[idx] = {**diary, **update_data}
+            
+            # 나머지 필드(있다면) 평범 병합
+            diaries[idx] = {**diary, **update_data}
             updated_diary = diaries[idx]
             updated = True
             break
