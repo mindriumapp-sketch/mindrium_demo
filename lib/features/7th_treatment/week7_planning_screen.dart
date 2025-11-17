@@ -174,7 +174,8 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
       final apiClient = ApiClient(tokens: TokenStorage());
       final userDataApi = UserDataApi(apiClient);
       final coreValueData = await userDataApi.getCoreValue();
-      _userCoreValue = coreValueData?['core_value'] as String?;
+      _userCoreValue =
+          (coreValueData?['value_goal'] ?? coreValueData?['core_value']) as String?;
       
       if (mounted) {
         setState(() {});

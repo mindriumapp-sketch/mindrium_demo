@@ -19,7 +19,7 @@ class UserDataApi {
   Future<Map<String, dynamic>> updateCoreValue(String coreValue) async {
     final res = await _client.dio.put(
       '/users/me/core-value',
-      data: {'core_value': coreValue},
+      data: {'value_goal': coreValue},
     );
     final data = res.data;
     if (data is Map<String, dynamic>) return data;

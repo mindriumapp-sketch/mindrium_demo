@@ -22,12 +22,12 @@ router = APIRouter(prefix="/users/me", tags=["user-data"])
 
 class CoreValueUpdate(BaseModel):
     """핵심 가치 업데이트 요청"""
-    core_value: str = Field(..., min_length=1, max_length=500, description="사용자의 핵심 가치")
+    value_goal: str = Field(..., min_length=1, max_length=500, description="사용자의 핵심 가치")
 
 
 class CoreValueResponse(BaseModel):
     """핵심 가치 응답"""
-    core_value: Optional[str] = None
+    value_goal: Optional[str] = None
     updated_at: Optional[datetime] = None
 
 
@@ -62,7 +62,7 @@ class ProgressUpdate(BaseModel):
 
 class UserDataResponse(BaseModel):
     """종합 사용자 데이터 응답"""
-    core_value: Optional[str] = None
+    value_goal: Optional[str] = None
     before_survey_completed: bool = False
     current_week: int = 1
     week_progress: List[WeekProgress] = []
@@ -127,7 +127,7 @@ async def get_core_value(
     """
     현재 로그인한 사용자의 핵심 가치를 조회합니다.
     
-    - **core_value**: 사용자가 설정한 핵심 가치 문구
+    - **value_goal**: 사용자가 설정한 핵심 가치 문구
     - **updated_at**: 마지막 업데이트 시각
     """
     user_id = current_user["_id"]
@@ -136,9 +136,17 @@ async def get_core_value(
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
     
+    value_goal = user.get("value_goal")
+    updated_at = user.get("value_goal_updated_at")
+
+    if value_goal is None:
+        value_goal = user.get("core_value")
+    if updated_at is None:
+        updated_at = user.get("core_value_updated_at")
+
     return CoreValueResponse(
-        core_value=user.get("core_value"),
-        updated_at=user.get("core_value_updated_at")
+        value_goal=value_goal,
+        updated_at=updated_at
     )
 
 
@@ -151,7 +159,7 @@ async def update_core_value(
     """
     사용자의 핵심 가치를 설정하거나 수정합니다.
     
-    - **core_value**: 최대 500자까지 입력 가능
+    - **value_goal**: 최대 500자까지 입력 가능
     - 자동으로 updated_at 타임스탬프 기록
     """
     user_id = current_user["_id"]
@@ -161,9 +169,13 @@ async def update_core_value(
         {"_id": user_id},
         {
             "$set": {
-                "core_value": data.core_value,
-                "core_value_updated_at": now
-            }
+                "value_goal": data.value_goal,
+                "value_goal_updated_at": now,
+            },
+            "$unset": {
+                "core_value": "",
+                "core_value_updated_at": "",
+            },
         }
     )
     
@@ -171,7 +183,7 @@ async def update_core_value(
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
     
     return CoreValueResponse(
-        core_value=data.core_value,
+        value_goal=data.value_goal,
         updated_at=now
     )
 
@@ -190,8 +202,10 @@ async def delete_core_value(
         {"_id": user_id},
         {
             "$unset": {
+                "value_goal": "",
+                "value_goal_updated_at": "",
                 "core_value": "",
-                "core_value_updated_at": ""
+                "core_value_updated_at": "",
             }
         }
     )
@@ -402,7 +416,7 @@ async def get_user_progress(
     """
     사용자의 전체 진행 상황을 조회합니다.
     
-    - **core_value**: 핵심 가치
+    - **value_goal**: 핵심 가치
     - **before_survey_completed**: 사전 설문 완료 여부
     - **current_week**: 현재 진행 중인 주차
     - **week_progress**: 주차별 진행도 (1-8주)
@@ -437,8 +451,12 @@ async def get_user_progress(
     total_diaries = len(user.get("diaries", []))
     total_relaxations = len(user.get("relaxation_tasks", []))
     
+    value_goal = user.get("value_goal")
+    if value_goal is None:
+        value_goal = user.get("core_value")
+
     return UserDataResponse(
-        core_value=user.get("core_value"),
+        value_goal=value_goal,
         before_survey_completed=user.get("survey_completed", False),
         current_week=current_week,
         week_progress=week_progress_data,
