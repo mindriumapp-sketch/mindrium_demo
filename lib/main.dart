@@ -18,7 +18,7 @@ void main() async {
 
   // ✅ Rive 초기화
   await RiveNative.init();
-
+ 
   // ✅ 전역 Provider 구성
   runApp(
     MultiProvider(
