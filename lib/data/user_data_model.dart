@@ -1,12 +1,12 @@
 class UserData {
   final String name;
-  final String coreValue;
+  final String valueGoal;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
   UserData({
     required this.name,
-    required this.coreValue,
+    required this.valueGoal,
     required this.createdAt,
     this.updatedAt,
   });
@@ -15,7 +15,7 @@ class UserData {
   Map<String, dynamic> toJson() {
     return {
       'name': name,
-      'coreValue': coreValue,
+      'valueGoal': valueGoal,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
@@ -25,7 +25,7 @@ class UserData {
   factory UserData.fromJson(Map<String, dynamic> json) {
     return UserData(
       name: json['name'] ?? '',
-      coreValue: json['coreValue'] ?? '',
+      valueGoal: json['valueGoal'] ?? '',
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt:
           json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
@@ -35,13 +35,13 @@ class UserData {
   // 데이터 복사 (업데이트용)
   UserData copyWith({
     String? name,
-    String? coreValue,
+    String? valueGoal,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return UserData(
       name: name ?? this.name,
-      coreValue: coreValue ?? this.coreValue,
+      valueGoal: valueGoal ?? this.valueGoal,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -49,7 +49,7 @@ class UserData {
 
   @override
   String toString() {
-    return 'UserData(name: $name, coreValue: $coreValue, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'UserData(name: $name, valueGoal: $valueGoal, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -57,7 +57,7 @@ class UserData {
     if (identical(this, other)) return true;
     return other is UserData &&
         other.name == name &&
-        other.coreValue == coreValue &&
+        other.valueGoal == valueGoal &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
   }
@@ -65,7 +65,7 @@ class UserData {
   @override
   int get hashCode {
     return name.hashCode ^
-        coreValue.hashCode ^
+        valueGoal.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode;
   }

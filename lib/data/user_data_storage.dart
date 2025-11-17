@@ -15,7 +15,7 @@ class UserDataStorage {
           .collection('users')
           .doc(user.uid)
           .update({
-            'coreValue': userData.coreValue,
+            'valueGoal': userData.valueGoal,
             'valueUpdatedAt': FieldValue.serverTimestamp(),
           });
     } catch (e) {
@@ -44,7 +44,7 @@ class UserDataStorage {
       final data = doc.data()!;
       return UserData(
         name: data['name'] ?? '',
-        coreValue: data['coreValue'] ?? '',
+        valueGoal: data['valueGoal'] ?? '',
         createdAt:
             data['createdAt'] != null
                 ? (data['createdAt'] as Timestamp).toDate()
@@ -78,7 +78,7 @@ class UserDataStorage {
 
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
         {
-          'coreValue': FieldValue.delete(),
+          'valueGoal': FieldValue.delete(),
           'valueUpdatedAt': FieldValue.delete(),
         },
       );
@@ -106,8 +106,8 @@ class UserDataStorage {
       }
 
       final data = doc.data()!;
-      return data['coreValue'] != null &&
-          data['coreValue'].toString().isNotEmpty;
+      return data['valueGoal'] != null &&
+          data['valueGoal'].toString().isNotEmpty;
     } catch (e) {
       return false;
     }
@@ -139,7 +139,7 @@ class UserDataStorage {
   }
 
   /// 사용자 핵심 가치만 가져오기 (Firebase Firestore)
-  static Future<String?> getUserCoreValue() async {
+  static Future<String?> getUserValueGoal() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
@@ -157,7 +157,7 @@ class UserDataStorage {
       }
 
       final data = doc.data()!;
-      return data['coreValue'] as String?;
+      return data['valueGoal'] as String?;
     } catch (e) {
       return null;
     }

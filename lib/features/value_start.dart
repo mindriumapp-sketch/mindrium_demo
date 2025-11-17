@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/common/constants.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gad_app_team/widgets/blue_white_card.dart';
+import 'package:provider/provider.dart';
+import 'package:gad_app_team/data/user_provider.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/user_data_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 class ValueStartScreen extends StatefulWidget {
   final int weekNumber;
@@ -25,7 +28,7 @@ class ValueStartScreen extends StatefulWidget {
 
 class _ValueStartScreenState extends State<ValueStartScreen> {
   String? _userName;
-  String? _userCoreValue;
+  String? _userValueGoal;
   bool _isLoading = true;
 
   final _page = PageController();
@@ -42,26 +45,26 @@ class _ValueStartScreenState extends State<ValueStartScreen> {
 
   Future<void> _loadUserData() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-        if (doc.exists) {
-          final data = doc.data()!;
-          if (!mounted) return;
-          setState(() {
-            _userName = data['name'] as String?;
-            _userCoreValue = data['coreValue'] as String?;
-            _isLoading = false;
-          });
-        }
+      // UserProvider에서 사용자 이름 가져오기
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      _userName = userProvider.userName;
+      
+      // UserDataApi에서 value_goal 가져오기
+      final apiClient = ApiClient(tokens: TokenStorage());
+      final userDataApi = UserDataApi(apiClient);
+      final valueGoalData = await userDataApi.getValueGoal();
+      _userValueGoal = valueGoalData?['value_goal'] as String?;
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
-      if (mounted && _isLoading) setState(() => _isLoading = false);
     } catch (e) {
       debugPrint('사용자 데이터 로드 실패: $e');
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -165,7 +168,7 @@ class _ValueStartScreenState extends State<ValueStartScreen> {
                         navy: _navy,
                         blue: _blue,
                         name: _userName ?? '사용자',
-                        value: _userCoreValue ?? '행복 가족 건강',
+                        value: _userValueGoal ?? '행복 가족 건강',
                         weekDescription: widget.weekDescription,
                       ),
                       _GuidePage(

@@ -40,7 +40,7 @@ class _Week1ValueGoalScreenState extends State<Week1ValueGoalScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      await _userDataApi.updateCoreValue(_controller.text.trim());
+      await _userDataApi.updateValueGoal(_controller.text.trim());
       if (mounted) _showEducationDialog();
     } catch (e) {
       if (mounted) {

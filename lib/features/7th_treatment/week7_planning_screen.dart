@@ -77,7 +77,7 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
 
   // 사용자 이름/핵심가치
   String? _userName;
-  String? _userCoreValue;
+  String? _userValueGoal;
 
   static const Color _bluePrimary = Color(0xFF5DADEC);
   static const Color _chipBorderBlue = Color(0xFF7EB9FF);
@@ -173,9 +173,8 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
       // 핵심 가치는 UserDataApi를 통해 가져오기
       final apiClient = ApiClient(tokens: TokenStorage());
       final userDataApi = UserDataApi(apiClient);
-      final coreValueData = await userDataApi.getCoreValue();
-      _userCoreValue =
-          (coreValueData?['value_goal'] ?? coreValueData?['core_value']) as String?;
+      final valueGoalData = await userDataApi.getValueGoal();
+      _userValueGoal = valueGoalData?['value_goal'] as String?;
       
       if (mounted) {
         setState(() {});
@@ -202,11 +201,11 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
     }
     sb.writeln();
 
-    if (_userCoreValue != null) {
+    if (_userValueGoal != null) {
       if (_userName != null) {
-        sb.writeln('$_userName님께서 소중히 여기는 가치는 "$_userCoreValue"입니다.');
+        sb.writeln('$_userName님께서 소중히 여기는 가치는 "$_userValueGoal"입니다.');
       } else {
-        sb.writeln('소중히 여기는 가치는 $_userCoreValue입니다.');
+        sb.writeln('소중히 여기는 가치는 $_userValueGoal입니다.');
       }
       sb.writeln();
       sb.writeln('이 가치를 실현하기 위해 추가하시는 행동이 도움이 될 것 같다면 추가해주세요.');

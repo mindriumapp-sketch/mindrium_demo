@@ -22,7 +22,7 @@ class MyInfoScreen extends StatefulWidget {
 class _MyInfoScreenState extends State<MyInfoScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
-  final TextEditingController coreValueController = TextEditingController();
+  final TextEditingController valueGoalController = TextEditingController();
   final TextEditingController currentPasswordController =
       TextEditingController();
   final TextEditingController newPasswordController = TextEditingController();
@@ -61,12 +61,11 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
       }
 
       try {
-        final coreValueRes = await _userDataApi.getCoreValue();
-        final rawValue =
-            coreValueRes?['value_goal'] ?? coreValueRes?['core_value'];
-        coreValueController.text = (rawValue as String?) ?? '';
+        final valueGoalRes = await _userDataApi.getValueGoal();
+        final rawValue = valueGoalRes?['value_goal'];
+        valueGoalController.text = (rawValue as String?) ?? '';
       } catch (_) {
-        coreValueController.text = '';
+        valueGoalController.text = '';
       }
     } on DioException catch (e) {
       final message =
@@ -85,7 +84,7 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
     setState(() => isLoading = true);
 
     final trimmedName = nameController.text.trim();
-    final coreValue = coreValueController.text.trim();
+    final valueGoal = valueGoalController.text.trim();
     final currentPw = currentPasswordController.text.trim();
     final newPw = newPasswordController.text.trim();
     final confirmPw = confirmPasswordController.text.trim();
@@ -109,10 +108,10 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
         provider.updateUserName(trimmedName);
       }
 
-      if (coreValue.isNotEmpty) {
-        await _userDataApi.updateCoreValue(coreValue);
+      if (valueGoal.isNotEmpty) {
+        await _userDataApi.updateValueGoal(valueGoal);
       } else {
-        await _userDataApi.deleteCoreValue();
+        await _userDataApi.deleteValueGoal();
       }
 
       if (showPasswordFields && newPw.isNotEmpty) {
@@ -246,7 +245,7 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
                             ),
                             const SizedBox(height: 16),
                             _buildTextField(
-                              controller: coreValueController,
+                              controller: valueGoalController,
                               label: '나의 핵심 가치',
                               icon: Icons.favorite_outline,
                               enabled: isEditing,
