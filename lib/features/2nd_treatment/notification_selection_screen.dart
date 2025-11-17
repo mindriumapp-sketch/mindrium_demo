@@ -678,6 +678,43 @@ class _NotificationSelectionScreenState
     }
   }
 
+  List<Map<String, dynamic>> _buildDiaryAlarmsPayload(
+    List<NotificationSetting> settings,
+  ) {
+    return settings.map((setting) {
+      final time = setting.time;
+      final hasLocation = (setting.location?.trim().isNotEmpty ?? false);
+      final repeat = setting.repeatOption;
+      final normalizedWeekdays =
+          repeat == RepeatOption.weekly ? (setting.weekdays.toSet().toList()..sort()) : <int>[];
+      final reminder = setting.reminderMinutes ?? 0;
+
+      final map = <String, dynamic>{
+        if (time != null)
+          'time': '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+        'repeat_option': repeat.name,
+        if (normalizedWeekdays.isNotEmpty) 'weekDays': normalizedWeekdays,
+        if (reminder > 0) 'reminder_minutes': reminder,
+        'enter': setting.notifyEnter,
+        'exit': setting.notifyExit,
+      };
+
+      if (hasLocation) {
+        map['location_desc'] = setting.location;
+      }
+      return map;
+    }).toList();
+  }
+
+  Future<void> _updateDiaryAlarms(String diaryId, List<NotificationSetting> settings) async {
+    final alarmsPayload = _buildDiaryAlarmsPayload(settings);
+    try {
+      await _diariesApi.updateDiary(diaryId, {'alarms': alarmsPayload});
+    } catch (e, st) {
+      debugPrint('일기 알림 동기화 실패: $e\n$st');
+    }
+  }
+
   Future<void> _onSavePressed() async {
     if (_isSaving) return;
     _syncRepeatIntoDrafts();
@@ -708,6 +745,8 @@ class _NotificationSelectionScreenState
       if (_noNotification) {
         await provider.cancelAllSchedules(abcId: resolvedDiaryId);
 
+        await _updateDiaryAlarms(resolvedDiaryId, const []);
+
         if (!mounted) return;
         Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
         return;
@@ -718,8 +757,9 @@ class _NotificationSelectionScreenState
 
       // 위치 + 시간 → 하나의 문서로 합치기
       String? alarmIdToDelete;
+      final List<NotificationSetting> settingsToPersist = [];
       if (_draftTime != null && _draftLocation != null) {
-        _draftLocation = _draftLocation!.copyWith(
+        final merged = _draftLocation!.copyWith(
           time: _draftTime!.time,
           repeatOption: _draftTime!.repeatOption,
           weekdays: _draftTime!.weekdays,
@@ -729,31 +769,46 @@ class _NotificationSelectionScreenState
           notifyExit: false,
         );
 
+        _draftLocation = merged;
+        settingsToPersist.add(merged);
+
         if (_draftTime!.id != null && _draftTime!.id != _draftLocation!.id) {
           alarmIdToDelete = _draftTime!.id;
         }
 
         _draftTime = null;
+      } else {
+        if (_draftTime != null) {
+          settingsToPersist.add(_draftTime!);
+        }
+        if (_draftLocation != null) {
+          settingsToPersist.add(_draftLocation!);
+        }
       }
+
+      final List<NotificationSetting> diarySyncSettings = [];
 
       Future<void> saveSetting(NotificationSetting setting) async {
         final saved = await provider.createSchedule(setting, abcId: resolvedDiaryId);
-        if (saved == null) return;
+        final effective = saved ?? setting;
+        diarySyncSettings.add(effective);
         if (identical(setting, _draftTime)) {
-          _draftTime = saved;
+          _draftTime = effective;
         }
         if (identical(setting, _draftLocation)) {
-          _draftLocation = saved;
+          _draftLocation = effective;
         }
       }
 
-      final draftTimeLocal = _draftTime;
-      if (draftTimeLocal != null) await saveSetting(draftTimeLocal);
-      final draftLocationLocal = _draftLocation;
-      if (draftLocationLocal != null) await saveSetting(draftLocationLocal);
+      for (final setting in settingsToPersist) {
+        await saveSetting(setting);
+      }
+
       if (alarmIdToDelete != null && alarmIdToDelete.isNotEmpty) {
         await provider.cancelSchedule(id: alarmIdToDelete, abcId: resolvedDiaryId);
       }
+
+      await _updateDiaryAlarms(resolvedDiaryId, diarySyncSettings);
 
       if (!mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);

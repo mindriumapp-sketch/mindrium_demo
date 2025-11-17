@@ -1,6 +1,5 @@
 // lib/services/daily_context.dart
 /// ✅ 주차별 요약 및 앵커(최근 활동/일기) 생성을 담당하는 유틸 클래스
-import 'dart:math';
 
 class DailyContext {
   /// ✅ 주차별 대표 활동명 (fallback 용)
@@ -65,7 +64,7 @@ class DailyContext {
     final relax = _asList(user['relaxationTasks']);
     final surveys = _asList(user['surveys']);
     final screen = _asList(user['screenTime']);
-    final worries = _asList(user['worryGroups']);
+    // final worries = _asList(user['worryGroups']);
 
     List<Map<String, dynamic>> selected = [];
 
