@@ -2,14 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/features/7th_treatment/week7_reason_input_screen.dart';
 import 'package:gad_app_team/features/7th_treatment/week7_planning_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gad_app_team/widgets/behavior_confirm_dialog.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 import 'package:gad_app_team/widgets/blue_banner.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart';
 import 'package:gad_app_team/widgets/custom_popup_design.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/diaries_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 class Week7AddDisplayScreen extends StatefulWidget {
   final String? initialBehavior;
@@ -48,7 +47,6 @@ class Week7AddDisplayScreen extends StatefulWidget {
 
 class _Week7AddDisplayScreenState extends State<Week7AddDisplayScreen>
     with TickerProviderStateMixin {
-  Map<String, dynamic>? _abcModel;
   bool _isLoading = true;
   String? _error;
 
@@ -57,6 +55,8 @@ class _Week7AddDisplayScreenState extends State<Week7AddDisplayScreen>
 
   late AnimationController _fadeController;
   late AnimationController _slideController;
+  late final ApiClient _client;
+  late final DiariesApi _diariesApi;
 
   // 공유 전역 상태
   static final Set<String> _globalAddedBehaviors = {};
@@ -85,6 +85,8 @@ class _Week7AddDisplayScreenState extends State<Week7AddDisplayScreen>
   @override
   void initState() {
     super.initState();
+    _client = ApiClient(tokens: TokenStorage());
+    _diariesApi = DiariesApi(_client);
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -93,7 +95,7 @@ class _Week7AddDisplayScreenState extends State<Week7AddDisplayScreen>
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    _fetchLatestAbcModel();
+    _fetchAllConfrontAvoidLogs();
   }
 
   @override
@@ -122,159 +124,65 @@ class _Week7AddDisplayScreenState extends State<Week7AddDisplayScreen>
     });
   }
 
-  Future<void> _fetchLatestAbcModel() async {
+  Future<void> _fetchAllConfrontAvoidLogs() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('로그인 정보 없음');
-
-      final snapshot =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .collection('abc_models')
-              .orderBy('createdAt', descending: true)
-              .limit(1)
-              .get();
-
-      if (snapshot.docs.isEmpty) {
-        _abcModel = null;
-        await _loadWeek6Fallback();
-        setState(() {
-          _isLoading = false;
-          if (_behaviorCards.isEmpty) {
-            _error = 'ABC 모델이 없고 6주차 데이터도 찾을 수 없습니다.';
-          }
-        });
-        return;
+      // 모든 일기에서 confrontAvoidLogs 수집
+      final allLogs = await _diariesApi.getAllConfrontAvoidLogs();
+      
+      // confrontAvoidLogs를 behaviorCards 형태로 변환
+      _initBehaviorCardsFromLogs(allLogs);
+      
+      // 초기 자동 추가는 "지연" (기본 true) — 기존 로직은 그대로 두고 게이트만 추가
+      if (widget.initialBehavior != null && !widget.deferInitialMarkAsAdded) {
+        _globalAddedBehaviors.add(widget.initialBehavior!);
       }
-
-      final data = snapshot.docs.first.data();
+      
+      _addedBehaviors = Set.from(_globalAddedBehaviors);
+      
       setState(() {
-        _abcModel = data;
         _isLoading = false;
-        _initBehaviorCards();
       });
-
-      if (_behaviorCards.isEmpty) {
-        await _loadWeek6Fallback();
-        setState(() {});
+      
+      if (_behaviorCards.isNotEmpty) {
+        _fadeController.forward();
+        _slideController.forward();
       }
-
-      _fadeController.forward();
-      _slideController.forward();
     } catch (e) {
-      await _loadWeek6Fallback();
       setState(() {
-        _error = _behaviorCards.isEmpty ? '데이터 오류: $e' : null;
+        _error = '데이터를 불러오지 못했습니다: $e';
         _isLoading = false;
       });
     }
   }
 
-  void _initBehaviorCards() {
-    if (_abcModel == null) return;
-
-    final behaviorClassifications =
-        _abcModel!['behavior_classifications'] as Map<String, dynamic>?;
-
-    if (behaviorClassifications == null || behaviorClassifications.isEmpty) {
-      _behaviorCards = [];
-    } else {
-      _behaviorCards =
-          behaviorClassifications.entries
-              .map(
-                (e) => {
-                  'behavior': e.key,
-                  'classification': (e.value as String?) ?? '미분류',
-                },
-              )
-              .toList();
-    }
-
-    // 초기 자동 추가는 "지연" (기본 true) — 기존 로직은 그대로 두고 게이트만 추가
-    if (widget.initialBehavior != null && !widget.deferInitialMarkAsAdded) {
-      _globalAddedBehaviors.add(widget.initialBehavior!);
-    }
-
-    _addedBehaviors = Set.from(_globalAddedBehaviors);
-  }
-
-  Future<void> _loadWeek6Fallback() async {
-    if (_behaviorCards.isNotEmpty) return;
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      try {
-        final week6Snap =
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(user.uid)
-                .collection('week6_behaviors')
-                .orderBy('createdAt', descending: true)
-                .limit(1)
-                .get();
-
-        if (week6Snap.docs.isNotEmpty) {
-          final m = week6Snap.docs.first.data();
-          final cards = _cardsFromAnyWeek6Payload(m);
-          if (cards.isNotEmpty) {
-            _behaviorCards = cards;
-            return;
-          }
-        }
-      } catch (_) {}
-    }
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final bcJson = prefs.getString('week6_behavior_classifications');
-      if (bcJson != null) {
-        final decoded = json.decode(bcJson);
-        if (decoded is Map<String, dynamic>) {
-          final cards = _cardsFromAnyWeek6Payload(decoded);
-          if (cards.isNotEmpty) {
-            _behaviorCards = cards;
-            return;
-          }
-        }
+  void _initBehaviorCardsFromLogs(List<Map<String, dynamic>> logs) {
+    // type과 comment를 사용하여 behaviorCards 생성
+    // 같은 comment가 여러 번 나올 수 있으므로, 최신 것만 사용 (또는 모두 표시)
+    // 여기서는 중복 제거하여 최신 것만 사용
+    final Map<String, String> behaviorMap = {}; // comment -> classification
+    
+    for (var log in logs) {
+      final comment = log['comment']?.toString() ?? '';
+      final type = log['type']?.toString() ?? '';
+      
+      if (comment.isNotEmpty && type.isNotEmpty) {
+        // 같은 comment가 있으면 최신 것으로 업데이트 (이미 정렬되어 있음)
+        final classification = type == 'confronted' ? '직면' : '회피';
+        behaviorMap[comment] = classification;
       }
-
-      final listJson = prefs.getString('week6_behaviors');
-      if (listJson != null) {
-        final decoded = json.decode(listJson);
-        if (decoded is List) {
-          final list = decoded.whereType<String>().toList();
-          if (list.isNotEmpty) {
-            _behaviorCards =
-                list
-                    .map((b) => {'behavior': b, 'classification': '미분류'})
-                    .toList();
-          }
-        }
-      }
-    } catch (_) {}
-  }
-
-  List<Map<String, String>> _cardsFromAnyWeek6Payload(Map<String, dynamic> m) {
-    final bc = m['behavior_classifications'];
-    if (bc is Map<String, dynamic> && bc.isNotEmpty) {
-      return bc.entries
-          .map(
-            (e) => {
+    }
+    
+    _behaviorCards = behaviorMap.entries
+        .map((e) => {
               'behavior': e.key,
-              'classification': (e.value as String?) ?? '미분류',
-            },
-          )
-          .toList();
-    }
-    final bList = m['behaviors'];
-    if (bList is List && bList.isNotEmpty) {
-      return bList
-          .whereType<String>()
-          .map((b) => {'behavior': b, 'classification': '미분류'})
-          .toList();
-    }
-    return const [];
+              'classification': e.value,
+            })
+        .toList();
   }
 
   String _getClassificationText(String classification) {

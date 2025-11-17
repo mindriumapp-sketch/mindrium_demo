@@ -5,13 +5,16 @@ import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/features/7th_treatment/week7_add_display_screen.dart';
 import 'package:gad_app_team/features/7th_treatment/week7_calendar_summary_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import 'package:gad_app_team/widgets/behavior_confirm_dialog.dart';
 import 'package:gad_app_team/widgets/calendar_sheet.dart';
 import 'package:gad_app_team/widgets/blue_banner.dart';
 import 'package:gad_app_team/widgets/eduhome_bg.dart';
+import 'package:provider/provider.dart';
+import 'package:gad_app_team/data/user_provider.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/user_data_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 // ─────────────────────────────────────────────
 // 캘린더 이벤트 모델
@@ -163,19 +166,18 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
 
   Future<void> _loadUserData() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final doc =
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-        if (doc.exists) {
-          final data = doc.data();
-          if (mounted) {
-            setState(() {
-              _userName = data?['name'] as String?;
-              _userCoreValue = data?['coreValue'] as String?;
-            });
-          }
-        }
+      // UserProvider에서 사용자 이름 가져오기
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      _userName = userProvider.userName;
+      
+      // 핵심 가치는 UserDataApi를 통해 가져오기
+      final apiClient = ApiClient(tokens: TokenStorage());
+      final userDataApi = UserDataApi(apiClient);
+      final coreValueData = await userDataApi.getCoreValue();
+      _userCoreValue = coreValueData?['core_value'] as String?;
+      
+      if (mounted) {
+        setState(() {});
       }
     } catch (e) {
       debugPrint('사용자 데이터 로드 실패: $e');
