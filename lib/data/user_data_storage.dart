@@ -15,7 +15,11 @@ class UserDataStorage {
           .collection('users')
           .doc(user.uid)
           .update({
+<<<<<<< HEAD
             'coreValue': userData.coreValue,
+=======
+            'valueGoal': userData.valueGoal,
+>>>>>>> 7cf0a32 (1118 통합)
             'valueUpdatedAt': FieldValue.serverTimestamp(),
           });
     } catch (e) {
@@ -44,7 +48,11 @@ class UserDataStorage {
       final data = doc.data()!;
       return UserData(
         name: data['name'] ?? '',
+<<<<<<< HEAD
         coreValue: data['coreValue'] ?? '',
+=======
+        valueGoal: data['valueGoal'] ?? '',
+>>>>>>> 7cf0a32 (1118 통합)
         createdAt:
             data['createdAt'] != null
                 ? (data['createdAt'] as Timestamp).toDate()
@@ -78,7 +86,11 @@ class UserDataStorage {
 
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
         {
+<<<<<<< HEAD
           'coreValue': FieldValue.delete(),
+=======
+          'valueGoal': FieldValue.delete(),
+>>>>>>> 7cf0a32 (1118 통합)
           'valueUpdatedAt': FieldValue.delete(),
         },
       );
@@ -106,8 +118,13 @@ class UserDataStorage {
       }
 
       final data = doc.data()!;
+<<<<<<< HEAD
       return data['coreValue'] != null &&
           data['coreValue'].toString().isNotEmpty;
+=======
+      return data['valueGoal'] != null &&
+          data['valueGoal'].toString().isNotEmpty;
+>>>>>>> 7cf0a32 (1118 통합)
     } catch (e) {
       return false;
     }
@@ -139,7 +156,11 @@ class UserDataStorage {
   }
 
   /// 사용자 핵심 가치만 가져오기 (Firebase Firestore)
+<<<<<<< HEAD
   static Future<String?> getUserCoreValue() async {
+=======
+  static Future<String?> getUserValueGoal() async {
+>>>>>>> 7cf0a32 (1118 통합)
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
@@ -157,7 +178,11 @@ class UserDataStorage {
       }
 
       final data = doc.data()!;
+<<<<<<< HEAD
       return data['coreValue'] as String?;
+=======
+      return data['valueGoal'] as String?;
+>>>>>>> 7cf0a32 (1118 통합)
     } catch (e) {
       return null;
     }

@@ -74,7 +74,11 @@ async def main():
             print(f"   설문 완료: {user.get('survey_completed')}")
         else:
             print(f"   ❌ 사용자 정보 조회 실패: {r.text}")
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 7cf0a32 (1118 통합)
         # 5. 스크린타임 기록 추가
         print(f"\n5️⃣ 스크린타임 기록 추가...")
         start_time = datetime.now(timezone.utc) - timedelta(minutes=45)
@@ -113,7 +117,11 @@ async def main():
                 print(f"   ❌ 요약 조회 실패: {r.text}")
         else:
             print(f"   ❌ 스크린타임 기록 추가 실패: {r.text}")
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 7cf0a32 (1118 통합)
         print("\n" + "=" * 60)
         print("✅ 모든 테스트 완료!")
         print("=" * 60)

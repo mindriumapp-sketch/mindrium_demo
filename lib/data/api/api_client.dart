@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+<<<<<<< HEAD
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
 
@@ -11,6 +12,18 @@ String _resolveBaseUrl(String? override) {
   if (kIsWeb) {
     return 'http://localhost:8050';
   }
+=======
+import 'package:flutter/foundation.dart';
+
+import '../storage/token_storage.dart';
+
+const String _envBaseUrl = String.fromEnvironment('API_BASE_URL');
+final String _defaultBaseUrl = _resolveDefaultBaseUrl();
+
+String _resolveDefaultBaseUrl() {
+  if (_envBaseUrl.isNotEmpty) return _envBaseUrl;
+  if (kIsWeb) return 'http://127.0.0.1:8050';
+>>>>>>> 7cf0a32 (1118 통합)
   if (defaultTargetPlatform == TargetPlatform.android) {
     return 'http://10.0.2.2:8050';
   }
@@ -25,8 +38,13 @@ class ApiClient {
   ApiClient({
     required this.tokens,
     String? baseUrl,
+<<<<<<< HEAD
   })  : baseUrl = _resolveBaseUrl(baseUrl),
         dio = Dio(BaseOptions(baseUrl: _resolveBaseUrl(baseUrl))) {
+=======
+  })  : baseUrl = baseUrl ?? _defaultBaseUrl,
+        dio = Dio(BaseOptions(baseUrl: baseUrl ?? _defaultBaseUrl)) {
+>>>>>>> 7cf0a32 (1118 통합)
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {

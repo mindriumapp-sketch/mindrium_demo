@@ -11,7 +11,10 @@ DEFAULT_USER_FIELDS = {
     "surveys": [],
     "custom_tags": [],
     "practice_sessions": [],
+<<<<<<< HEAD
     "screen_time": [],
+=======
+>>>>>>> 7cf0a32 (1118 통합)
     "email_verified": False,
     "created_at": datetime.now(timezone.utc),
 }

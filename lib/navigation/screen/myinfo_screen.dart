@@ -23,7 +23,11 @@ class MyInfoScreen extends StatefulWidget {
 class _MyInfoScreenState extends State<MyInfoScreen> with WidgetsBindingObserver {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
+<<<<<<< HEAD
   final TextEditingController coreValueController = TextEditingController();
+=======
+  final TextEditingController valueGoalController = TextEditingController();
+>>>>>>> 7cf0a32 (1118 통합)
   final TextEditingController currentPasswordController =
       TextEditingController();
   final TextEditingController newPasswordController = TextEditingController();
@@ -92,7 +96,11 @@ class _MyInfoScreenState extends State<MyInfoScreen> with WidgetsBindingObserver
     try {
       await context.read<ScreenTimeProvider>().refresh();
     } catch (_) {
+<<<<<<< HEAD
       // ignore refresh errors on overview screen
+=======
+      // ignore overview refresh errors
+>>>>>>> 7cf0a32 (1118 통합)
     }
   }
 
@@ -111,12 +119,20 @@ class _MyInfoScreenState extends State<MyInfoScreen> with WidgetsBindingObserver
       }
 
       try {
+<<<<<<< HEAD
         final coreValueRes = await _userDataApi.getCoreValue();
         final rawValue =
             coreValueRes?['value_goal'] ?? coreValueRes?['core_value'];
         coreValueController.text = (rawValue as String?) ?? '';
       } catch (_) {
         coreValueController.text = '';
+=======
+        final valueGoalRes = await _userDataApi.getValueGoal();
+        final rawValue = valueGoalRes?['value_goal'];
+        valueGoalController.text = (rawValue as String?) ?? '';
+      } catch (_) {
+        valueGoalController.text = '';
+>>>>>>> 7cf0a32 (1118 통합)
       }
     } on DioException catch (e) {
       final message =
@@ -135,7 +151,11 @@ class _MyInfoScreenState extends State<MyInfoScreen> with WidgetsBindingObserver
     setState(() => isLoading = true);
 
     final trimmedName = nameController.text.trim();
+<<<<<<< HEAD
     final coreValue = coreValueController.text.trim();
+=======
+    final valueGoal = valueGoalController.text.trim();
+>>>>>>> 7cf0a32 (1118 통합)
     final currentPw = currentPasswordController.text.trim();
     final newPw = newPasswordController.text.trim();
     final confirmPw = confirmPasswordController.text.trim();
@@ -159,10 +179,17 @@ class _MyInfoScreenState extends State<MyInfoScreen> with WidgetsBindingObserver
         provider.updateUserName(trimmedName);
       }
 
+<<<<<<< HEAD
       if (coreValue.isNotEmpty) {
         await _userDataApi.updateCoreValue(coreValue);
       } else {
         await _userDataApi.deleteCoreValue();
+=======
+      if (valueGoal.isNotEmpty) {
+        await _userDataApi.updateValueGoal(valueGoal);
+      } else {
+        await _userDataApi.deleteValueGoal();
+>>>>>>> 7cf0a32 (1118 통합)
       }
 
       if (showPasswordFields && newPw.isNotEmpty) {
@@ -213,7 +240,10 @@ class _MyInfoScreenState extends State<MyInfoScreen> with WidgetsBindingObserver
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     _scheduleVisibilityRefresh();
+=======
+>>>>>>> 7cf0a32 (1118 통합)
     // 🎨 색상 팔레트
     const Color softWhite = Color(0xE6FFFFFF);
     const Color deepNavy = Color(0xFF004C73);
@@ -297,7 +327,11 @@ class _MyInfoScreenState extends State<MyInfoScreen> with WidgetsBindingObserver
                             ),
                             const SizedBox(height: 16),
                             _buildTextField(
+<<<<<<< HEAD
                               controller: coreValueController,
+=======
+                              controller: valueGoalController,
+>>>>>>> 7cf0a32 (1118 통합)
                               label: '나의 핵심 가치',
                               icon: Icons.favorite_outline,
                               enabled: isEditing,

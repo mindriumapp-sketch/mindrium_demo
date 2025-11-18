@@ -6,12 +6,18 @@ class UserDataApi {
   final ApiClient _client;
   UserDataApi(this._client);
 
+<<<<<<< HEAD
   Future<Map<String, dynamic>?> getCoreValue() async {
     final res = await _client.dio.get('/users/me/core-value');
+=======
+  Future<Map<String, dynamic>?> getValueGoal() async {
+    final res = await _client.dio.get('/users/me/value-goal');
+>>>>>>> 7cf0a32 (1118 통합)
     final data = res.data;
     if (data is Map<String, dynamic>) return data;
     throw DioException(
       requestOptions: res.requestOptions,
+<<<<<<< HEAD
       message: 'Invalid /users/me/core-value response',
     );
   }
@@ -20,17 +26,36 @@ class UserDataApi {
     final res = await _client.dio.put(
       '/users/me/core-value',
       data: {'value_goal': coreValue},
+=======
+      message: 'Invalid /users/me/value-goal response',
+    );
+  }
+
+  Future<Map<String, dynamic>> updateValueGoal(String valueGoal) async {
+    final res = await _client.dio.put(
+      '/users/me/value-goal',
+      data: {'value_goal': valueGoal},
+>>>>>>> 7cf0a32 (1118 통합)
     );
     final data = res.data;
     if (data is Map<String, dynamic>) return data;
     throw DioException(
       requestOptions: res.requestOptions,
+<<<<<<< HEAD
       message: 'Invalid /users/me/core-value (PUT) response',
     );
   }
 
   Future<void> deleteCoreValue() async {
     await _client.dio.delete('/users/me/core-value');
+=======
+      message: 'Invalid /users/me/value-goal (PUT) response',
+    );
+  }
+
+  Future<void> deleteValueGoal() async {
+    await _client.dio.delete('/users/me/value-goal');
+>>>>>>> 7cf0a32 (1118 통합)
   }
 
   Future<Map<String, dynamic>> getProgress() async {

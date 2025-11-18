@@ -81,7 +81,11 @@ class _Week8EffectivenessScreenState extends State<Week8EffectivenessScreen> {
 
   bool _loading = true;
   String? _userName;
+<<<<<<< HEAD
   String? _userCoreValue;
+=======
+  String? _userValueGoal;
+>>>>>>> 7cf0a32 (1118 통합)
 
   // ✅ JellyfishNotice에 띄울 말 제어용 UI 상태
   bool _answered = false; // 이번 질문에 예/아니오를 눌렀는가
@@ -110,7 +114,11 @@ class _Week8EffectivenessScreenState extends State<Week8EffectivenessScreen> {
       if (!doc.exists) return;
       final d = doc.data();
       _userName = d?['name'] as String?;
+<<<<<<< HEAD
       _userCoreValue = d?['coreValue'] as String?;
+=======
+      _userValueGoal = d?['value_goal'] as String?;
+>>>>>>> 7cf0a32 (1118 통합)
     } catch (_) {}
   }
 
@@ -269,8 +277,13 @@ class _Week8EffectivenessScreenState extends State<Week8EffectivenessScreen> {
     }
 
     final String defaultDesc =
+<<<<<<< HEAD
     _userName != null && _userCoreValue != null
         ? '$_userName님의 불안을 줄이고,\n소중히 여기는 가치\n"$_userCoreValue"를 향상하는 데\n도움이 되셨습니까?'
+=======
+    _userName != null && _userValueGoal != null
+        ? '$_userName님의 불안을 줄이고,\n소중히 여기는 가치\n"$_userValueGoal"를 향상하는 데\n도움이 되셨습니까?'
+>>>>>>> 7cf0a32 (1118 통합)
         : '이 행동이 불안을 줄이고\n소중히 여기는 가치를 향상하는 데\n도움이 되셨습니까?';
 
     // ✅ Jellyfish에 들어갈 실제 텍스트 결정

@@ -45,12 +45,19 @@ import 'package:gad_app_team/features/menu/education/education3.dart';
 import 'package:gad_app_team/features/menu/education/education4.dart';
 import 'package:gad_app_team/features/menu/education/education5.dart';
 import 'package:gad_app_team/features/menu/education/education6.dart';
+<<<<<<< HEAD
+=======
+import 'package:gad_app_team/features/menu/reports/screen_time_screen.dart';
+>>>>>>> 7cf0a32 (1118 통합)
 
 import 'package:gad_app_team/features/menu/relaxation/relaxation_screen.dart';
 import 'package:gad_app_team/features/menu/relaxation/relaxation_score_screen.dart';
 import 'package:gad_app_team/features/menu/relaxation/relaxation_education.dart';
 import 'package:gad_app_team/features/menu/relaxation/relaxation_noti.dart';
+<<<<<<< HEAD
 import 'package:gad_app_team/features/menu/reports/screen_time_screen.dart';
+=======
+>>>>>>> 7cf0a32 (1118 통합)
 import 'package:gad_app_team/contents/before_sud_screen.dart';
 import 'package:gad_app_team/contents/after_sud_screen.dart';
 

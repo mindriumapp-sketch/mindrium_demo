@@ -113,5 +113,9 @@ secrets/
 **/test_db.py
 **/pip-log.txt
 **/pip-delete-this-directory.txt
+<<<<<<< HEAD
 **/.pytest_cache/
 clean_clone/
+=======
+**/.pytest_cache/
+>>>>>>> 7cf0a32 (1118 통합)

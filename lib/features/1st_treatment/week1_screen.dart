@@ -18,12 +18,21 @@ const List<String> kWeek1Prefixes = [
 class Week1Screen extends StatelessWidget {
   const Week1Screen({super.key});
 
+<<<<<<< HEAD
   Future<bool> _hasCoreValue() async {
     try {
       final client = ApiClient(tokens: TokenStorage());
       final userDataApi = UserDataApi(client);
       final response = await userDataApi.getCoreValue();
       final value = response?['value_goal'] ?? response?['core_value'];
+=======
+  Future<bool> _hasValueGoal() async {
+    try {
+      final client = ApiClient(tokens: TokenStorage());
+      final userDataApi = UserDataApi(client);
+      final response = await userDataApi.getValueGoal();
+      final value = response?['value_goal'];
+>>>>>>> 7cf0a32 (1118 통합)
       return value is String && value.toString().trim().isNotEmpty;
     } catch (_) {
       return false;
@@ -33,7 +42,11 @@ class Week1Screen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<bool>(
+<<<<<<< HEAD
       future: _hasCoreValue(),
+=======
+      future: _hasValueGoal(),
+>>>>>>> 7cf0a32 (1118 통합)
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(

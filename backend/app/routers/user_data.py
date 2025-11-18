@@ -16,16 +16,28 @@ from core.security import get_current_user
 from models.user import USER_COLLECTION
 
 router = APIRouter(prefix="/users/me", tags=["user-data"])
+<<<<<<< HEAD
+=======
+KST = timezone(timedelta(hours=9))
+>>>>>>> 7cf0a32 (1118 통합)
 
 
 # ============= Schemas =============
 
+<<<<<<< HEAD
 class CoreValueUpdate(BaseModel):
+=======
+class ValueGoalUpdate(BaseModel):
+>>>>>>> 7cf0a32 (1118 통합)
     """핵심 가치 업데이트 요청"""
     value_goal: str = Field(..., min_length=1, max_length=500, description="사용자의 핵심 가치")
 
 
+<<<<<<< HEAD
 class CoreValueResponse(BaseModel):
+=======
+class ValueGoalResponse(BaseModel):
+>>>>>>> 7cf0a32 (1118 통합)
     """핵심 가치 응답"""
     value_goal: Optional[str] = None
     updated_at: Optional[datetime] = None
@@ -120,6 +132,27 @@ class PracticeSessionResponse(BaseModel):
     updated_at: datetime
 
 
+<<<<<<< HEAD
+=======
+class BackgroundInterval(BaseModel):
+    start: datetime = Field(
+        ...,
+        validation_alias=AliasChoices("start", "start_time", "startTime"),
+        serialization_alias="start",
+        description="백그라운드 진입 시각",
+    )
+    end: Optional[datetime] = Field(
+        None,
+        validation_alias=AliasChoices("end", "end_time", "endTime"),
+        serialization_alias="end",
+        description="백그라운드 종료 시각",
+    )
+
+    class Config:
+        populate_by_name = True
+
+
+>>>>>>> 7cf0a32 (1118 통합)
 class ScreenTimeBase(BaseModel):
     label: Optional[str] = Field(
         default=None,
@@ -142,6 +175,15 @@ class ScreenTimeBase(BaseModel):
         serialization_alias="note",
         description="자유 입력 메모",
     )
+<<<<<<< HEAD
+=======
+    background_intervals: Optional[List[BackgroundInterval]] = Field(
+        default=None,
+        validation_alias=AliasChoices("background_intervals", "backgroundIntervals"),
+        serialization_alias="backgroundIntervals",
+        description="앱이 백그라운드로 전환된 구간 목록",
+    )
+>>>>>>> 7cf0a32 (1118 통합)
 
     class Config:
         populate_by_name = True
@@ -251,6 +293,7 @@ def _clean_text(value: Optional[str]) -> Optional[str]:
     return trimmed or None
 
 
+<<<<<<< HEAD
 def _calc_duration_minutes(start: Optional[datetime], end: Optional[datetime], duration_hint: Optional[int]) -> tuple[int, Optional[datetime]]:
     if duration_hint is not None and duration_hint >= 0:
         if end is None and start is not None:
@@ -261,6 +304,92 @@ def _calc_duration_minutes(start: Optional[datetime], end: Optional[datetime], d
         minutes = int(round(seconds / 60))
         return minutes, end
     return 0, end
+=======
+def _parse_background_intervals(raw_intervals) -> List[dict]:
+    parsed: List[dict] = []
+    if not raw_intervals:
+        return parsed
+
+    for item in raw_intervals:
+        if isinstance(item, BackgroundInterval):
+            start_val = item.start
+            end_val = item.end
+        elif isinstance(item, dict):
+            start_val = item.get("start") or item.get("start_time") or item.get("startTime")
+            end_val = item.get("end") or item.get("end_time") or item.get("endTime")
+        else:
+            start_val = getattr(item, "start", None)
+            end_val = getattr(item, "end", None)
+
+        start = _parse_dt(start_val)
+        end = _parse_dt(end_val)
+        if not start or not end or end <= start:
+            continue
+        parsed.append({"start": start, "end": end})
+
+    return parsed
+
+
+def _normalize_background_intervals(session_start: Optional[datetime], session_end: Optional[datetime], intervals) -> List[dict]:
+    if not session_start or not session_end or session_end <= session_start or not intervals:
+        return []
+
+    parsed = _parse_background_intervals(intervals)
+    clamped: List[dict] = []
+    for interval in parsed:
+        start = max(session_start, min(session_end, interval["start"]))
+        end = max(session_start, min(session_end, interval["end"]))
+        if end <= start:
+            continue
+        clamped.append({"start": start, "end": end})
+
+    if not clamped:
+        return []
+
+    clamped.sort(key=lambda iv: iv["start"])
+    merged: List[dict] = [clamped[0]]
+    for interval in clamped[1:]:
+        last = merged[-1]
+        if interval["start"] <= last["end"]:
+            if interval["end"] > last["end"]:
+                last["end"] = interval["end"]
+        else:
+            merged.append(interval)
+    return merged
+
+
+def _sum_interval_seconds(intervals: List[dict]) -> float:
+    total = 0.0
+    for interval in intervals:
+        span = interval["end"] - interval["start"]
+        total += max(0.0, span.total_seconds())
+    return total
+
+
+def _calc_duration_minutes(
+    start: Optional[datetime],
+    end: Optional[datetime],
+    duration_hint: Optional[int],
+    background_intervals,
+) -> tuple[int, Optional[datetime], List[dict]]:
+    final_end = end
+    base_seconds = 0.0
+
+    if start and end and end > start:
+        base_seconds = float((end - start).total_seconds())
+    elif duration_hint is not None and duration_hint >= 0:
+        base_seconds = float(duration_hint * 60)
+        if start and (final_end is None or final_end <= start):
+            final_end = start + timedelta(minutes=duration_hint)
+    else:
+        base_seconds = 0.0
+
+    normalized_intervals = _normalize_background_intervals(start, final_end, background_intervals)
+    excluded = _sum_interval_seconds(normalized_intervals)
+    effective_seconds = max(0.0, base_seconds - excluded)
+    minutes = int(round(effective_seconds / 60))
+    return minutes, final_end, normalized_intervals
+>>>>>>> 7cf0a32 (1118 통합)
 
 
 def _normalize_screen_time_entries(raw_entries) -> List[dict]:
@@ -276,8 +405,14 @@ def _normalize_screen_time_entries(raw_entries) -> List[dict]:
         end = _parse_dt(item.get("end_time") or item.get("endTime"))
         created = _parse_dt(item.get("created_at") or item.get("createdAt") or start)
         updated = _parse_dt(item.get("updated_at") or item.get("updatedAt") or created)
+<<<<<<< HEAD
         duration_hint = _int_from(item.get("duration_minutes") or item.get("durationMinutes"))
         duration, end = _calc_duration_minutes(start, end, duration_hint)
+=======
+        raw_intervals = item.get("background_intervals") or item.get("backgroundIntervals")
+        duration_hint = _int_from(item.get("duration_minutes") or item.get("durationMinutes"))
+        duration, end, normalized_intervals = _calc_duration_minutes(start, end, duration_hint, raw_intervals)
+>>>>>>> 7cf0a32 (1118 통합)
         normalized.append({
             "entry_id": entry_id,
             "start_time": start or created,
@@ -288,6 +423,10 @@ def _normalize_screen_time_entries(raw_entries) -> List[dict]:
             "note": item.get("note") or item.get("notes"),
             "created_at": created or start or datetime.now(timezone.utc),
             "updated_at": updated or created or datetime.now(timezone.utc),
+<<<<<<< HEAD
+=======
+            "background_intervals": normalized_intervals,
+>>>>>>> 7cf0a32 (1118 통합)
         })
 
     normalized.sort(
@@ -303,9 +442,18 @@ def _summarize_screen_time(entries: List[dict]) -> ScreenTimeSummaryResponse:
     week_minutes = 0
     sessions = len(entries)
     last_entry_at: Optional[datetime] = None
+<<<<<<< HEAD
     now = datetime.now(timezone.utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = now - timedelta(days=7)
+=======
+    now_utc = datetime.now(timezone.utc)
+    now_kst = now_utc.astimezone(KST)
+    today_start_kst = now_kst.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = today_start_kst.astimezone(timezone.utc)
+    week_start_kst = now_kst - timedelta(days=7)
+    week_start = week_start_kst.astimezone(timezone.utc)
+>>>>>>> 7cf0a32 (1118 통합)
 
     for entry in entries:
         minutes = entry.get("duration_minutes") or 0
@@ -328,11 +476,18 @@ def _summarize_screen_time(entries: List[dict]) -> ScreenTimeSummaryResponse:
     )
 
 
+<<<<<<< HEAD
 
 # ============= API Endpoints =============
 
 @router.get("/core-value", response_model=CoreValueResponse, summary="핵심 가치 조회")
 async def get_core_value(
+=======
+# ============= API Endpoints =============
+
+@router.get("/value-goal", response_model=ValueGoalResponse, summary="핵심 가치 조회")
+async def get_value_goal(
+>>>>>>> 7cf0a32 (1118 통합)
     current_user: dict = Depends(get_current_user),
     db = Depends(get_db)
 ):
@@ -340,7 +495,10 @@ async def get_core_value(
     현재 로그인한 사용자의 핵심 가치를 조회합니다.
     
     - **value_goal**: 사용자가 설정한 핵심 가치 문구
+<<<<<<< HEAD
     - **updated_at**: 마지막 업데이트 시각
+=======
+>>>>>>> 7cf0a32 (1118 통합)
     """
     user_id = current_user["_id"]
     user = await db[USER_COLLECTION].find_one({"_id": user_id})
@@ -349,6 +507,7 @@ async def get_core_value(
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
     
     value_goal = user.get("value_goal")
+<<<<<<< HEAD
     updated_at = user.get("value_goal_updated_at")
 
     if value_goal is None:
@@ -365,6 +524,18 @@ async def get_core_value(
 @router.put("/core-value", response_model=CoreValueResponse, summary="핵심 가치 설정/수정")
 async def update_core_value(
     data: CoreValueUpdate,
+=======
+
+    return ValueGoalResponse(
+        value_goal=value_goal,
+        updated_at=None
+    )
+
+
+@router.put("/value-goal", response_model=ValueGoalResponse, summary="핵심 가치 설정/수정")
+async def update_value_goal(
+    data: ValueGoalUpdate,
+>>>>>>> 7cf0a32 (1118 통합)
     current_user: dict = Depends(get_current_user),
     db = Depends(get_db)
 ):
@@ -372,21 +543,32 @@ async def update_core_value(
     사용자의 핵심 가치를 설정하거나 수정합니다.
     
     - **value_goal**: 최대 500자까지 입력 가능
+<<<<<<< HEAD
     - 자동으로 updated_at 타임스탬프 기록
     """
     user_id = current_user["_id"]
     now = datetime.now(timezone.utc)
+=======
+    """
+    user_id = current_user["_id"]
+>>>>>>> 7cf0a32 (1118 통합)
     
     result = await db[USER_COLLECTION].update_one(
         {"_id": user_id},
         {
             "$set": {
                 "value_goal": data.value_goal,
+<<<<<<< HEAD
                 "value_goal_updated_at": now,
             },
             "$unset": {
                 "core_value": "",
                 "core_value_updated_at": "",
+=======
+            },
+            "$unset": {
+                "value_goal_updated_at": "",
+>>>>>>> 7cf0a32 (1118 통합)
             },
         }
     )
@@ -394,6 +576,7 @@ async def update_core_value(
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
     
+<<<<<<< HEAD
     return CoreValueResponse(
         value_goal=data.value_goal,
         updated_at=now
@@ -402,6 +585,16 @@ async def update_core_value(
 
 @router.delete("/core-value", status_code=status.HTTP_204_NO_CONTENT, summary="핵심 가치 삭제")
 async def delete_core_value(
+=======
+    return ValueGoalResponse(
+        value_goal=data.value_goal,
+        updated_at=None
+    )
+
+
+@router.delete("/value-goal", status_code=status.HTTP_204_NO_CONTENT, summary="핵심 가치 삭제")
+async def delete_value_goal(
+>>>>>>> 7cf0a32 (1118 통합)
     current_user: dict = Depends(get_current_user),
     db = Depends(get_db)
 ):
@@ -416,8 +609,11 @@ async def delete_core_value(
             "$unset": {
                 "value_goal": "",
                 "value_goal_updated_at": "",
+<<<<<<< HEAD
                 "core_value": "",
                 "core_value_updated_at": "",
+=======
+>>>>>>> 7cf0a32 (1118 통합)
             }
         }
     )
@@ -878,11 +1074,14 @@ async def get_user_progress(
     total_relaxations = len(user.get("relaxation_tasks", []))
     
     value_goal = user.get("value_goal")
+<<<<<<< HEAD
     if value_goal is None:
         value_goal = user.get("core_value")
 
     screen_entries = _normalize_screen_time_entries(user.get("screen_time", []))
     screen_summary = _summarize_screen_time(screen_entries)
+=======
+>>>>>>> 7cf0a32 (1118 통합)
 
     return UserDataResponse(
         value_goal=value_goal,
@@ -890,10 +1089,14 @@ async def get_user_progress(
         current_week=current_week,
         week_progress=week_progress_data,
         total_diaries=total_diaries,
+<<<<<<< HEAD
         total_relaxations=total_relaxations,
         total_screen_minutes=screen_summary.total_minutes,
         screen_time_sessions=screen_summary.sessions,
         last_screen_time_at=screen_summary.last_entry_at,
+=======
+        total_relaxations=total_relaxations
+>>>>>>> 7cf0a32 (1118 통합)
     )
 
 
@@ -1099,7 +1302,11 @@ async def get_practice_sessions(
         key=lambda s: _parse_date(s.get("created_at") or s.get("updated_at")),
         reverse=True
     )
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 7cf0a32 (1118 통합)
     return [PracticeSessionResponse(**s) for s in sessions]
 
 
@@ -1167,7 +1374,11 @@ async def create_screen_time_entry(
         raise HTTPException(status_code=400, detail="end_time이 start_time보다 빠릅니다")
 
     duration_hint = payload.duration_minutes
+<<<<<<< HEAD
     duration, end = _calc_duration_minutes(start, end, duration_hint)
+=======
+    duration, end, normalized_intervals = _calc_duration_minutes(start, end, duration_hint, payload.background_intervals)
+>>>>>>> 7cf0a32 (1118 통합)
     if duration == 0 and end is None:
         raise HTTPException(status_code=400, detail="end_time 또는 duration_minutes 중 하나는 필요합니다")
 
@@ -1182,6 +1393,10 @@ async def create_screen_time_entry(
         "note": _clean_text(payload.note),
         "created_at": now,
         "updated_at": now,
+<<<<<<< HEAD
+=======
+        "background_intervals": normalized_intervals,
+>>>>>>> 7cf0a32 (1118 통합)
     }
 
     result = await db[USER_COLLECTION].update_one(
@@ -1223,7 +1438,21 @@ async def update_screen_time_entry(
         new_start = _ensure_utc(updates.start_time) if updates.start_time else current.get("start_time")
         new_end = _ensure_utc(updates.end_time) if updates.end_time else current.get("end_time")
         duration_hint = updates.duration_minutes if updates.duration_minutes is not None else current.get("duration_minutes")
+<<<<<<< HEAD
         duration, new_end = _calc_duration_minutes(new_start, new_end, duration_hint)
+=======
+        intervals_input = (
+            updates.background_intervals
+            if updates.background_intervals is not None
+            else current.get("background_intervals")
+        )
+        duration, new_end, normalized_intervals = _calc_duration_minutes(
+            new_start,
+            new_end,
+            duration_hint,
+            intervals_input,
+        )
+>>>>>>> 7cf0a32 (1118 통합)
 
         if new_start is None:
             raise HTTPException(status_code=400, detail="start_time은 비워둘 수 없습니다")
@@ -1234,6 +1463,10 @@ async def update_screen_time_entry(
         entries[idx]["start_time"] = new_start
         entries[idx]["end_time"] = new_end
         entries[idx]["duration_minutes"] = duration
+<<<<<<< HEAD
+=======
+        entries[idx]["background_intervals"] = normalized_intervals
+>>>>>>> 7cf0a32 (1118 통합)
         if updates.label is not None:
             entries[idx]["label"] = _clean_text(updates.label)
         if updates.source is not None:
