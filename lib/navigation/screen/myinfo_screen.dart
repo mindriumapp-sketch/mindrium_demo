@@ -11,6 +11,8 @@ import 'package:gad_app_team/data/api/user_data_api.dart';
 import 'package:gad_app_team/data/api/auth_api.dart';
 import 'package:gad_app_team/data/storage/token_storage.dart';
 import 'package:gad_app_team/data/user_provider.dart';
+import 'package:gad_app_team/data/api/screen_time_api.dart';
+import 'package:gad_app_team/data/models/screen_time_summary.dart';
 
 class MyInfoScreen extends StatefulWidget {
   const MyInfoScreen({super.key});
@@ -39,11 +41,15 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
   late final UsersApi _usersApi = UsersApi(_apiClient);
   late final UserDataApi _userDataApi = UserDataApi(_apiClient);
   late final AuthApi _authApi = AuthApi(_apiClient, _tokens);
+  late final ScreenTimeApi _screenTimeApi = ScreenTimeApi(_apiClient);
+  ScreenTimeSummary? _screenTimeSummary;
+  bool _screenTimeLoading = true;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _loadScreenTimeSummary();
   }
 
   Future<void> _loadUserData() async {
@@ -77,6 +83,36 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
       BlueBanner.show(context, '내 정보를 불러오지 못했어요.');
     } finally {
       if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> _loadScreenTimeSummary({bool showError = false}) async {
+    if (mounted) {
+      setState(() => _screenTimeLoading = true);
+    }
+    try {
+      final summary = await _screenTimeApi.fetchSummary();
+      if (!mounted) return;
+      setState(() {
+        _screenTimeSummary = summary;
+        _screenTimeLoading = false;
+      });
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() => _screenTimeLoading = false);
+      if (showError) {
+        final message =
+            e.response?.data is Map
+                ? e.response?.data['detail']?.toString()
+                : e.message;
+        BlueBanner.show(context, message ?? '스크린타임 요약을 불러오지 못했어요.');
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _screenTimeLoading = false);
+      if (showError) {
+        BlueBanner.show(context, '스크린타임 요약을 불러오지 못했어요.');
+      }
     }
   }
 
@@ -265,6 +301,8 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
                               ),
                             ),
                             const SizedBox(height: 24),
+                            _buildScreenTimeCard(),
+                            const SizedBox(height: 24),
 
                             if (showPasswordFields) ...[
                               _buildTextField(
@@ -348,6 +386,135 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildScreenTimeCard() {
+    final summary = _screenTimeSummary;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE0ECF4)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1A000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                '스크린타임 요약',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: Color(0xFF00344F),
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/screen_time');
+                },
+                child: const Text(
+                  '기록 보러가기',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_screenTimeLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            )
+          else if (summary == null)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '요약을 불러오지 못했습니다.',
+                  style: TextStyle(color: Colors.black54),
+                ),
+                TextButton(
+                  onPressed: () => _loadScreenTimeSummary(showError: true),
+                  child: const Text('다시 시도'),
+                ),
+              ],
+            )
+          else
+            Column(
+              children: [
+                Row(
+                  children: [
+                    _metricTile('총 사용 시간', _minutesLabel(summary.totalMinutes)),
+                    const SizedBox(width: 12),
+                    _metricTile('오늘', _minutesLabel(summary.todayMinutes)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _metricTile('최근 7일', _minutesLabel(summary.weekMinutes)),
+                    const SizedBox(width: 12),
+                    _metricTile('기록 횟수', '${summary.sessions}회'),
+                  ],
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metricTile(String label, String value) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5FBFF),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF004C73),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _minutesLabel(double minutes) {
+    if (minutes <= 0) return '0분';
+    final rounded = minutes.round();
+    if (rounded <= 0) {
+      return '1분 미만';
+    }
+    return '$rounded분';
   }
 
   Widget _buildTextField({

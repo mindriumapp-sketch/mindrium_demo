@@ -15,6 +15,7 @@ import 'package:gad_app_team/features/2nd_treatment/week2_screen.dart';
 import 'package:gad_app_team/features/4th_treatment/week4_screen.dart';
 import 'package:gad_app_team/features/4th_treatment/week4_classfication_result_screen.dart';
 import 'package:gad_app_team/features/8th_treatment/week8_screen.dart';
+import 'package:gad_app_team/features/screen_time/screen_time_page.dart';
 
 //notification
 import 'package:gad_app_team/features/menu/diary/diary_directory_screen.dart';
@@ -144,6 +145,7 @@ class MyApp extends StatelessWidget {
         '/education6': (context) => const Education6Page(),
         '/education7': (context) => const Education7Page(),
         '/relax': (context) => const RelaxationScreen(),
+        '/screen_time': (context) => const ScreenTimePage(),
         '/relaxation_education': (context) {
           final args =
               (ModalRoute.of(context)!.settings.arguments as Map?) ?? {};
