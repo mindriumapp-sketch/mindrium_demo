@@ -45,6 +45,7 @@ import 'package:gad_app_team/features/menu/education/education3.dart';
 import 'package:gad_app_team/features/menu/education/education4.dart';
 import 'package:gad_app_team/features/menu/education/education5.dart';
 import 'package:gad_app_team/features/menu/education/education6.dart';
+import 'package:gad_app_team/features/menu/education/education7.dart';
 
 import 'package:gad_app_team/features/menu/relaxation/relaxation_screen.dart';
 import 'package:gad_app_team/features/menu/relaxation/relaxation_score_screen.dart';
@@ -141,6 +142,7 @@ class MyApp extends StatelessWidget {
         '/education4': (context) => const Education4Page(),
         '/education5': (context) => const Education5Page(),
         '/education6': (context) => const Education6Page(),
+        '/education7': (context) => const Education7Page(),
         '/relax': (context) => const RelaxationScreen(),
         '/relaxation_education': (context) {
           final args =

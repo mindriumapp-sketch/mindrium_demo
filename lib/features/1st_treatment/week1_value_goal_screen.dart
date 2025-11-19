@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import 'package:gad_app_team/data/api/api_client.dart';
 import 'package:gad_app_team/data/api/user_data_api.dart';
 import 'package:gad_app_team/data/storage/token_storage.dart';
 import 'package:gad_app_team/data/user_provider.dart';
-import 'package:gad_app_team/features/menu/education/education_page.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart';
 
 class Week1ValueGoalScreen extends StatefulWidget {
@@ -41,7 +39,9 @@ class _Week1ValueGoalScreenState extends State<Week1ValueGoalScreen> {
     setState(() => _isLoading = true);
     try {
       await _userDataApi.updateValueGoal(_controller.text.trim());
-      if (mounted) _showEducationDialog();
+      if (mounted) {
+        Navigator.pushNamed(context, '/education');
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -53,48 +53,6 @@ class _Week1ValueGoalScreenState extends State<Week1ValueGoalScreen> {
     }
   }
 
-  void _showEducationDialog() {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('1주차 교육 시작'),
-            content: Text('${_userName ?? "사용자"}님, 1주차 불안에 대해 배워보겠습니다.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('취소'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (_) => const EducationPage(
-                            title: '1주차 - 불안에 대한 교육',
-                            jsonPrefixes: [
-                              'week1_part1_',
-                              'week1_part2_',
-                              'week1_part3_',
-                              'week1_part4_',
-                              'week1_part5_',
-                              'week1_part6_',
-                              'week1_relaxation_',
-                            ],
-                            isRelax: true,
-                          ),
-                    ),
-                  );
-                },
-                child: const Text('시작하기'),
-              ),
-            ],
-          ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final name = _userName ?? '사용자';
@@ -102,7 +60,7 @@ class _Week1ValueGoalScreenState extends State<Week1ValueGoalScreen> {
     // ✅ 디자인 위젯 ApplyDesign 그대로 사용
     return ApplyDesign(
       appBarTitle: '1주차 - 시작하기',
-      cardTitle: '$name님, Mindrium에 오신 것을 환영합니다 🌊',
+      cardTitle: 'Mindrium에 오신 것을\n환영합니다 🌊',
       onBack: () => Navigator.pop(context),
       onNext: _saveUserData,
       child: Form(
@@ -111,7 +69,7 @@ class _Week1ValueGoalScreenState extends State<Week1ValueGoalScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              '이 프로그램을 통해 불안을 관리하고 \n 더 나은 삶을 만들어가시길 바랍니다.',
+              '이 프로그램을 통해 불안을 관리하고 \n더 나은 삶을 만들어가시길 바랍니다.',
               style: TextStyle(
                 fontSize: 14.5,
                 color: Color(0xFF333333),
@@ -120,24 +78,19 @@ class _Week1ValueGoalScreenState extends State<Week1ValueGoalScreen> {
             ),
             const SizedBox(height: 30),
             Text(
-              '$name님, 삶에서 가장 중요하게 생각하는\n가치는 무엇인가요?',
+              '$name님, 삶에서 가장 중요하게\n생각하는 가치는 무엇인가요?',
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF224C78),
               ),
             ),
-            const SizedBox(height: 12),
-            const Text(
-              '예: 가족, 건강, 성장, 자유, 사랑, 평화 등',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
-            ),
             const SizedBox(height: 18),
             TextFormField(
               controller: _controller,
               maxLines: 3,
               decoration: InputDecoration(
-                hintText: '가장 소중한 가치를 적어주세요...',
+                hintText: '예: 가족, 건강, 성장, 자유, 사랑, 평화 등',
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(

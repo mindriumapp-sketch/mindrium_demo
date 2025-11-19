@@ -10,7 +10,7 @@ class Education4Page extends StatelessWidget {
     return EducationPage(
       jsonPrefixes: ['week1_part4_'],
       nextPageBuilder: () => Education5Page(),
-      title: '교육 (4/6)',
+      title: '불안에 대한 교육',
     );
   }
 }

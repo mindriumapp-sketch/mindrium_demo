@@ -91,48 +91,6 @@ class _ValueStartScreenState extends State<ValueStartScreen> {
     }
   }
 
-  String _getWeekIcon(int weekNumber) {
-    switch (weekNumber) {
-      case 2:
-        return '🧠';
-      case 3:
-        return '💭';
-      case 4:
-        return '🔍';
-      case 5:
-        return '⚡';
-      case 6:
-        return '🎯';
-      case 7:
-        return '📅';
-      case 8:
-        return '🏆';
-      default:
-        return '📚';
-    }
-  }
-
-  Color _getWeekColor(int weekNumber) {
-    switch (weekNumber) {
-      case 2:
-        return Colors.blue;
-      case 3:
-        return Colors.green;
-      case 4:
-        return Colors.orange;
-      case 5:
-        return Colors.purple;
-      case 6:
-        return Colors.red;
-      case 7:
-        return Colors.teal;
-      case 8:
-        return Colors.amber;
-      default:
-        return AppColors.indigo500;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final double maxCardWidth = MediaQuery.of(context).size.width - 34 * 2;
