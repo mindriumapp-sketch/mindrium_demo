@@ -21,7 +21,7 @@ class MyInfoScreen extends StatefulWidget {
   State<MyInfoScreen> createState() => _MyInfoScreenState();
 }
 
-class _MyInfoScreenState extends State<MyInfoScreen> {
+class _MyInfoScreenState extends State<MyInfoScreen> with WidgetsBindingObserver {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController valueGoalController = TextEditingController();
@@ -48,8 +48,22 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadUserData();
     _loadScreenTimeSummary();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadScreenTimeSummary();
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -421,7 +435,9 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
               const Spacer(),
               TextButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/screen_time');
+                  Navigator.pushNamed(context, '/screen_time').then((_) {
+                    _loadScreenTimeSummary();
+                  });
                 },
                 child: const Text(
                   '기록 보러가기',
@@ -455,15 +471,15 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
               children: [
                 Row(
                   children: [
-                    _metricTile('총 사용 시간', _minutesLabel(summary.totalMinutes)),
+                    _metricTile('총 사용 시간', _formatDuration(summary.totalMinutes)),
                     const SizedBox(width: 12),
-                    _metricTile('오늘', _minutesLabel(summary.todayMinutes)),
+                    _metricTile('오늘', _formatDuration(summary.todayMinutes)),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    _metricTile('최근 7일', _minutesLabel(summary.weekMinutes)),
+                    _metricTile('최근 7일', _formatDuration(summary.weekMinutes)),
                     const SizedBox(width: 12),
                     _metricTile('기록 횟수', '${summary.sessions}회'),
                   ],
@@ -508,13 +524,18 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
     );
   }
 
-  String _minutesLabel(double minutes) {
-    if (minutes <= 0) return '0분';
-    final rounded = minutes.round();
-    if (rounded <= 0) {
-      return '1분 미만';
+  String _formatDuration(double minutes) {
+    final totalSeconds = (minutes * 60).round();
+    if (totalSeconds <= 0) return '0초';
+    final mins = totalSeconds ~/ 60;
+    final secs = totalSeconds % 60;
+    if (mins > 0 && secs > 0) {
+      return '${mins}분 ${secs}초';
     }
-    return '$rounded분';
+    if (mins > 0) {
+      return '${mins}분';
+    }
+    return '${secs}초';
   }
 
   Widget _buildTextField({

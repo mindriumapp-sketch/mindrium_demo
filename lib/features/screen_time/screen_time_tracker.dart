@@ -24,6 +24,7 @@ class _ScreenTimeAutoTrackerState extends State<ScreenTimeAutoTracker>
     with WidgetsBindingObserver {
   static const _prefsKey = 'screen_time_session_start';
   static const _pendingKey = 'screen_time_pending_sessions';
+  static const _minSessionSeconds = 5;
 
   final TokenStorage _tokens = TokenStorage();
   late final ApiClient _apiClient = ApiClient(tokens: _tokens);
@@ -34,12 +35,15 @@ class _ScreenTimeAutoTrackerState extends State<ScreenTimeAutoTracker>
   bool _initialised = false;
   bool _isClosingActive = false;
   bool _isFlushingQueue = false;
+  final bool _trackingEnabled = !kIsWeb;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _bootstrap();
+    if (_trackingEnabled) {
+      WidgetsBinding.instance.addObserver(this);
+      _bootstrap();
+    }
   }
 
   Future<void> _bootstrap() async {
@@ -65,13 +69,15 @@ class _ScreenTimeAutoTrackerState extends State<ScreenTimeAutoTracker>
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    if (_trackingEnabled) {
+      WidgetsBinding.instance.removeObserver(this);
+    }
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!_initialised) return;
+    if (!_initialised || !_trackingEnabled) return;
     switch (state) {
       case AppLifecycleState.resumed:
         unawaited(_startSession());
@@ -86,6 +92,7 @@ class _ScreenTimeAutoTrackerState extends State<ScreenTimeAutoTracker>
   }
 
   Future<void> _startSession() async {
+    if (!_trackingEnabled) return;
     if (_activeSessionStartUtc != null || _isClosingActive) return;
     final now = DateTime.now().toUtc();
     _activeSessionStartUtc = now;
@@ -94,14 +101,21 @@ class _ScreenTimeAutoTrackerState extends State<ScreenTimeAutoTracker>
   }
 
   Future<void> _completeCurrentSession() async {
+    if (!_trackingEnabled) return;
     if (_activeSessionStartUtc == null || _isClosingActive) return;
     _isClosingActive = true;
     final start = _activeSessionStartUtc!;
     final end = DateTime.now().toUtc();
     final platform = _platformLabel();
+    final seconds = end.difference(start).inSeconds;
 
     _activeSessionStartUtc = null;
     await _prefs?.remove(_prefsKey);
+
+    if (seconds < _minSessionSeconds) {
+      _isClosingActive = false;
+      return;
+    }
 
     try {
       await _screenTimeApi.logSession(

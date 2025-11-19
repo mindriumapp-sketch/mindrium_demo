@@ -42,13 +42,21 @@ def _ensure_utc(dt: datetime) -> datetime:
     return dt.astimezone(timezone.utc)
 
 
+def _coerce_datetime(dt: datetime | None) -> datetime | None:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
 def _serialize_entry(doc: dict) -> dict:
     return {
         "id": str(doc.get("_id")),
-        "start_time": doc.get("start_time"),
-        "end_time": doc.get("end_time"),
+        "start_time": _coerce_datetime(doc.get("start_time")),
+        "end_time": _coerce_datetime(doc.get("end_time")),
         "duration_minutes": float(doc.get("duration_minutes", 0)),
-        "created_at": doc.get("created_at"),
+        "created_at": _coerce_datetime(doc.get("created_at")),
         "platform": doc.get("platform"),
     }
 
@@ -69,8 +77,8 @@ async def _window_minutes(collection, user_id: str, start_utc: datetime, end_utc
         }
     )
     async for doc in cursor:
-        st: datetime | None = doc.get("start_time")
-        et: datetime | None = doc.get("end_time")
+        st = _coerce_datetime(doc.get("start_time"))
+        et = _coerce_datetime(doc.get("end_time"))
         if not isinstance(st, datetime) or not isinstance(et, datetime):
             continue
         overlap_start = max(st, start_utc)
@@ -154,7 +162,7 @@ async def get_screen_time_summary(
     total_minutes = float(total_docs[0]["sum"]) if total_docs else 0.0
 
     last_entry = await collection.find_one({"user_id": user_id}, sort=[("end_time", -1)])
-    last_entry_at = last_entry.get("end_time") if last_entry else None
+    last_entry_at = _coerce_datetime(last_entry.get("end_time")) if last_entry else None
 
     return ScreenTimeSummary(
         totalMinutes=round(total_minutes, 2),
