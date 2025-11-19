@@ -103,6 +103,7 @@ class Week4ClassificationResultScreen extends StatelessWidget {
           arguments: {
             'abcId': abcId_,
             'beforeSud': safeBeforeSud,
+            'origin': origin ?? 'apply',
             if (diary != null) 'diary': diary,
           },
         );

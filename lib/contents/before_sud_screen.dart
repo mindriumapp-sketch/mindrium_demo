@@ -246,9 +246,9 @@ class _BeforeSudRatingScreenState extends State<BeforeSudRatingScreen> {
                   inactiveTickMarkColor: Colors.transparent,
                   // 색상
                   activeTrackColor: _accent,
-                  inactiveTrackColor: _accent.withOpacity(0.22),
+                  inactiveTrackColor: _accent.withValues(alpha: 0.22),
                   thumbColor: _accent,
-                  overlayColor: _accent.withOpacity(0.16),
+                  overlayColor: _accent.withValues(alpha: 0.16),
                   // 값 라벨(항상 표시하려면 always)
                   showValueIndicator: ShowValueIndicator.onDrag,
                   valueIndicatorColor: _accent,

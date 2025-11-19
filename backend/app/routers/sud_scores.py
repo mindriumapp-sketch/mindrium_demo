@@ -82,8 +82,6 @@ async def create_sud_score(
         "diary_id": payload.diary_id,
         "before_sud": payload.before_sud,
         "after_sud": payload.after_sud,
-        "latitude": payload.latitude,
-        "longitude": payload.longitude,
         "created_at": now,
         "updated_at": now,
     }

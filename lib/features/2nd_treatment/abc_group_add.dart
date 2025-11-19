@@ -7,6 +7,7 @@ import '../../data/storage/token_storage.dart';
 import '../../data/api/api_client.dart';
 import '../../data/api/worry_groups_api.dart';
 import '../../data/api/diaries_api.dart';
+import '../../data/api/user_data_api.dart';
 import 'abc_group_add_screen.dart';
 
 class AbcGroupAddScreen extends StatefulWidget {
@@ -34,6 +35,7 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
   late final ApiClient _apiClient = ApiClient(tokens: _tokens);
   late final WorryGroupsApi _worryGroupsApi = WorryGroupsApi(_apiClient);
   late final DiariesApi _diariesApi = DiariesApi(_apiClient);
+  late final UserDataApi _userDataApi = UserDataApi(_apiClient);
 
   String? _selectedGroupId;
   List<Map<String, dynamic>> _groups = [];
@@ -95,6 +97,44 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
     final avgScore = validCount > 0 ? total / validCount : 0.0;
 
     return {'group': group, 'diaryCount': count, 'avgScore': avgScore};
+  }
+
+  Future<int> _getCurrentWeek() async {
+    try {
+      final progress = await _userDataApi.getProgress();
+      final currentWeek = progress['completed_week'];
+      if (currentWeek is int) return currentWeek;
+      if (currentWeek is num) return currentWeek.toInt();
+    } catch (e) {
+      debugPrint('❌ 현재 치료 주차 조회 실패: $e');
+    }
+    return 1;
+  }
+
+  Future<void> _navigateAfterGroupSelection() async {
+    if (!mounted) return;
+    if (widget.origin == 'apply' && widget.abcId != null) {
+      // final week = await _getCurrentWeek();
+      final week = 8; // TODO: 임시: 항상 8주차로 이동
+      if (!mounted) return;
+      final args = <String, dynamic>{
+        'abcId': widget.abcId,
+        if (widget.beforeSud != null) 'sud': widget.beforeSud,
+        if (widget.diary != null) 'diary': widget.diary,
+      };
+      if (widget.origin != null) {
+        args['origin'] = widget.origin;
+      }
+      final route =
+          week >= 4 ? '/relax_or_alternative' : '/relax_yes_or_no';
+      Navigator.pushReplacementNamed(
+        context,
+        route,
+        arguments: args,
+      );
+    } else {
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+    }
   }
 
   // 🎨 개선된 편집 다이얼로그
@@ -301,27 +341,27 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Colors.white.withOpacity(0.85),
-              Colors.white.withOpacity(0.75),
+              Colors.white.withValues(alpha: 0.85),
+              Colors.white.withValues(alpha: 0.75),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFF5B9FD3).withOpacity(0.4),
+            color: const Color(0xFF5B9FD3).withValues(alpha: 0.4),
             width: 2,
             strokeAlign: BorderSide.strokeAlignInside,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF5B9FD3).withOpacity(0.15),
+              color: const Color(0xFF5B9FD3).withValues(alpha: 0.15),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
             // 상단 하이라이트 (유리 반짝임)
             BoxShadow(
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
               blurRadius: 8,
               spreadRadius: -2,
               offset: const Offset(0, -2),
@@ -334,7 +374,7 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF5B9FD3).withOpacity(0.1),
+                color: const Color(0xFF5B9FD3).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -387,8 +427,8 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
                   )
                   : LinearGradient(
                     colors: [
-                      Colors.white.withOpacity(0.85), // 더 높은 투명도
-                      Colors.white.withOpacity(0.75),
+                      Colors.white.withValues(alpha: 0.85), // 더 높은 투명도
+                      Colors.white.withValues(alpha: 0.75),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -398,7 +438,7 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
               isSelected
                   ? Border.all(color: const Color(0xFF5B9FD3), width: 2.5)
                   : Border.all(
-                    color: Colors.white.withOpacity(0.9), // 밝은 테두리
+                    color: Colors.white.withValues(alpha: 0.9), // 밝은 테두리
                     width: 1.5,
                   ),
           boxShadow: [
@@ -406,15 +446,15 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
             BoxShadow(
               color:
                   isSelected
-                      ? const Color(0xFF5B9FD3).withOpacity(0.35)
-                      : Colors.black.withOpacity(0.06),
+                      ? const Color(0xFF5B9FD3).withValues(alpha: 0.35)
+                      : Colors.black.withValues(alpha: 0.06),
               blurRadius: isSelected ? 24 : 16,
               spreadRadius: isSelected ? 2 : 0,
               offset: Offset(0, isSelected ? 10 : 6),
             ),
             // 상단 하이라이트 (유리 반짝임 효과)
             BoxShadow(
-              color: Colors.white.withOpacity(isSelected ? 0.6 : 0.4),
+              color: Colors.white.withValues(alpha: isSelected ? 0.6 : 0.4),
               blurRadius: 8,
               spreadRadius: -2,
               offset: const Offset(0, -2),
@@ -422,7 +462,7 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
             // 선택 시 글로우
             if (isSelected)
               BoxShadow(
-                color: const Color(0xFF5B9FD3).withOpacity(0.2),
+                color: const Color(0xFF5B9FD3).withValues(alpha: 0.2),
                 blurRadius: 16,
                 spreadRadius: -2,
                 offset: const Offset(0, 0),
@@ -448,13 +488,13 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
                                 end: Alignment.bottomRight,
                               )
                               : null,
-                      color: isSelected ? null : Colors.white.withOpacity(0.7),
+                      color: isSelected ? null : Colors.white.withValues(alpha: 0.7),
                       boxShadow: [
                         BoxShadow(
                           color:
                               isSelected
-                                  ? const Color(0xFF5B9FD3).withOpacity(0.3)
-                                  : Colors.black.withOpacity(0.05),
+                                  ? const Color(0xFF5B9FD3).withValues(alpha: 0.3)
+                                  : Colors.black.withValues(alpha: 0.05),
                           blurRadius: isSelected ? 16 : 12,
                           offset: const Offset(0, 4),
                         ),
@@ -504,10 +544,11 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
         Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
-        return false;
       },
       child: Scaffold(
         extendBody: true,
@@ -665,7 +706,7 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
                                   BoxShadow(
                                     color: const Color(
                                       0xFF5B9FD3,
-                                    ).withOpacity(0.18),
+                                    ).withValues(alpha: 0.18),
                                     blurRadius: 20,
                                     offset: const Offset(0, 8),
                                   ),
@@ -697,7 +738,7 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
                                           decoration: BoxDecoration(
                                             color: const Color(
                                               0xFF5B9FD3,
-                                            ).withOpacity(0.1),
+                                            ).withValues(alpha: 0.1),
                                             borderRadius: BorderRadius.circular(
                                               10,
                                             ),
@@ -860,32 +901,27 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
                   );
                   debugPrint('Error message: ${e.message}');
                   debugPrint('Stack trace: $stackTrace');
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          '그룹 할당 실패: ${e.response?.data ?? e.message}',
-                        ),
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '그룹 할당 실패: ${e.response?.data ?? e.message}',
                       ),
-                    );
-                  }
+                    ),
+                  );
                   return;
                 } catch (e, stackTrace) {
                   debugPrint('❌ 일기 그룹 할당 실패: $e');
                   debugPrint('Stack trace: $stackTrace');
-                  if (mounted) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('그룹 할당 실패: $e')));
-                  }
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('그룹 할당 실패: $e')));
                   return;
                 }
 
-                // 홈으로 이동 (알림 설정은 이미 완료된 상태)
                 if (!context.mounted) return;
-                Navigator.of(
-                  context,
-                ).pushNamedAndRemoveUntil('/home', (_) => false);
+                await _navigateAfterGroupSelection();
               },
             ),
           ),

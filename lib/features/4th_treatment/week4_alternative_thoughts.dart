@@ -6,6 +6,7 @@ import 'package:gad_app_team/widgets/chips_editor.dart';
 
 // 다음 화면 (기존 로직 유지)
 import 'week4_alternative_thoughts_display_screen.dart';
+import 'week4_classfication_result_screen.dart';
 import 'package:gad_app_team/data/api/api_client.dart';
 import 'package:gad_app_team/data/api/diaries_api.dart';
 import 'package:gad_app_team/data/storage/token_storage.dart';
@@ -20,6 +21,8 @@ class Week4AlternativeThoughtsScreen extends StatefulWidget {
   final List<String> originalBList;
   final String? abcId;
   final int loopCount;
+  final String? origin;
+  final dynamic diary;
 
   const Week4AlternativeThoughtsScreen({
     super.key,
@@ -32,6 +35,8 @@ class Week4AlternativeThoughtsScreen extends StatefulWidget {
     this.originalBList = const [],
     this.abcId,
     this.loopCount = 1,
+    this.origin,
+    this.diary,
   });
 
   @override
@@ -100,40 +105,89 @@ class _Week4AlternativeThoughtsScreenState
         onBack: () => Navigator.pop(context),
         onNext: _chips.isNotEmpty
             ? () async {
-          // 저장
-          await _saveAlternativeThoughts();
+                final routeArgs =
+                    ModalRoute.of(context)?.settings.arguments as Map? ?? {};
+                final String? originArg =
+                    widget.origin ?? routeArgs['origin'] as String?;
+                final dynamic diaryArg =
+                    widget.diary ?? routeArgs['diary'];
+                final String? abcIdArg =
+                    widget.abcId ?? routeArgs['abcId'] as String?;
+                final int? beforeSudArg =
+                    widget.beforeSud ?? routeArgs['beforeSud'] as int?;
 
-          // 항상 현재 B(생각)을 명확히 전달
-          final bToShow = widget.previousChips.isNotEmpty
-              ? widget.previousChips.last
-              : (widget.remainingBList.isNotEmpty
-              ? widget.remainingBList.first
-              : '');
+                final currentThoughts = _chipsKey.currentState?.values ?? _chips;
+                final combinedThoughts = [
+                  ...?widget.existingAlternativeThoughts,
+                  ...currentThoughts,
+                ];
 
-          // 항상 표시 화면을 거쳐 Agreement(슬라이더)로 이어지도록 고정
-          Navigator.push(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (_, __, ___) =>
-                  Week4AlternativeThoughtsDisplayScreen(
-                    alternativeThoughts:
-                    _chipsKey.currentState?.values ?? _chips,
-                    previousB: bToShow,
-                    beforeSud: widget.beforeSud ?? 0,
-                    remainingBList: widget.remainingBList,
-                    allBList: widget.allBList,
-                    existingAlternativeThoughts:
-                    widget.existingAlternativeThoughts,
-                    isFromAnxietyScreen: widget.isFromAnxietyScreen,
-                    originalBList: widget.originalBList,
-                    abcId: widget.abcId,
-                    loopCount: widget.loopCount,
+                // 저장
+                await _saveAlternativeThoughts();
+                if (!mounted) return;
+
+                // 현재 B(생각)
+                final bToShow = widget.previousChips.isNotEmpty
+                    ? widget.previousChips.last
+                    : (widget.remainingBList.isNotEmpty
+                        ? widget.remainingBList.first
+                        : '');
+
+                if (originArg == 'apply') {
+                  Navigator.pushReplacement(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (_, __, ___) =>
+                          Week4ClassificationResultScreen(
+                            bList: widget.previousChips,
+                            beforeSud: beforeSudArg ?? widget.beforeSud,
+                            remainingBList: widget.remainingBList,
+                            allBList: widget.allBList,
+                            alternativeThoughts: combinedThoughts,
+                            isFromAnxietyScreen: widget.isFromAnxietyScreen,
+                            existingAlternativeThoughts:
+                                widget.existingAlternativeThoughts,
+                            abcId: abcIdArg ?? widget.abcId,
+                            loopCount: widget.loopCount,
+                          ),
+                      settings: RouteSettings(
+                        arguments: {
+                          if ((abcIdArg ?? widget.abcId) != null)
+                            'abcId': (abcIdArg ?? widget.abcId)!,
+                          if (originArg != null) 'origin': originArg,
+                          if (diaryArg != null) 'diary': diaryArg,
+                        },
+                      ),
+                      transitionDuration: Duration.zero,
+                      reverseTransitionDuration: Duration.zero,
+                    ),
+                  );
+                  return;
+                }
+
+                // 기본 흐름: 표시 화면
+                Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (_, __, ___) =>
+                        Week4AlternativeThoughtsDisplayScreen(
+                          alternativeThoughts: currentThoughts,
+                          previousB: bToShow,
+                          beforeSud: widget.beforeSud ?? beforeSudArg ?? 0,
+                          remainingBList: widget.remainingBList,
+                          allBList: widget.allBList,
+                          existingAlternativeThoughts:
+                              widget.existingAlternativeThoughts,
+                          isFromAnxietyScreen: widget.isFromAnxietyScreen,
+                          originalBList: widget.originalBList,
+                          abcId: widget.abcId ?? abcIdArg,
+                          loopCount: widget.loopCount,
+                        ),
+                    transitionDuration: Duration.zero,
+                    reverseTransitionDuration: Duration.zero,
                   ),
-              transitionDuration: Duration.zero,
-              reverseTransitionDuration: Duration.zero,
-            ),
-          );
-        }
+                );
+              }
             : null,
 
         // 레이아웃 옵션 (이전 화면과 동일 톤)
