@@ -44,10 +44,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   // 🎨 내부 색상 정의
   static const Color _indigo = Color(0xFF3F51B5);
-  static const Color _mint = Color(0xFF8DE4CC);
+  // static const Color _mint = Color(0xFF8DE4CC);
   static const Color _black = Color(0xFF222222);
-  static const Color _greyText = Color(0xFF666666);
-  static const Color _white = Colors.white;
+  // static const Color _greyText = Color(0xFF666666);
+  // static const Color _white = Colors.white;
 
   Future<bool> _confirmExit(BuildContext context) async {
     return await showDialog<bool>(

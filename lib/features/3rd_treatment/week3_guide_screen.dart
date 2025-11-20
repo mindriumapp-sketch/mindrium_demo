@@ -14,11 +14,6 @@ class Week3GuideScreen extends StatefulWidget {
 class _Week3GuideScreenState extends State<Week3GuideScreen> {
   // ChipsEditor 제어용 Key
   final GlobalKey<ChipsEditorState> _chipsKey = GlobalKey<ChipsEditorState>();
-  List<String> _chips = [];
-
-  void _onChipsChanged(List<String> v) {
-    setState(() => _chips = v);
-  }
 
   // 상단 큰 이미지 카드 (imagination.png 로 변경)
   Widget _buildTopCard(BuildContext context) {
@@ -63,7 +58,7 @@ class _Week3GuideScreenState extends State<Week3GuideScreen> {
         ChipsEditor(
           key: _chipsKey,
           initial: const [],
-          onChanged: _onChipsChanged,
+          onChanged: (_) {},
           minHeight: 150,
           maxWidthFactor: 0.78,
           emptyText: const Text(
@@ -119,8 +114,8 @@ class _Week3GuideScreenState extends State<Week3GuideScreen> {
         panelPadding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
         panelRadius: 18,
         maxWidth: 960,
-        topcardColor: Colors.white.withOpacity(0.96),
-        btmcardColor: const Color(0xFF7DD9E8).withOpacity(0.35),
+        topcardColor: Colors.white.withValues(alpha: 0.96),
+        btmcardColor: const Color(0xFF7DD9E8).withValues(alpha: 0.35),
       ),
     );
   }

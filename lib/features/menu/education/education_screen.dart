@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/utils/edu_progress.dart';
 import 'package:gad_app_team/widgets/edu_progress_section.dart';
-import 'package:gad_app_team/features/menu/menu_screen.dart';
+// import 'package:gad_app_team/features/menu/menu_screen.dart';
 
 class _NoScrollbarBehavior extends ScrollBehavior {
   const _NoScrollbarBehavior();
@@ -65,6 +65,7 @@ class _EducationScreenState extends State<EducationScreen> {
 
   Future<void> _openBook(BuildContext context, BookItem it) async {
     await EduProgress.setLastRoute(it.route);
+    if (!context.mounted) return;
     final result = await Navigator.pushNamed(context, it.route);
     if (result is int) {
       final key = _routeToKey[it.route];
@@ -81,15 +82,14 @@ class _EducationScreenState extends State<EducationScreen> {
     final row1 = _items.sublist(0, 3);
     final row2 = _items.sublist(3, 6);
 
-    return WillPopScope(
-      // ✅ 물리적 뒤로가기 → '/contents'
-      onWillPop: () async {
-        Navigator.pushNamedAndRemoveUntil(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        Navigator.pushNamed(
           context,
           '/contents',
-          (route) => false,
         );
-        return false;
       },
       child: ScrollConfiguration(
         behavior: const _NoScrollbarBehavior(),
@@ -116,10 +116,9 @@ class _EducationScreenState extends State<EducationScreen> {
                       confirmOnHome: true,
                       confirmOnBack: false,
                       onBack:
-                          () => Navigator.pushNamedAndRemoveUntil(
+                          () => Navigator.pushNamed(
                             context,
                             '/contents',
-                            (route) => false,
                           ),
                       titleTextStyle: const TextStyle(
                         fontFamily: 'Noto Sans KR',
@@ -177,11 +176,11 @@ class _EducationScreenState extends State<EducationScreen> {
   ) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.92),
+        color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -241,11 +240,11 @@ class _EducationScreenState extends State<EducationScreen> {
   Widget _buildProgressSection() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.92),
+        color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),

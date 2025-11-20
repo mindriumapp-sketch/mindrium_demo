@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:gad_app_team/data/api/api_client.dart';
 import 'package:gad_app_team/data/api/diaries_api.dart';
@@ -47,7 +48,7 @@ class DiaryYesOrNo extends StatelessWidget {
               children: [
                 // 🔹 로고 이미지 (노란 로딩 대신 표시)
                 Image.asset(
-                  'assets/logo.png',
+                  'assets/image/logo.png',
                   width: 80,
                   height: 80,
                   fit: BoxFit.contain,
@@ -71,6 +72,7 @@ class DiaryYesOrNo extends StatelessWidget {
     );
 
     Position? pos;
+    String? addressKo;
     try {
       var perm = await Geolocator.checkPermission();
       if (perm == LocationPermission.denied) {
@@ -94,6 +96,39 @@ class DiaryYesOrNo extends StatelessWidget {
       pos = null;
     }
 
+    final resolvedPos = pos;
+    if (resolvedPos != null) {
+      try {
+        await setLocaleIdentifier('ko_KR');
+        final placemarks = await placemarkFromCoordinates(
+          resolvedPos.latitude,
+          resolvedPos.longitude,
+        ).timeout(const Duration(seconds: 5));
+        if (placemarks.isNotEmpty) {
+          final p = placemarks.first;
+          final parts = <String>[
+            if ((p.administrativeArea ?? '').trim().isNotEmpty)
+              p.administrativeArea!.trim(),
+            if ((p.locality ?? '').trim().isNotEmpty) p.locality!.trim(),
+            if ((p.subLocality ?? '').trim().isNotEmpty)
+              p.subLocality!.trim(),
+            if ((p.thoroughfare ?? '').trim().isNotEmpty)
+              p.thoroughfare!.trim(),
+            if ((p.subThoroughfare ?? '').trim().isNotEmpty)
+              p.subThoroughfare!.trim(),
+          ];
+          if (parts.isNotEmpty) {
+            addressKo = parts.join(' ');
+          }
+        }
+      } catch (e) {
+        debugPrint('주소 변환 실패: $e');
+      }
+    }
+
+    final activationLabel =
+        '자동 생성 일기 \n주소: ${addressKo ?? '확인되지 않음'}';
+
     int? beforeSud;
     final rawSud = args['beforeSud'];
     if (rawSud is int) {
@@ -107,8 +142,8 @@ class DiaryYesOrNo extends StatelessWidget {
     try {
       // 🔹 FastAPI + MongoDB에 빈 일기 생성
       final diaryRes = await diariesApi.createDiary(
-        groupId: 0, // 그룹은 이후 화면에서 지정
-        activatingEvents: '자동 생성 일기',
+        groupId: 1, // 그룹은 이후 화면에서 지정
+        activatingEvents: activationLabel,
         belief: const [],
         consequenceP: const [],
         consequenceE: const [],
@@ -125,10 +160,16 @@ class DiaryYesOrNo extends StatelessWidget {
       }
 
       if (beforeSud != null) {
-        await sudApi.createSudScore(
-          diaryId: abcId,
-          beforeScore: beforeSud,
-        );
+        try {
+          await sudApi.createSudScore(
+            diaryId: abcId,
+            beforeScore: beforeSud,
+          );
+        } on DioException catch (e) {
+          debugPrint('⚠️ SUD 저장 실패(Dio): ${e.message}');
+        } catch (e) {
+          debugPrint('⚠️ SUD 저장 실패: $e');
+        }
       }
 
       if (context.mounted) {

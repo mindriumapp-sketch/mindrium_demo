@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/widgets/detail_popup.dart';
-import 'package:gad_app_team/widgets/thought_card.dart'; // ThoughtBubble
-import 'package:gad_app_team/widgets/jellyfish_notice.dart'; // 안 쓰면 지워도 됨
+// import 'package:gad_app_team/widgets/detail_popup.dart';
+// import 'package:gad_app_team/widgets/thought_card.dart'; // ThoughtBubble
+// import 'package:gad_app_team/widgets/jellyfish_notice.dart'; // 안 쓰면 지워도 됨
 
 /// ABC 3단계 탭 + 하얀 카드 본문을 한 번에 보여주는 위젯
 /// - activeIndex: 0(A), 1(B), 2(C)
@@ -28,7 +28,7 @@ class AbcStepCard extends StatelessWidget {
   Widget build(BuildContext context) {
     const previewCount = 2;
     final bool needMore = selectedChips.length > previewCount;
-    final List<String> preview =
+    // final List<String> preview =
     needMore ? selectedChips.sublist(0, previewCount) : selectedChips;
 
     return Column(
@@ -49,7 +49,7 @@ class AbcStepCard extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: Colors.black.withValues(alpha: 0.06),
                 blurRadius: 10,
                 offset: const Offset(0, 6),
               ),

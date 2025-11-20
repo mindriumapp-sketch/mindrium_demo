@@ -101,10 +101,9 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
         confirmOnHome: false,
         confirmOnBack: false,
         onBack: () {
-          Navigator.pushAndRemoveUntil(
+          Navigator.pop(
             context,
             MaterialPageRoute(builder: (context) => const ContentScreen()),
-            (route) => false,
           );
         },
       ),

@@ -174,10 +174,9 @@ class _NotificationDirectoryScreenState extends State<NotificationDirectoryScree
         confirmOnHome: false,
         confirmOnBack: false,
         onBack: () {
-          Navigator.pushAndRemoveUntil(
+          Navigator.pop(
             context,
             MaterialPageRoute(builder: (context) => const ContentScreen()),
-            (route) => false,
           );
         },
       ),

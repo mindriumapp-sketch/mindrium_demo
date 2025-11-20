@@ -127,12 +127,12 @@ class _BeforeSudRatingScreenState extends State<BeforeSudRatingScreen> {
           await _saveSud(abcId);
           if (!context.mounted) return;
 
-          if (!hasAbcId && origin == 'apply') {
+          if (!hasAbcId && (origin == 'apply' || origin == 'solve')) {
             Navigator.pushReplacementNamed(
               context,
               '/diary_yes_or_no',
               arguments: {
-                'origin': 'apply',
+                'origin': origin,
                 if (diary != null) 'diary': diary,
                 'beforeSud': _sud,
               },

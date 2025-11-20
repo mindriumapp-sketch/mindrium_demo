@@ -23,6 +23,8 @@ class RelaxOrAlternativePage extends StatelessWidget {
     final String? abcId = args['abcId'] as String?;
     final int? sud = args['sud'] as int?;
     final dynamic diary = args['diary'];
+    final dynamic rawOrigin = args['origin'];
+    final String origin = rawOrigin is String ? rawOrigin : 'apply';
 
     return InnerBtnCardScreen(
       appBarTitle: '다음 단계 선택',
@@ -40,7 +42,7 @@ class RelaxOrAlternativePage extends StatelessWidget {
             'riveAsset': 'noti.riv',
             'nextPage': '/relaxation_score',
             'diary': diary,
-            'origin': 'apply',
+            'origin': origin,
           },
         );
       },
@@ -55,7 +57,7 @@ class RelaxOrAlternativePage extends StatelessWidget {
           arguments: {
             'abcId': abcId,
             'sud': sud,
-            'origin': 'apply',
+            'origin': origin,
             if (diary != null) 'diary': diary,
           },
         );

@@ -9,8 +9,8 @@ import 'package:gad_app_team/data/storage/token_storage.dart';
 /// --------- 스타일 ---------
 class _SColors {
   static const black = AppColors.black;
-  static const bodyMuted = Color(0xFF8F8F8F);
-  static const labelDark = Color(0xFF2B2929);
+  // static const bodyMuted = Color(0xFF8F8F8F);
+  // static const labelDark = Color(0xFF2B2929);
 
   // 카드 (불투명)
   static const cardFill = Color(0xCCFFFFFF);

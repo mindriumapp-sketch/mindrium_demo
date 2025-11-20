@@ -107,8 +107,10 @@ class TreatmentScreen extends StatelessWidget {
           );
         }
 
-        final completedWeeks = (snapshot.data!['completedWeekSet'] as Set<int>) ?? <int>{};
-        final unlockedWeeks = (snapshot.data!['unlockedWeekSet'] as Set<int>) ?? <int>{};
+        final completedWeeks =
+            snapshot.data!['completedWeekSet'] as Set<int>? ?? <int>{};
+        final unlockedWeeks =
+            snapshot.data!['unlockedWeekSet'] as Set<int>? ?? <int>{};
         final weekByDays = snapshot.data!['weekByDays'] as int? ?? 0;
 
         int lastCompleted = completedWeeks.isEmpty

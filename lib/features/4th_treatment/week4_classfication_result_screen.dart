@@ -1,8 +1,8 @@
 // lib/features/4th_treatment/week4_classfication_result_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+// import 'package:provider/provider.dart';
 
-import 'package:gad_app_team/data/user_provider.dart';
+// import 'package:gad_app_team/data/user_provider.dart';
 import 'week4_alternative_thoughts.dart';
 import 'week4_skip_choice_screen.dart';
 import 'week4_after_sud_screen.dart';
@@ -60,7 +60,7 @@ class Week4ClassificationResultScreen extends StatelessWidget {
     final dynamic diary   = args['diary'];
     final bool isFromApply = origin == 'apply';
 
-    final userName = Provider.of<UserProvider>(context, listen: false).userName;
+    // final userName = Provider.of<UserProvider>(context, listen: false).userName;
 
     // 메인 문구
     String mainQuestionText;

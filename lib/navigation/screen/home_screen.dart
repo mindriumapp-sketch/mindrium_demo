@@ -451,12 +451,11 @@ class _HomeScreenState extends State<HomeScreen> {
           description: '오늘 불안하신 상황이 있으셨나요? 지금 눌러서 오늘의 활동을 시작해봐요.',
           color: const Color(0xFFFFE2E8),
           imagePath: 'assets/image/pink2.png',
-          onTap:
-              () => Navigator.pushNamed(
-                context,
-                '/before_sud',
-                arguments: const {'origin': 'apply', 'diary': 'new'},
-              ),
+          onTap: () => Navigator.pushNamed(
+            context,
+            '/before_sud',
+            arguments: const {'origin': 'solve', 'diary': 'new'},
+          ),
         ),
       ],
     );

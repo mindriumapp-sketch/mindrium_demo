@@ -19,7 +19,7 @@ class NavigationButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     // 🎨 내부 전용 팔레트 / 사이즈 정의
     const Color blueMain = Color(0xFF33A4F0);
-    const Color blueLight = Color(0xFF5DADEC);
+    // const Color blueLight = Color(0xFF5DADEC);
     const Color white = Colors.white;
     const Color grey = Color(0xFF9E9E9E);
     const Color grey300 = Color(0xFFE0E0E0);

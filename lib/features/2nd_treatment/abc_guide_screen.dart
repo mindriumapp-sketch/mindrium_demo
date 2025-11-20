@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/features/2nd_treatment/abc_input_screen.dart';
+// import 'package:gad_app_team/features/2nd_treatment/abc_input_screen.dart';
 import 'package:gad_app_team/features/2nd_treatment/week2_screen.dart';
 import 'package:gad_app_team/features/2nd_treatment/abc_activate_screen.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart';

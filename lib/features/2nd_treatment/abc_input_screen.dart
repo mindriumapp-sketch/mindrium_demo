@@ -387,10 +387,11 @@ class _AbcInputScreenState extends State<AbcInputScreen> {
           isExampleMode: widget.isExampleMode,
           onChipTap:
               (i, s) => setState(() {
-                if (s)
+                if (s) {
                   _selectedBGrid.add(i);
-                else
+                } else {
                   _selectedBGrid.remove(i);
+                }
               }),
           onAddBelief:
               widget.isExampleMode

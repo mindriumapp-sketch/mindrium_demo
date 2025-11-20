@@ -1,6 +1,7 @@
 // lib/services/data_repo.dart
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/foundation.dart';
 
 /// ✅ 기본 사용자 ID (dummy.json의 patient_id 중 하나)
 const String defaultUserId = "OCZQALVZ";
@@ -29,7 +30,7 @@ class DataRepo {
             users[id] = userData;
           }
         }
-        print('📂 [DataRepo] dummy.json (List 구조) 로드 완료, 사용자 ${users.length}명');
+        debugPrint('📂 [DataRepo] dummy.json (List 구조) 로드 완료, 사용자 ${users.length}명');
       } else if (decoded is Map<String, dynamic>) {
         // ✅ Map 기반 구조 (기존 호환)
         final base = decoded['users'] ?? decoded;
@@ -40,7 +41,7 @@ class DataRepo {
               users[id.toString()] = val;
             }
           });
-          print('📂 [DataRepo] dummy.json (Map 구조) 로드 완료, 사용자 ${users.length}명');
+          debugPrint('📂 [DataRepo] dummy.json (Map 구조) 로드 완료, 사용자 ${users.length}명');
         }
       } else {
         throw Exception('❌ 지원되지 않는 JSON 루트 구조입니다.');
@@ -53,7 +54,7 @@ class DataRepo {
       _cache = users;
       return users;
     } catch (e) {
-      print('⚠️ [DataRepo] dummy.json 로드 실패: $e');
+      debugPrint('⚠️ [DataRepo] dummy.json 로드 실패: $e');
       rethrow;
     }
   }
@@ -70,20 +71,14 @@ class DataRepo {
     final user = all[userId];
 
     if (user == null) {
-      print('⚠️ [DataRepo] userId=$userId 데이터를 찾을 수 없습니다.');
+      debugPrint('⚠️ [DataRepo] userId=$userId 데이터를 찾을 수 없습니다.');
       return null;
     }
 
-    // ✅ 타입 안정성 확보
-    if (user is Map<String, dynamic>) {
-      // 필수 필드 보완
-      user['patient_id'] ??= userId;
-      user['completedWeek'] ??= 0;
-      return user;
-    } else {
-      print('⚠️ [DataRepo] user 데이터 구조가 예상과 다릅니다. (userId=$userId)');
-      return null;
-    }
+    // 필수 필드 보완
+    user['patient_id'] ??= userId;
+    user['completedWeek'] ??= 0;
+    return user;
   }
 
   /// ✅ 기본 사용자 반환 (fallback)
@@ -94,6 +89,6 @@ class DataRepo {
   /// ✅ 캐시 초기화 (디버깅용)
   void clearCache() {
     _cache = null;
-    print('♻️ [DataRepo] 캐시 초기화 완료');
+    debugPrint('♻️ [DataRepo] 캐시 초기화 완료');
   }
 }

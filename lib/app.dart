@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gad_app_team/chatbot/chatbot_main.dart';
 import 'package:gad_app_team/common/constants.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:gad_app_team/contents/alternative_yes_or_no.dart';
 import 'package:gad_app_team/contents/apply_alternative_thought.dart';
 import 'package:gad_app_team/contents/diary_or_relax_or_home.dart';
 import 'package:gad_app_team/contents/filtered_diary_select.dart';
@@ -10,7 +11,7 @@ import 'package:gad_app_team/contents/filtered_diary_show.dart';
 import 'package:gad_app_team/contents/relax_or_alternative.dart';
 import 'package:gad_app_team/contents/relax_yes_or_no.dart';
 import 'package:gad_app_team/contents/similar_activation.dart';
-import 'package:gad_app_team/contents/training_select.dart';
+// import 'package:gad_app_team/contents/training_select.dart';
 import 'package:gad_app_team/features/2nd_treatment/week2_screen.dart';
 import 'package:gad_app_team/features/4th_treatment/week4_screen.dart';
 import 'package:gad_app_team/features/4th_treatment/week4_classfication_result_screen.dart';
@@ -182,7 +183,8 @@ class MyApp extends StatelessWidget {
         "/similar_activation": (context) => const SimilarActivationScreen(),
         "/relax_or_alternative": (context) => const RelaxOrAlternativePage(),
         "/relax_yes_or_no": (context) => const RelaxYesOrNo(),
-        "/training": (context) => const TrainingSelect(),
+        "alt_yes_or_no": (context) => const AltYesOrNo(),
+        // "/training": (context) => const TrainingSelect(),
         '/apply_alt_thought':
             (context) => const ApplyAlternativeThoughtScreen(),
         "/abc_group_add": (context) => const AbcGroupAddScreen(),

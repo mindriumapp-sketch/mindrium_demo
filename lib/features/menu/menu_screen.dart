@@ -1,4 +1,4 @@
-/// 🪸 Mindrium ContentScreen — AppBar 제거 + 기능/라우팅 그대로 유지
+// 🪸 Mindrium ContentScreen — AppBar 제거 + 기능/라우팅 그대로 유지
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/widgets/tap_design.dart'; // ✅ 공통 디자인 위젯 (AppBar 포함, 하지만 여기선 숨김 처리)
 
@@ -51,13 +51,20 @@ class ContentScreen extends StatelessWidget {
         .map((e) => _MenuRouteLauncher(onTap: e['onTap'] as VoidCallback))
         .toList();
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: Colors.transparent,
-      body: TreatmentDesign(
-        appBarTitle: '', // AppBar 제목 비워서 UI 최소화
-        weekContents: weekContents,
-        weekScreens: weekScreens,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+      },
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        backgroundColor: Colors.transparent,
+        body: TreatmentDesign(
+          appBarTitle: '', // AppBar 제목 비워서 UI 최소화
+          weekContents: weekContents,
+          weekScreens: weekScreens,
+        ),
       ),
     );
   }
@@ -67,7 +74,7 @@ class ContentScreen extends StatelessWidget {
 class _MenuRouteLauncher extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _MenuRouteLauncher({required this.onTap, super.key});
+  const _MenuRouteLauncher({required this.onTap});
 
   @override
   Widget build(BuildContext context) {

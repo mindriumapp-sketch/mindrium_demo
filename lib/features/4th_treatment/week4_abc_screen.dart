@@ -78,28 +78,6 @@ class _Week4AbcScreenState extends State<Week4AbcScreen> {
         .toList();
   }
 
-  Future<void> _fetchDiaryById(String diaryId) async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final res = await _diariesApi.getDiary(diaryId);
-      if (!mounted) return;
-      setState(() {
-        _abcModel = res;
-        _bList = _parseBeliefToList(res['belief']);
-        _isLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _error = '데이터를 불러오지 못했습니다.';
-        _isLoading = false;
-      });
-    }
-  }
-
   // ✅ Week6 스타일에 맞춘 하이라이트 박스
   Widget _highlightedText(String text) {
     return Container(

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/common/constants.dart';
+// import 'package:gad_app_team/common/constants.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/blue_white_card.dart';
 import 'package:provider/provider.dart';
@@ -91,48 +91,6 @@ class _ValueStartScreenState extends State<ValueStartScreen> {
     }
   }
 
-  String _getWeekIcon(int weekNumber) {
-    switch (weekNumber) {
-      case 2:
-        return '🧠';
-      case 3:
-        return '💭';
-      case 4:
-        return '🔍';
-      case 5:
-        return '⚡';
-      case 6:
-        return '🎯';
-      case 7:
-        return '📅';
-      case 8:
-        return '🏆';
-      default:
-        return '📚';
-    }
-  }
-
-  Color _getWeekColor(int weekNumber) {
-    switch (weekNumber) {
-      case 2:
-        return Colors.blue;
-      case 3:
-        return Colors.green;
-      case 4:
-        return Colors.orange;
-      case 5:
-        return Colors.purple;
-      case 6:
-        return Colors.red;
-      case 7:
-        return Colors.teal;
-      case 8:
-        return Colors.amber;
-      default:
-        return AppColors.indigo500;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final double maxCardWidth = MediaQuery.of(context).size.width - 34 * 2;
@@ -192,9 +150,9 @@ class _ValueStartScreenState extends State<ValueStartScreen> {
                             padding:
                             const EdgeInsets.symmetric(vertical: 14),
                             backgroundColor:
-                            Colors.white.withOpacity(_index == 0 ? 0.5 : 1),
+                            Colors.white.withValues(alpha: _index == 0 ? 0.5 : 1),
                             side: BorderSide(
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withValues(alpha:  0.8),
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -246,24 +204,19 @@ class _ValueStartScreenState extends State<ValueStartScreen> {
 }
 
 class _OutlinedCard extends StatelessWidget {
-  final double radius;
-  final double borderWidth;
-  final Color borderColor;
   final Widget child;
+  const _OutlinedCard({required this.child});
 
-  const _OutlinedCard({
-    required this.child,
-    this.radius = 22,
-    this.borderWidth = 4.0,
-    this.borderColor = const Color(0xFF7EB9FF),
-  });
+  static const double _radius = 22;
+  static const double _borderWidth = 4.0;
+  static const Color _borderColor = Color(0xFF7EB9FF);
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: borderColor, width: borderWidth),
+        borderRadius: BorderRadius.circular(_radius),
+        border: Border.all(color: _borderColor, width: _borderWidth),
         boxShadow: const [
           BoxShadow(
             color: Color(0x29000000),
@@ -273,7 +226,7 @@ class _OutlinedCard extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: BorderRadius.circular(_radius),
         child: child,
       ),
     );

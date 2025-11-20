@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/foundation.dart';
 import 'gpt_api.dart';
 
 /// RAG (Retrieval-Augmented Generation) 서비스
@@ -17,12 +18,11 @@ class RagService {
     if (_loaded) return;
     
     try {
-      print('📚 RAG 데이터 로딩 중...');
+      debugPrint('📚 RAG 데이터 로딩 중...');
       final jsonlString = await rootBundle.loadString('assets/data/rag_singleton_with_embeddings.jsonl');
       final lines = jsonlString.split('\n').where((line) => line.trim().isNotEmpty).toList();
       
       _ragData = [];
-      int loadedCount = 0;
       
       // JSONL 형식 - 각 라인이 독립적인 JSON 객체
       for (final line in lines) {
@@ -47,16 +47,16 @@ class RagService {
             'embedding': embedding,  // 파일에서 읽은 임베딩 벡터
           });
           
-          loadedCount++;
+          // keep count if needed later
         } catch (e) {
           continue;
         }
       }
       
       _loaded = true;
-      print('✅ RAG 데이터 로드 완료: ${_ragData.length}개 항목 (임베딩 차원: ${_ragData.isNotEmpty ? (_ragData[0]['embedding'] as List).length : 0})');
+      debugPrint('✅ RAG 데이터 로드 완료: ${_ragData.length}개 항목 (임베딩 차원: ${_ragData.isNotEmpty ? (_ragData[0]['embedding'] as List).length : 0})');
     } catch (e) {
-      print('❌ RAG 파일 로드 실패: $e');
+      debugPrint('❌ RAG 파일 로드 실패: $e');
     }
   }
 
@@ -82,7 +82,7 @@ class RagService {
   /// 사용자 입력과 가장 유사한 RAG 항목 찾기 (임베딩 기반, 상위 K개 반환)
   Future<List<Map<String, dynamic>>> findTopKSimilar(String userInput, {int k = 3}) async {
     if (!_loaded || _ragData.isEmpty) {
-      print('❌ RAG 데이터가 로드되지 않음');
+      debugPrint('❌ RAG 데이터가 로드되지 않음');
       return [];
     }
 
@@ -111,10 +111,10 @@ class RagService {
     final topK = similarities.take(k).toList();
 
     // 결과 출력
-    print('📚 RAG 검색 결과 (상위 $k개):');
+    debugPrint('📚 RAG 검색 결과 (상위 $k개):');
     for (int i = 0; i < topK.length; i++) {
       final item = topK[i];
-      print('   ${i + 1}. (유사도: ${((item['similarity'] as double) * 100).toStringAsFixed(1)}%) "${item['query']}"');
+      debugPrint('   ${i + 1}. (유사도: ${((item['similarity'] as double) * 100).toStringAsFixed(1)}%) "${item['query']}"');
     }
 
     return topK;

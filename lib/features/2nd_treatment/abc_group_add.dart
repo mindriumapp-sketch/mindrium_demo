@@ -111,30 +111,49 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
     return 1;
   }
 
+  bool get _shouldContinueTherapyFlow =>
+      (widget.origin == 'apply' || widget.origin == 'solve') &&
+      widget.abcId != null;
+
   Future<void> _navigateAfterGroupSelection() async {
     if (!mounted) return;
-    if (widget.origin == 'apply' && widget.abcId != null) {
-      // final week = await _getCurrentWeek();
-      final week = 8; // TODO: 임시: 항상 8주차로 이동
-      if (!mounted) return;
-      final args = <String, dynamic>{
-        'abcId': widget.abcId,
-        if (widget.beforeSud != null) 'sud': widget.beforeSud,
-        if (widget.diary != null) 'diary': widget.diary,
-      };
-      if (widget.origin != null) {
-        args['origin'] = widget.origin;
-      }
-      final route =
-          week >= 4 ? '/relax_or_alternative' : '/relax_yes_or_no';
+    if (!_shouldContinueTherapyFlow) {
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+      return;
+    }
+
+    final args = <String, dynamic>{
+      'abcId': widget.abcId,
+      if (widget.beforeSud != null) 'sud': widget.beforeSud,
+      if (widget.diary != null) 'diary': widget.diary,
+      if (widget.origin != null) 'origin': widget.origin,
+    };
+
+    if (widget.origin == 'solve') {
       Navigator.pushReplacementNamed(
         context,
-        route,
-        arguments: args,
+        '/relaxation_noti',
+        arguments: {
+          ...args,
+          'taskId': widget.abcId,
+          'weekNumber': 4,
+          'mp3Asset': 'noti.mp3',
+          'riveAsset': 'noti.riv',
+          'nextPage': '/relaxation_score',
+        },
       );
-    } else {
-      Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+      return;
     }
+
+    // final week = await _getCurrentWeek();
+    final week = 8; // TODO: 임시: 항상 8주차로 이동
+    if (!mounted) return;
+    final route = week >= 4 ? '/relax_or_alternative' : '/relax_yes_or_no';
+    Navigator.pushReplacementNamed(
+      context,
+      route,
+      arguments: args,
+    );
   }
 
   // 🎨 개선된 편집 다이얼로그

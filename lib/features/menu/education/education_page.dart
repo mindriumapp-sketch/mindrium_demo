@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:gad_app_team/data/education_model.dart';
 import 'package:gad_app_team/widgets/memo_sheet_design.dart';
 import 'package:gad_app_team/widgets/custom_popup_design.dart';
-import 'package:gad_app_team/utils/edu_progress.dart';
+// import 'package:gad_app_team/utils/edu_progress.dart';
 
 class EducationPage extends StatefulWidget {
   final List<String> jsonPrefixes; // ex. ['week1_', 'week1b_']

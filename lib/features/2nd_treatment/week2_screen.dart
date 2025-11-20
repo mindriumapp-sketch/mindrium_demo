@@ -8,7 +8,7 @@ class Week2Screen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    // final screenWidth = MediaQuery.of(context).size.width;
 
     return ApplyDesign(
       appBarTitle: '2주차 - 시작하기',
