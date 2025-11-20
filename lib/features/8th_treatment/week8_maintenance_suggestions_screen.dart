@@ -1,7 +1,7 @@
 // File: features/8th_treatment/week8_maintenance_suggestions_screen.dart
 import 'package:flutter/material.dart';
+import 'package:gad_app_team/features/8th_treatment/week8_final_screen.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart';
-import 'package:gad_app_team/widgets/custom_popup_design.dart';
 
 class Week8MaintenanceSuggestionsScreen extends StatefulWidget {
   const Week8MaintenanceSuggestionsScreen({super.key});
@@ -24,11 +24,20 @@ class _Week8MaintenanceSuggestionsScreenState
     '어려움이 오면 언제든 이 앱으로 돌아와 \n다시 시작할 수 있다는 것을 기억하세요.',
   ];
 
-  void _nextStep() {
+  void _nextStep() async {
     if (_currentStep < _suggestions.length - 1) {
       setState(() => _currentStep++);
     } else {
-      _showCompletionDialog();
+      //await _saveSession();
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => Week8FinalScreen(),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        ),
+      );
     }
   }
 
@@ -38,25 +47,6 @@ class _Week8MaintenanceSuggestionsScreenState
     } else {
       Navigator.pop(context);
     }
-  }
-
-  void _showCompletionDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (_) => CustomPopupDesign(
-            title: '8주차 완료!',
-            message: '8주간의 여정을 성공적으로 완주하셨습니다!\n앞으로도 꾸준히 자신을 돌보세요!',
-            onPositivePressed: () {
-              Navigator.of(
-                context,
-              ).pushNamedAndRemoveUntil('/home', (_) => false);
-            },
-            positiveText: '홈으로 돌아가기',
-            negativeText: null,
-          )
-    );
   }
 
   @override

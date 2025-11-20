@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:gad_app_team/features/5th_treatment/week5_final_screen.dart';
 import 'package:gad_app_team/widgets/top_btm_card.dart';
 import 'package:gad_app_team/widgets/thought_card.dart';
-import 'package:gad_app_team/widgets/custom_popup_design.dart';
 import 'package:gad_app_team/widgets/detail_popup.dart';
 import 'package:gad_app_team/data/api/api_client.dart';
 import 'package:gad_app_team/data/api/user_data_api.dart';
@@ -82,27 +82,6 @@ class _Week5VisualScreenState extends State<Week5VisualScreen> {
         setState(() => _isSaving = false);
       }
     }
-  }
-
-  void _showFinishDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => CustomPopupDesign(
-        title: '수고하셨습니다!',
-        message: '오늘도 불안을 직면하는 연습과\n회피 행동을 구분하는 연습을 마쳤어요!',
-        positiveText: '홈으로 돌아가기',
-        negativeText: null,
-        onNegativePressed: null,
-        onPositivePressed: () async {
-          // 세션 저장 후 홈으로 이동
-          await _saveSession();
-          if (!mounted) return;
-          Navigator.of(context, rootNavigator: true).pop();
-          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-        },
-      ),
-    );
   }
 
   // 공통 팝업: 전체 칩 보여주기 (ThoughtBubble로)
@@ -211,7 +190,18 @@ class _Week5VisualScreenState extends State<Week5VisualScreen> {
       topChild: _buildTopPanel(),
       bottomChild: _buildBottomPanel(),
       onBack: () => Navigator.pop(context),
-      onNext: _showFinishDialog,
+      onNext: () async {
+        await _saveSession();
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => Week5FinalScreen(),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+          ),
+        );
+      },
       pagePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       panelsGap: 24,
       panelPadding: const EdgeInsets.fromLTRB(20, 18, 20, 18),

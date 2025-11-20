@@ -1,8 +1,8 @@
 // lib/features/6th_treatment/week6_visual_screen.dart
 import 'package:flutter/material.dart';
+import 'package:gad_app_team/features/6th_treatment/week6_final_screen.dart';
 import 'package:gad_app_team/widgets/top_btm_card.dart';        // ✅ ApplyDoubleCard
 import 'package:gad_app_team/widgets/thought_card.dart';        // ✅ ThoughtCard
-import 'package:gad_app_team/widgets/custom_popup_design.dart'; // ✅ (팝업 UI)
 import 'package:gad_app_team/utils/edu_progress.dart';
 
 class Week6VisualScreen extends StatefulWidget {
@@ -20,28 +20,6 @@ class Week6VisualScreen extends StatefulWidget {
 }
 
 class _Week6VisualScreenState extends State<Week6VisualScreen> {
-  void _showFinishDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => CustomPopupDesign(
-        title: '수고하셨습니다!',
-        message: '오늘도 불안을 직면하고 회피하는 행동을 구분하는 실습을 마쳤어요!',
-        positiveText: '홈으로 돌아가기',
-        negativeText: null, // 단일 버튼
-        onPositivePressed: () async {
-          //await EduProgress.markWeekDone(6);
-          // 1) 팝업 닫고
-          Navigator.of(context, rootNavigator: true).pop();
-          // 2) 홈으로 이동
-          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-        },
-        onNegativePressed: null,
-        // backgroundAsset: null,
-        // iconAsset: null,
-      ),
-    );
-  }
 
   // 상단 패널: 불안을 회피하는 행동 (previousChips)
   Widget _buildTopPanel() {
@@ -74,7 +52,18 @@ class _Week6VisualScreenState extends State<Week6VisualScreen> {
 
       // ✅ Week5와 동일한 UX: 이전(뒤로가기) / 다음(완료 팝업)
       onBack: () => Navigator.pop(context),
-      onNext: _showFinishDialog,
+      onNext: () async {
+        //await _saveSession();
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => Week6FinalScreen(),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+          ),
+        );
+      },
 
       // 스타일 옵션 (Week5와 동일)
       pagePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),

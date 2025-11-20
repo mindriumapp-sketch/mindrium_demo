@@ -1,7 +1,7 @@
 // lib/features/3rd_treatment/week3_visual_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/widgets/custom_popup_design.dart'; // 완료 팝업
+import 'package:gad_app_team/features/3rd_treatment/week3_final_screen.dart';
 import 'package:gad_app_team/widgets/thought_card.dart';        // ThoughtCard / ThoughtType
 import 'package:gad_app_team/widgets/detail_popup.dart';        // 자세히 보기 팝업
 import 'package:gad_app_team/widgets/navigation_button.dart';
@@ -42,9 +42,9 @@ class _Week3VisualScreenState extends State<Week3VisualScreen> {
 
   Future<void> _saveSession() async {
     if (_isSaving) return;
-    
+
     setState(() => _isSaving = true);
-    
+
     try {
       // 퀴즈 결과 변환
       Map<String, dynamic>? classificationQuiz;
@@ -57,7 +57,7 @@ class _Week3VisualScreenState extends State<Week3VisualScreen> {
                   'correct_type': item['correctType'],
                 })
             .toList();
-        
+
         classificationQuiz = {
           'correct_count': widget.correctCount,
           'total_count': widget.quizResults!.length,
@@ -85,30 +85,6 @@ class _Week3VisualScreenState extends State<Week3VisualScreen> {
         setState(() => _isSaving = false);
       }
     }
-  }
-
-  void _showFinishDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return CustomPopupDesign(
-          title: '수고하셨습니다!',
-          message: '오늘도 자기이해와 긍정적 자기대화를 \n실천했어요.',
-          positiveText: '홈으로 돌아가기',
-          negativeText: null,
-          onNegativePressed: null,
-          onPositivePressed: () async {
-            // 세션 저장 후 홈으로 이동
-            await _saveSession();
-            if (!mounted) return;
-            Navigator.of(context, rootNavigator: true).pop();
-            Navigator.of(context)
-                .pushNamedAndRemoveUntil('/home', (route) => false);
-          },
-        );
-      },
-    );
   }
 
   // 공통: 전체 칩 자세히 보기
@@ -324,7 +300,18 @@ class _Week3VisualScreenState extends State<Week3VisualScreen> {
               leftLabel: '이전',
               rightLabel: '다음',
               onBack: () => Navigator.pop(context),
-              onNext: _showFinishDialog,
+              onNext: () async {
+                await _saveSession();
+                if (!mounted) return;
+                Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (_, __, ___) => Week3FinalScreen(),
+                    transitionDuration: Duration.zero,
+                    reverseTransitionDuration: Duration.zero,
+                  ),
+                );
+              }
             ),
           ),
         ),

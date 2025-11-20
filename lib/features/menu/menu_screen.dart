@@ -17,7 +17,7 @@ class ContentScreen extends StatelessWidget {
       {
         'title': '이완',
         'subtitle': '긴장을 완화하고 마음을 안정시키기',
-        'onTap': () => Navigator.pushNamed(context, '/relaxation_education'),
+        'onTap': () => Navigator.pushNamed(context, '/relaxation'),
       },
       {
         'title': '걱정 일기 목록',

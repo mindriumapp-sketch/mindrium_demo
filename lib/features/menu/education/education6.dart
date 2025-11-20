@@ -9,7 +9,7 @@ class Education6Page extends StatelessWidget {
   Widget build(BuildContext context) {
     return EducationPage(
       jsonPrefixes: ['week1_part6_'],
-      title: '교육 (6/6)',
+      title: '불안에 대한 교육',
     );
   }
 }

@@ -16,6 +16,7 @@ import 'package:gad_app_team/features/2nd_treatment/week2_screen.dart';
 import 'package:gad_app_team/features/4th_treatment/week4_screen.dart';
 import 'package:gad_app_team/features/4th_treatment/week4_classfication_result_screen.dart';
 import 'package:gad_app_team/features/8th_treatment/week8_screen.dart';
+import 'package:gad_app_team/features/screen_time/screen_time_page.dart';
 
 //notification
 import 'package:gad_app_team/features/menu/diary/diary_directory_screen.dart';
@@ -46,6 +47,7 @@ import 'package:gad_app_team/features/menu/education/education3.dart';
 import 'package:gad_app_team/features/menu/education/education4.dart';
 import 'package:gad_app_team/features/menu/education/education5.dart';
 import 'package:gad_app_team/features/menu/education/education6.dart';
+import 'package:gad_app_team/features/menu/education/education7.dart';
 
 import 'package:gad_app_team/features/menu/relaxation/relaxation_screen.dart';
 import 'package:gad_app_team/features/menu/relaxation/relaxation_score_screen.dart';
@@ -142,7 +144,9 @@ class MyApp extends StatelessWidget {
         '/education4': (context) => const Education4Page(),
         '/education5': (context) => const Education5Page(),
         '/education6': (context) => const Education6Page(),
-        '/relax': (context) => const RelaxationScreen(),
+        '/education7': (context) => const Education7Page(),
+        '/relaxation': (context) => const RelaxationScreen(),
+        '/screen_time': (context) => const ScreenTimePage(),
         '/relaxation_education': (context) {
           final args =
               (ModalRoute.of(context)!.settings.arguments as Map?) ?? {};

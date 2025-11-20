@@ -160,6 +160,7 @@ flutter:
     - assets/image/edu_book4.jpg
     - assets/image/edu_book5.jpg
     - assets/image/edu_book6.jpg
+    - assets/image/edu_relaxation.png
     - assets/image/week2_scenario1.jpg
     - assets/image/week2_scenario2.jpg
     - assets/image/week2_scenario3.jpg
@@ -224,8 +225,20 @@ flutter:
 
     - assets/relaxation/week1.riv
     - assets/relaxation/week1.mp3
+    - assets/relaxation/week2.riv
+    - assets/relaxation/week2.mp3
+    - assets/relaxation/week3.riv
+    - assets/relaxation/week3.mp3
     - assets/relaxation/week4.riv
     - assets/relaxation/week4.mp3
+    - assets/relaxation/week5.riv
+    - assets/relaxation/week5.mp3
+    - assets/relaxation/week6.riv
+    - assets/relaxation/week6.mp3
+    - assets/relaxation/week7.riv
+    - assets/relaxation/week7.mp3
+    - assets/relaxation/week8.riv
+    - assets/relaxation/week8.mp3
     - assets/relaxation/noti.riv
     - assets/relaxation/noti.mp3
 

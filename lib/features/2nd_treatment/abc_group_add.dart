@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:gad_app_team/widgets/custom_popup_design.dart';
 
 import '../../widgets/custom_appbar.dart';
 import '../../widgets/navigation_button.dart';
@@ -117,8 +118,9 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
 
   Future<void> _navigateAfterGroupSelection() async {
     if (!mounted) return;
+
     if (!_shouldContinueTherapyFlow) {
-      Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+      _showStartDialog();
       return;
     }
 
@@ -945,6 +947,37 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// 🧘 이완 교육 다이얼로그 — CustomPopupDesign(확인 단일 버튼)
+  void _showStartDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => CustomPopupDesign(
+        title: '이완 음성 안내 시작',
+        message:
+            '잠시 후, 이완을 위한 음성 안내가 시작됩니다.\n주변 소리와 음량을 조절해보세요.',
+        positiveText: '확인',
+        negativeText: null,
+        backgroundAsset: null,
+        iconAsset: null,
+        onPositivePressed: () async {
+          // await EduProgress.markWeekDone(1);
+          Navigator.pop(context);
+          Navigator.pushReplacementNamed(
+            context,
+            '/relaxation_education',
+            arguments: {
+              'taskId': 'week2_education',
+              'weekNumber': 2,
+              'mp3Asset': 'week2.mp3',
+              'riveAsset': 'week2.riv',
+            },
+          );
+        },
       ),
     );
   }

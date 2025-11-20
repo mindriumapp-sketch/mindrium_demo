@@ -33,6 +33,7 @@ class UserDataApi {
     await _client.dio.delete('/users/me/value-goal');
   }
 
+  //TODO: 따로 할일목록 api 만들면서 옮기기
   Future<Map<String, dynamic>> getProgress() async {
     final res = await _client.dio.get('/users/me/progress');
     final data = res.data;

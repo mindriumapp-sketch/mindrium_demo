@@ -5,43 +5,45 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:rive/rive.dart' as rive;
 import 'package:gad_app_team/common/constants.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
+
 import 'relaxation_logger.dart';  // 분리한 로거
+import 'relaxation_education.dart' show relaxationTitleForWeek;
 
-// --- 주차 타이틀 맵 ---
-const Map<int, String> kRelaxationWeekTitles = {
-  1: '1주차 - 점진적 이완',
-  2: '2주차 - 점진적 이완',
-  3: '3주차 - 이완만 하는 이완',
-  4: '4주차 - 신호 조절 이완',
-  5: '5주차 - 차등 이완',
-  6: '6주차 - 차등 이완',
-  7: '7주차 - 신속 이완',
-  8: '8주차 - 신속 이완',
-};
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
-String relaxationTitleForWeek(int? week) {
-  final w = week ?? 1;
-  return kRelaxationWeekTitles[w] ?? '$w주차 이완 훈련';
+/// 알림 재생 화면 상단 타이틀
+/// - weekNumber가 있으면: 그 주차 이완 타이틀 그대로 사용 (숙제 알림)
+/// - weekNumber가 없으면: 일기 기반 이완 알림
+String notiTitle(String taskId, int? weekNumber) {
+  // 숙제 알림: 주차 정보가 들어온 경우
+  if (weekNumber != null) {
+    return relaxationTitleForWeek(weekNumber);
+  }
+  // 일기 기반 알림: 주차 정보 없음
+  return '알림 이후 이완';
 }
+
 
 // 초기 싱크 보정
 const Duration _kInitialAudioDelay = Duration(milliseconds: 0);
 // 중간 자동 저장 주기
 const Duration _kAutosaveInterval = Duration(seconds: 30);
 
+
 class NotiPlayer extends StatefulWidget {
   final String taskId;
-  final int weekNumber;
-  final String mp3Asset;    // 예: 'week1.mp3'
-  final String riveAsset;   // 예: 'week1.riv'
+  final int? weekNumber;
+  final String? mp3Asset;    // 예: 'week1.mp3'
+  final String? riveAsset;   // 예: 'week1.riv'
   final String nextPage;    // ✅ 다음 라우트 이름(그대로 사용)
 
   const NotiPlayer({
     super.key,
     required this.taskId,
-    required this.weekNumber,
-    required this.mp3Asset,
-    required this.riveAsset,
+    this.weekNumber,
+    this.mp3Asset = 'noti.mp3',
+    this.riveAsset = 'noti.riv',
     required this.nextPage,
   });
 
@@ -66,7 +68,7 @@ class _NotiPlayerState extends State<NotiPlayer> with WidgetsBindingObserver {
   bool _isRiveFinished = false;
 
   // Logger
-  late final SessionLogger _logger;
+  late final RelaxationLogger _logger;
 
   // 저장 제어
   bool _finalSaved = false;
@@ -78,11 +80,14 @@ class _NotiPlayerState extends State<NotiPlayer> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    _logger = SessionLogger(
+    _logger = RelaxationLogger(
       taskId: widget.taskId,
       weekNumber: widget.weekNumber,
     );
     _logger.logEvent("start");
+
+    // 🔥 세션 시작 시점에 위치 한 번만 캡처해서 logger에 넣음
+    _captureStartLocation();
 
     _startAutosaveTimer(); // 주기 저장
   }
@@ -193,7 +198,7 @@ class _NotiPlayerState extends State<NotiPlayer> with WidgetsBindingObserver {
         child: Scaffold(
           backgroundColor: AppColors.white,
           appBar: CustomAppBar(
-            title: relaxationTitleForWeek(widget.weekNumber),
+            title: notiTitle(widget.taskId, widget.weekNumber),
             showHome: false,
           ),
           body: Stack(
@@ -265,5 +270,54 @@ class _NotiPlayerState extends State<NotiPlayer> with WidgetsBindingObserver {
         ),
       ),
     );
+  }
+
+  Future<void> _captureStartLocation() async {
+    try {
+      // 1) 권한 확인 + 필요 시 요청
+      LocationPermission perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
+        // 권한 없으면 위치 없이 진행
+        return;
+      }
+
+      // 2) 현재 위치 가져오기
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.best,
+      );
+
+      // 3) 주소 문자열 만들기 (가능하면)
+      String? addressName;
+      try {
+        final placemarks = await placemarkFromCoordinates(
+          pos.latitude,
+          pos.longitude,
+        );
+        if (placemarks.isNotEmpty) {
+          final p = placemarks.first;
+          addressName = [
+            p.administrativeArea,
+            p.locality,
+            p.subLocality,
+            p.thoroughfare,
+          ].where((e) => e != null && e.isNotEmpty).join(' ');
+        }
+      } catch (e) {
+        debugPrint('reverse geocoding 실패: $e');
+      }
+
+      // 4) Logger에 딱 한 번 세팅
+      _logger.updateLocation(
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+        addressName: addressName,
+      );
+    } catch (e) {
+      debugPrint('위치 캡처 실패: $e');
+    }
   }
 }

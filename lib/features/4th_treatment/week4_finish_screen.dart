@@ -74,7 +74,7 @@ class Week4FinishScreen extends StatelessWidget {
           context,
           '/relaxation_education',
           arguments: {
-            'taskId': 'edu_0004',
+            'taskId': 'week4_education',
             'weekNumber': 4,
             'mp3Asset': 'week4.mp3',
             'riveAsset': 'week4.riv',

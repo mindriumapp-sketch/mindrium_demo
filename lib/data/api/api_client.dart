@@ -1,16 +1,28 @@
 import 'package:dio/dio.dart';
 import '../storage/token_storage.dart';
 
+const String _envBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+
 class ApiClient {
   final Dio dio;
   final TokenStorage tokens;
   final String baseUrl;
 
+  static String _resolveBaseUrl(String? override) {
+    if (override != null && override.isNotEmpty) {
+      return override;
+    }
+    if (_envBaseUrl.isNotEmpty) {
+      return _envBaseUrl;
+    }
+    return 'http://10.0.2.2:8080';
+  }
+
   ApiClient({
     required this.tokens,
     String? baseUrl,
-  })  : baseUrl = baseUrl ?? 'http://10.0.2.2:8080',
-        dio = Dio(BaseOptions(baseUrl: baseUrl ?? 'http://10.0.2.2:8080')) {
+  })  : baseUrl = _resolveBaseUrl(baseUrl),
+        dio = Dio(BaseOptions(baseUrl: _resolveBaseUrl(baseUrl))) {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {

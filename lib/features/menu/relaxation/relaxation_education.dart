@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:gad_app_team/widgets/custom_popup_design.dart';
 import 'package:rive/rive.dart' as rive;
 import 'package:gad_app_team/common/constants.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'relaxation_logger.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:gad_app_team/utils/edu_progress.dart';
 
 // --- 주차 타이틀 ---
@@ -65,7 +68,7 @@ class _PracticePlayerState extends State<PracticePlayer>
   bool _isAudioFinished = false;
   bool _isRiveFinished = false;
 
-  late final SessionLogger _logger;
+  late final RelaxationLogger _logger;
 
   bool _finalSaved = false;
   Timer? _autosaveTimer;
@@ -76,11 +79,14 @@ class _PracticePlayerState extends State<PracticePlayer>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    _logger = SessionLogger(
+    _logger = RelaxationLogger(
       taskId: widget.taskId,
       weekNumber: widget.weekNumber,
     );
     _logger.logEvent("start");
+
+    // 🔥 세션 시작 시점에 위치 한 번만 캡처해서 logger에 넣음
+    _captureStartLocation();
 
     _startAutosaveTimer();
   }
@@ -149,12 +155,16 @@ class _PracticePlayerState extends State<PracticePlayer>
 
   void _checkIfBothFinished() async {
     if (_isAudioFinished && _isRiveFinished) {
+      // ✅ 완주 플래그 먼저 세움
+      _logger.setFullyCompleted();
       _logger.logEvent("session_complete");
+
       await _saveOnce(reason: 'complete');
       if (!mounted) return;
+
       //await EduProgress.markWeekDone(1);
-      // ✅ 홈으로 이동 (진행도 갱신 및 다음 주차 unlock 반영)
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+      // ✅ 교육 화면으로 이동 (진행도 갱신 및 다음 주차 unlock 반영)
+      Navigator.pushNamedAndRemoveUntil(context, '/treatment', (_) => false);
     }
   }
 
@@ -183,20 +193,13 @@ class _PracticePlayerState extends State<PracticePlayer>
             final shouldExit = await showDialog<bool>(
               context: context,
               builder:
-                  (context) => AlertDialog(
-                    backgroundColor: Colors.white.withOpacity(0.95),
-                    title: const Text('종료하시겠습니까?'),
-                    content: const Text('이 화면을 종료하고 이전 화면으로 돌아갑니다.'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('취소'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('나가기'),
-                      ),
-                    ],
+                  (context) => CustomPopupDesign(
+                    title: '종료하시겠습니까?',
+                    message: '이완 연습을 종료하고 이전 화면으로 돌아갑니다.',
+                    positiveText: '나가기',
+                    onPositivePressed: () => Navigator.pop(context, true),
+                    negativeText: '취소',
+                    onNegativePressed: () => Navigator.pop(context, false),
                   ),
             );
 
@@ -218,7 +221,7 @@ class _PracticePlayerState extends State<PracticePlayer>
               if (Navigator.canPop(context)) {
                 Navigator.pop(context);
               } else {
-                Navigator.pushReplacementNamed(context, '/menu');
+                Navigator.pushReplacementNamed(context, '/treatment');
               }
 
               // ✅ 오버레이 제거
@@ -298,5 +301,54 @@ class _PracticePlayerState extends State<PracticePlayer>
         ),
       ),
     );
+  }
+
+  Future<void> _captureStartLocation() async {
+    try {
+      // 1) 권한 확인 + 필요 시 요청
+      LocationPermission perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
+        // 권한 없으면 위치 없이 진행
+        return;
+      }
+
+      // 2) 현재 위치 가져오기
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.best,
+      );
+
+      // 3) 주소 문자열 만들기 (가능하면)
+      String? addressName;
+      try {
+        final placemarks = await placemarkFromCoordinates(
+          pos.latitude,
+          pos.longitude,
+        );
+        if (placemarks.isNotEmpty) {
+          final p = placemarks.first;
+          addressName = [
+            p.administrativeArea,
+            p.locality,
+            p.subLocality,
+            p.thoroughfare,
+          ].where((e) => e != null && e.isNotEmpty).join(' ');
+        }
+      } catch (e) {
+        debugPrint('reverse geocoding 실패: $e');
+      }
+
+      // 4) Logger에 딱 한 번 세팅
+      _logger.updateLocation(
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+        addressName: addressName,
+      );
+    } catch (e) {
+      debugPrint('위치 캡처 실패: $e');
+    }
   }
 }

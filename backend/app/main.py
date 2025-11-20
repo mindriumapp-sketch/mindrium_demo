@@ -8,6 +8,8 @@ from routers.diaries import router as diaries_router
 from routers.sud_scores import router as sud_scores_router
 from routers.user_data import router as user_data_router
 from routers.notifications import router as notifications_router
+from routers.relaxation_tasks import router as relaxation_router
+from routers.screen_time import router as screen_time_router
 
 settings = get_settings()
 
@@ -41,3 +43,5 @@ app.include_router(sud_scores_router)
 # 2025-11-13 사용자 데이터 라우터 등록 (설문 저장 등)
 app.include_router(user_data_router)
 app.include_router(notifications_router)
+app.include_router(relaxation_router)
+app.include_router(screen_time_router)

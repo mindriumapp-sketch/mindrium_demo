@@ -4,7 +4,6 @@ import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/widgets/eduhome_bg.dart';
 import 'package:gad_app_team/features/8th_treatment/week8_maintenance_suggestions_screen.dart';
-import 'package:gad_app_team/widgets/custom_popup_design.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart';
 import 'package:gad_app_team/utils/edu_progress.dart';
 
@@ -65,7 +64,14 @@ class _Week8UserJourneyScreenState extends State<Week8UserJourneyScreen> {
         _isNextEnabled = _controllers[_currentStep].text.trim().isNotEmpty;
       });
     } else {
-      _showCompletionDialog();
+      Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => Week8MaintenanceSuggestionsScreen(),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        ),
+      );
     }
   }
 
@@ -78,34 +84,6 @@ class _Week8UserJourneyScreenState extends State<Week8UserJourneyScreen> {
     } else {
       Navigator.pop(context);
     }
-  }
-
-  void _showCompletionDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.35),
-      builder: (context) {
-        return CustomPopupDesign(
-          title: '여정 회고 완료!',
-          message:
-          '8주간의 여정을 성공적으로 되돌아보셨습니다!\n앞으로도 건강한 생활 습관을 꾸준히 실천하여\n더 나은 나를 만들어가세요!',
-          onPositivePressed: () async {
-            //await EduProgress.markWeekDone(8);
-            Navigator.of(context).pop();
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                const Week8MaintenanceSuggestionsScreen(),
-              ),
-            );
-          },
-          positiveText: '다음으로',
-          negativeText: null,
-        );
-      },
-    );
   }
 
   // ✅ 여기 추가: 네가 준 진행바 버전

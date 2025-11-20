@@ -155,7 +155,7 @@ class _TermsScreenState extends State<TermsScreen> {
                       TextButton(
                         onPressed: () => Navigator.pop(context),
                         child: const Text(
-                          '← 로그인으로 돌아가기',
+                          '로그인으로 돌아가기',  // 왼쪽 화살표 폰트 인식 안 됨
                           style: TextStyle(
                             fontFamily: 'Noto Sans KR',
                             fontWeight: FontWeight.w600,
