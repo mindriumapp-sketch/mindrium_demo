@@ -1,23 +1,41 @@
 // 🔹 Mindrium: 걱정 일기 진행 분기 화면 (DiaryYesOrNo 개선 최종 버전)
-// ‘아니오’ 클릭 시 로딩중 표시 + Firestore 병렬 처리 + 위치 timeout 안전 처리
+// ‘아니오’ 클릭 시 로딩중 표시 + FastAPI 저장 + 위치 timeout 안전 처리
 
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/diaries_api.dart';
+import 'package:gad_app_team/data/api/sud_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 import 'package:gad_app_team/features/2nd_treatment/abc_group_add.dart';
 import 'package:gad_app_team/widgets/inner_btn_card.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:geolocator/geolocator.dart';
 
 class DiaryYesOrNo extends StatelessWidget {
   const DiaryYesOrNo({super.key});
 
   Future<void> _handleNo(BuildContext context, Map args, dynamic diary) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
+    final rawOrigin = args['origin'];
+    final origin = rawOrigin is String ? rawOrigin : 'apply';
+    final tokens = TokenStorage();
+    final access = await tokens.access;
+    if (access == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('로그인이 필요합니다. 다시 로그인해 주세요.')),
+        );
+      }
+      return;
+    }
+
+    final apiClient = ApiClient(tokens: tokens);
+    final diariesApi = DiariesApi(apiClient);
+    final sudApi = SudApi(apiClient);
 
     // 🔸 로딩 다이얼로그 표시
+    if (!context.mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -76,30 +94,42 @@ class DiaryYesOrNo extends StatelessWidget {
       pos = null;
     }
 
-    final firestore = FirebaseFirestore.instance;
-
-    final data = {
-      'activatingEvent': null,
-      'belief': null,
-      'consequence': null,
-      'createdAt': FieldValue.serverTimestamp(),
-      if (pos != null) 'latitude': pos.latitude,
-      if (pos != null) 'longitude': pos.longitude,
-    };
+    int? beforeSud;
+    final rawSud = args['beforeSud'];
+    if (rawSud is int) {
+      beforeSud = rawSud;
+    } else if (rawSud is num) {
+      beforeSud = rawSud.round();
+    } else if (rawSud is String) {
+      beforeSud = int.tryParse(rawSud);
+    }
 
     try {
-      // 🔹 문서 ID 미리 생성
-      final docRef =
-          firestore.collection('users').doc(uid).collection('abc_models').doc();
+      // 🔹 FastAPI + MongoDB에 빈 일기 생성
+      final diaryRes = await diariesApi.createDiary(
+        groupId: 0, // 그룹은 이후 화면에서 지정
+        activatingEvents: '자동 생성 일기',
+        belief: const [],
+        consequenceP: const [],
+        consequenceE: const [],
+        consequenceB: const [],
+        sudScores: const [],
+        alternativeThoughts: const [],
+        alarms: const [],
+        latitude: pos?.latitude,
+        longitude: pos?.longitude,
+      );
+      final abcId = diaryRes['diaryId']?.toString();
+      if (abcId == null || abcId.isEmpty) {
+        throw Exception('생성된 일기 ID를 확인할 수 없습니다.');
+      }
 
-      // 🔹 Firestore 병렬 처리로 시간 단축
-      await Future.wait([
-        docRef.set(data),
-        docRef.collection('sud_score').add({
-          'before_sud': args['beforeSud'] ?? 0,
-          'createdAt': FieldValue.serverTimestamp(),
-        }),
-      ]);
+      if (beforeSud != null) {
+        await sudApi.createSudScore(
+          diaryId: abcId,
+          beforeScore: beforeSud,
+        );
+      }
 
       if (context.mounted) {
         Navigator.pop(context); // ✅ 로딩창 닫기
@@ -108,18 +138,30 @@ class DiaryYesOrNo extends StatelessWidget {
           MaterialPageRoute(
             builder:
                 (_) => AbcGroupAddScreen(
-                  origin: 'apply',
-                  abcId: docRef.id,
+                  origin: origin,
+                  abcId: abcId,
+                  beforeSud: beforeSud,
                   diary: diary,
                 ),
           ),
+        );
+      }
+    } on DioException catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // 로딩창 닫기
+        final detail = e.response?.data is Map
+            ? (e.response?.data['detail']?.toString() ??
+                e.response?.data.toString())
+            : e.message;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('데이터 저장 중 오류가 발생했습니다: $detail')),
         );
       }
     } catch (e) {
       if (context.mounted) {
         Navigator.pop(context); // 로딩창 닫기
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('데이터 저장 중 오류가 발생했습니다. 다시 시도해주세요.')),
+          SnackBar(content: Text('데이터 저장 중 오류가 발생했습니다: $e')),
         );
       }
     }
@@ -129,10 +171,28 @@ class DiaryYesOrNo extends StatelessWidget {
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments as Map? ?? {};
     final dynamic diary = args['diary'];
+    final dynamic rawOrigin = args['origin'];
+    final String origin = rawOrigin is String ? rawOrigin : 'apply';
 
     return InnerBtnCardScreen(
       appBarTitle: '걱정 일기 진행',
       title: '걱정 일기를 새로 \n작성하시겠어요?',
+      primaryText: '예',
+      onPrimary: () {
+        Navigator.pushNamed(
+          context,
+          '/abc',
+          arguments: {
+            'origin': origin,
+            'abcId': null,
+            if (diary != null) 'diary': diary,
+            'beforeSud': args['beforeSud'],
+          },
+        );
+      },
+      secondaryText: '아니오',
+      onSecondary: () => _handleNo(context, args, diary),
+      backgroundAsset: 'assets/image/eduhome.png',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -156,22 +216,6 @@ class DiaryYesOrNo extends StatelessWidget {
           ),
         ],
       ),
-      primaryText: '예',
-      onPrimary: () {
-        Navigator.pushNamed(
-          context,
-          '/abc',
-          arguments: {
-            'origin': 'apply',
-            'abcId': null,
-            if (diary != null) 'diary': diary,
-            'beforeSud': args['beforeSud'],
-          },
-        );
-      },
-      secondaryText: '아니오',
-      onSecondary: () => _handleNo(context, args, diary),
-      backgroundAsset: 'assets/image/eduhome.png',
     );
   }
 }

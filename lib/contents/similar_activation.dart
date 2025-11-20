@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gad_app_team/widgets/inner_btn_card.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/diaries_api.dart';
+import 'package:gad_app_team/data/api/user_data_api.dart';
 
 /// 💡 Mindrium 스타일: 비슷한 상황 확인 화면
 /// 앞쪽은 InnerBtnCardScreen 구조로 감싸고,
@@ -17,12 +19,10 @@ class SimilarActivationScreen extends StatelessWidget {
     final int? sud = args['sud'] as int?;
     debugPrint('[SimilarActivation] abcId=$abcId, groupId=$groupId');
 
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('로그인 정보가 없습니다.')));
-    }
+    final tokens = TokenStorage();
+    final apiClient = ApiClient(tokens: tokens);
+    final diariesApi = DiariesApi(apiClient);
+    final userDataApi = UserDataApi(apiClient);
 
     return InnerBtnCardScreen(
       appBarTitle: '비슷한 상황 확인',
@@ -30,32 +30,39 @@ class SimilarActivationScreen extends StatelessWidget {
       primaryText: '네',
       secondaryText: '아니오',
       onPrimary: () async {
-        final uid = FirebaseAuth.instance.currentUser?.uid;
-        int completed = 0;
-        if (uid != null) {
-          final snap =
-              await FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(uid)
-                  .get();
-          completed = (snap.data()?['completed_education'] ?? 0) as int;
+        final access = await tokens.access;
+        if (access == null) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('로그인이 필요합니다.')));
+          }
+          return;
         }
+
+        int completedWeeks = 8; //TODO: 임시 8주차 완료 처리
+        // try {
+        //   final progress = await userDataApi.getProgress();
+        //   final weekProgress = progress['week_progress'];
+        //   if (weekProgress is List) {
+        //     for (final item in weekProgress) {
+        //       if (item is Map && item['completed'] == true) {
+        //         completedWeeks++;
+        //       }
+        //     }
+        //   }
+        // } catch (e) {
+        //   debugPrint('❌ 진행도 정보 조회 실패: $e');
+        // }
 
         if (!context.mounted) return;
-
-        if (completed >= 4) {
-          Navigator.pushNamed(
-            context,
-            '/relax_or_alternative',
-            arguments: {'abcId': abcId, 'sud': sud},
-          );
-        } else {
-          Navigator.pushNamed(
-            context,
-            '/relax_yes_or_no',
-            arguments: {'abcId': abcId, 'sud': sud},
-          );
-        }
+        final route =
+            completedWeeks >= 4 ? '/relax_or_alternative' : '/relax_yes_or_no';
+        Navigator.pushNamed(
+          context,
+          route,
+          arguments: {'abcId': abcId, 'sud': sud},
+        );
       },
       onSecondary: () {
         Navigator.pushNamed(
@@ -64,27 +71,52 @@ class SimilarActivationScreen extends StatelessWidget {
           arguments: {'origin': 'apply'},
         );
       },
-      child: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        future:
-            FirebaseFirestore.instance
-                .collection('users')
-                .doc(uid)
-                .collection('abc_models')
-                .doc(abcId)
-                .get(),
+      child: abcId == null || abcId.isEmpty
+          ? const Center(child: Text('일기 정보를 찾을 수 없습니다.'))
+          : FutureBuilder<Map<String, dynamic>>(
+        future: diariesApi.getDiary(abcId),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (!snap.hasData || !snap.data!.exists) {
+          if (snap.hasError) {
+            return Center(
+              child: Text(
+                '일기 데이터를 불러오지 못했습니다.\n${snap.error}',
+                textAlign: TextAlign.center,
+              ),
+            );
+          }
+          final data = snap.data;
+          if (data == null) {
             return const Center(child: Text('일기 데이터를 찾을 수 없습니다.'));
           }
 
-          final data = snap.data!.data()!;
           final activatingEvent =
-              (data['activatingEvent'] ?? '').toString().trim();
-          final belief = (data['belief'] ?? '').toString().trim();
-          final consequence = (data['consequence'] ?? '').toString().trim();
+              (data['activating_events'] ?? data['activatingEvent'] ?? '')
+                  .toString()
+                  .trim();
+          final beliefValue = data['belief'];
+          final belief =
+              beliefValue is List
+                  ? beliefValue
+                      .whereType<String>()
+                      .where((e) => e.trim().isNotEmpty)
+                      .join(', ')
+                  : (beliefValue ?? '').toString().trim();
+          final consequences = [
+            data['consequence_p'],
+            data['consequence_e'],
+            data['consequence_b'],
+          ]
+              .whereType<List>()
+              .expand((list) => list)
+              .whereType<String>()
+              .toList();
+          final consequence =
+              consequences.isNotEmpty
+                  ? consequences.join(', ')
+                  : (data['consequence'] ?? '').toString().trim();
 
           return SimilarActivationVisualizer(
             activatingEvent: activatingEvent,
@@ -172,7 +204,7 @@ class SimilarActivationVisualizer extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 6,
             offset: const Offset(2, 3),
           ),
@@ -202,7 +234,7 @@ class SimilarActivationVisualizer extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(

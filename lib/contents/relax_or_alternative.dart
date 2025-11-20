@@ -28,19 +28,6 @@ class RelaxOrAlternativePage extends StatelessWidget {
       appBarTitle: '다음 단계 선택',
       title: '어떤 활동을 진행하시겠어요?',
       backgroundAsset: 'assets/image/eduhome.png',
-      // 카드 안 본문
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 4),
-          Image.asset(
-            'assets/image/pink3.png',
-            height: math.min(180, MediaQuery.of(context).size.width * 0.38),
-            fit: BoxFit.contain,
-          ),
-        ],
-      ),
-      // 1차 버튼: 이완 활동
       primaryText: '이완 활동',
       onPrimary: () {
         Navigator.pushNamed(
@@ -57,7 +44,6 @@ class RelaxOrAlternativePage extends StatelessWidget {
           },
         );
       },
-      // 2차 버튼: 대체 생각 작성
       secondaryText: '대체 생각 작성',
       onSecondary: () {
         debugPrint(
@@ -69,10 +55,23 @@ class RelaxOrAlternativePage extends StatelessWidget {
           arguments: {
             'abcId': abcId,
             'sud': sud,
+            'origin': 'apply',
             if (diary != null) 'diary': diary,
           },
         );
       },
+      // 카드 안 본문
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 4),
+          Image.asset(
+            'assets/image/pink3.png',
+            height: math.min(180, MediaQuery.of(context).size.width * 0.38),
+            fit: BoxFit.contain,
+          ),
+        ],
+      ),
     );
   }
 }

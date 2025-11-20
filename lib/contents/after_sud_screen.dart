@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart'; // ✅ ApplyDesign
 import 'package:gad_app_team/features/4th_treatment/week4_skip_choice_screen.dart';
 import 'package:gad_app_team/features/2nd_treatment/notification_selection_screen.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/diaries_api.dart';
+import 'package:gad_app_team/data/api/sud_api.dart';
 
 class AfterSudRatingScreen extends StatefulWidget {
   const AfterSudRatingScreen({super.key});
@@ -14,51 +16,36 @@ class AfterSudRatingScreen extends StatefulWidget {
 
 class _AfterSudRatingScreenState extends State<AfterSudRatingScreen> {
   int _sud = 5;
+  final TokenStorage _tokens = TokenStorage();
+  late final ApiClient _apiClient = ApiClient(tokens: _tokens);
+  late final SudApi _sudApi = SudApi(_apiClient);
+  late final DiariesApi _diariesApi = DiariesApi(_apiClient);
 
   Map _args() => ModalRoute.of(context)?.settings.arguments as Map? ?? {};
   String? get _abcId => _args()['abcId'] as String?;
   String? get _origin => _args()['origin'] as String?;
   dynamic get _diary => _args()['diary'];
 
-  // ───────────────────── Firestore 저장 ─────────────────────
+  // ───────────────────── FastAPI 저장 ─────────────────────
   Future<void> _saveSud() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
     final abcId = _abcId;
-    if (uid == null || abcId == null || abcId.isEmpty) return;
-
-    final sudRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('abc_models')
-        .doc(abcId)
-        .collection('sud_score');
-
-    final payload = {
-      'after_sud': _sud,
-      'updatedAt': FieldValue.serverTimestamp(),
-    };
-
-    final snap =
-        await sudRef.orderBy('updatedAt', descending: true).limit(1).get();
-    if (snap.docs.isNotEmpty) {
-      await snap.docs.first.reference.update(payload);
-    } else {
-      await sudRef.add(payload);
-    }
+    if (abcId == null || abcId.isEmpty) return;
+    await _sudApi.createSudScore(
+      diaryId: abcId,
+      beforeScore: _sud,
+      afterScore: _sud,
+    );
   }
 
   // ───────────────────── 비교 및 분기 ─────────────────────
   Future<void> _compareAndNavigate() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-
     final abcId = _abcId;
     final origin = _origin;
-    final diary = _diary;
+    final diaryArg = _diary;
 
     if (origin == 'apply') {
       if (!mounted) return;
-      if (diary == 'new') {
+      if (diaryArg == 'new') {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -79,18 +66,18 @@ class _AfterSudRatingScreenState extends State<AfterSudRatingScreen> {
       return;
     }
 
-    final sudCol = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('abc_models')
-        .doc(abcId)
-        .collection('sud_score');
-
-    final latest =
-        await sudCol.orderBy('updatedAt', descending: true).limit(1).get();
-    final data = latest.docs.first.data();
-    final beforeSud = (data['before_sud'] ?? 0) as num;
-    final afterSud = (data['after_sud'] ?? _sud) as num;
+    final diaryData = await _diariesApi.getDiary(abcId);
+    final scores = diaryData['sudScores'] as List<dynamic>? ?? const [];
+    scores.sort((a, b) {
+      final da = DateTime.tryParse(a['updated_at']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final db = DateTime.tryParse(b['updated_at']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      return db.compareTo(da);
+    });
+    final latest = scores.isNotEmpty ? scores.first : null;
+    final beforeSud = latest?['before_sud'] as num? ?? _sud;
+    final afterSud = latest?['after_sud'] as num? ?? _sud;
 
     if (!mounted) return;
     if (afterSud < beforeSud) {
@@ -102,15 +89,15 @@ class _AfterSudRatingScreenState extends State<AfterSudRatingScreen> {
           pageBuilder:
               (_, __, ___) => Week4SkipChoiceScreen(
                 beforeSud: beforeSud.toInt(),
-                allBList:
-                    (_args()['allBList'] as List?)?.cast<String>() ?? const [],
-                remainingBList:
-                    (_args()['remainingBList'] as List?)?.cast<String>() ??
-                    const [],
+                  allBList:
+                      (_args()['allBList'] as List?)?.cast<String>() ?? const [],
+                  remainingBList:
+                      (_args()['remainingBList'] as List?)?.cast<String>() ??
+                      const [],
                 existingAlternativeThoughts:
-                    (_args()['allAlternativeThoughts'] as List?)
-                        ?.cast<String>() ??
-                    const [],
+                  (_args()['allAlternativeThoughts'] as List?)
+                      ?.cast<String>() ??
+                  const [],
                 abcId: abcId,
                 isFromAfterSud: true,
               ),
@@ -187,9 +174,9 @@ class _AfterSudRatingScreenState extends State<AfterSudRatingScreen> {
               trackHeight: 14,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 13),
               activeTrackColor: _accent,
-              inactiveTrackColor: _accent.withOpacity(0.25),
+              inactiveTrackColor: _accent.withValues(alpha: 0.25),
               thumbColor: _accent,
-              overlayColor: _accent.withOpacity(0.2),
+              overlayColor: _accent.withValues(alpha: 0.2),
             ),
             child: Slider(
               value: _sud.toDouble(),

@@ -1,12 +1,12 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 import 'package:gad_app_team/widgets/inner_btn_card.dart';
 import 'package:gad_app_team/features/4th_treatment/week4_alternative_thoughts.dart';
 import 'package:provider/provider.dart';
 import 'package:gad_app_team/data/user_provider.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/diaries_api.dart';
 
 /// 💡 Firestore의 'belief' 필드(B 리스트)를 불러와 선택 후 다음 단계로 이동하는 화면
 class ApplyAlternativeThoughtScreen extends StatefulWidget {
@@ -25,6 +25,9 @@ class _ApplyAlternativeThoughtScreenState
   String? _abcId;
   int _beforeSud = 0;
   int? _selectedIndex;
+  final TokenStorage _tokens = TokenStorage();
+  late final ApiClient _apiClient = ApiClient(tokens: _tokens);
+  late final DiariesApi _diariesApi = DiariesApi(_apiClient);
 
   @override
   void didChangeDependencies() {
@@ -35,56 +38,57 @@ class _ApplyAlternativeThoughtScreenState
     if (_bList.isEmpty && !_loading) _fetchBeliefs();
   }
 
-  /// 🔹 Firestore에서 'belief' 리스트 로드
+  /// 🔹 FastAPI(다이어리)에서 'belief' 리스트 로드
   Future<void> _fetchBeliefs() async {
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final uid =
-          FirebaseAuth.instance.currentUser?.uid ?? prefs.getString('uid');
-      if (uid == null || uid.isEmpty) {
-        throw Exception('사용자 식별자를 찾을 수 없습니다.');
-      }
+      final access = await _tokens.access;
+      if (access == null) throw Exception('로그인이 필요합니다.');
 
-      final firestore = FirebaseFirestore.instance;
-      List<String> list;
+      List<String> list = const [];
 
       if (_abcId != null && _abcId!.isNotEmpty) {
-        final doc =
-            await firestore
-                .collection('users')
-                .doc(uid)
-                .collection('abc_models')
-                .doc(_abcId)
-                .get();
-
-        final data = doc.data();
-        if (!doc.exists || data == null) throw Exception('해당 ABC를 찾을 수 없습니다.');
-        list = _parseBeliefList(data['belief']);
-        _abcId = doc.id;
+        final diary = await _diariesApi.getDiary(_abcId!);
+        if (diary.isEmpty) throw Exception('해당 ABC를 찾을 수 없습니다.');
+        list = _parseBeliefList(diary['belief']);
 
         if (list.isEmpty) {
-          final groupId = (data['group_id'] ?? data['groupId'])?.toString();
-          if (groupId != null && groupId.isNotEmpty) {
-            list = await _loadGroupBeliefs(firestore, uid, groupId);
+          final groupRaw = diary['group_Id'] ?? diary['groupId'];
+          final groupId =
+              groupRaw is int
+                  ? groupRaw
+                  : groupRaw is num
+                  ? groupRaw.toInt()
+                  : int.tryParse(groupRaw?.toString() ?? '');
+          if (groupId != null) {
+            list = await _loadGroupBeliefs(groupId);
           }
         }
-        if (list.isEmpty) list = await _loadAllBeliefs(firestore, uid);
+        if (list.isEmpty) list = await _loadAllBeliefs();
       } else {
-        list = await _loadAllBeliefs(firestore, uid);
+        list = await _loadAllBeliefs();
         if (list.isEmpty) throw Exception('저장된 일기를 찾을 수 없습니다.');
-        _abcId = await _latestAbcId(firestore, uid);
+        _abcId = await _latestAbcId();
       }
 
-      if (mounted) {
-        setState(() {
-          _bList = list;
-          _loading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _bList = list;
+        _loading = false;
+      });
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final detail =
+          e.response?.data is Map
+              ? e.response?.data['detail']?.toString()
+              : e.message;
+      setState(() {
+        _error = detail ?? '데이터를 불러오지 못했습니다.';
+        _loading = false;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -94,23 +98,31 @@ class _ApplyAlternativeThoughtScreenState
     }
   }
 
-  Future<List<String>> _loadGroupBeliefs(
-    FirebaseFirestore firestore,
-    String uid,
-    String groupId,
-  ) async {
-    final qs =
-        await firestore
-            .collection('users')
-            .doc(uid)
-            .collection('abc_models')
-            .where('group_id', isEqualTo: groupId)
-            .get();
+  Future<List<String>> _loadGroupBeliefs(int groupId) async {
+    final diaries = await _diariesApi.listDiaries(groupId: groupId);
+    return _extractBeliefsFromDiaries(diaries);
+  }
 
+  Future<List<String>> _loadAllBeliefs() async {
+    final diaries = await _diariesApi.listDiaries();
+    return _extractBeliefsFromDiaries(diaries);
+  }
+
+  Future<String?> _latestAbcId() async {
+    final diaries = await _diariesApi.listDiaries();
+    if (diaries.isEmpty) return null;
+    diaries.sort(
+      (a, b) => _parseDate(b['createdAt']).compareTo(_parseDate(a['createdAt'])),
+    );
+    final latest = diaries.first;
+    return latest['diaryId']?.toString();
+  }
+
+  List<String> _extractBeliefsFromDiaries(List<Map<String, dynamic>> diaries) {
     final seen = <String>{};
     final acc = <String>[];
-    for (final doc in qs.docs) {
-      final items = _parseBeliefList(doc.data()['belief']);
+    for (final diary in diaries) {
+      final items = _parseBeliefList(diary['belief']);
       for (final item in items) {
         if (seen.add(item)) acc.add(item);
       }
@@ -118,39 +130,12 @@ class _ApplyAlternativeThoughtScreenState
     return acc;
   }
 
-  Future<List<String>> _loadAllBeliefs(
-    FirebaseFirestore firestore,
-    String uid,
-  ) async {
-    final snapshot =
-        await firestore
-            .collection('users')
-            .doc(uid)
-            .collection('abc_models')
-            .orderBy('createdAt', descending: true)
-            .get();
-
-    final seen = <String>{};
-    final acc = <String>[];
-    for (final doc in snapshot.docs) {
-      final items = _parseBeliefList(doc.data()['belief']);
-      for (final item in items) {
-        if (seen.add(item)) acc.add(item);
-      }
+  DateTime _parseDate(dynamic raw) {
+    if (raw is DateTime) return raw;
+    if (raw is String) {
+      return DateTime.tryParse(raw) ?? DateTime.fromMillisecondsSinceEpoch(0);
     }
-    return acc;
-  }
-
-  Future<String?> _latestAbcId(FirebaseFirestore firestore, String uid) async {
-    final snapshot =
-        await firestore
-            .collection('users')
-            .doc(uid)
-            .collection('abc_models')
-            .orderBy('createdAt', descending: true)
-            .limit(1)
-            .get();
-    return snapshot.docs.isEmpty ? null : snapshot.docs.first.id;
+    return DateTime.fromMillisecondsSinceEpoch(0);
   }
 
   List<String> _parseBeliefList(dynamic belief) {
@@ -190,6 +175,8 @@ class _ApplyAlternativeThoughtScreenState
               allBList: all,
               originalBList: all,
               abcId: _abcId,
+              origin: 'apply',
+              diary: diary,
             ),
       ),
     );
@@ -260,7 +247,7 @@ class _ApplyAlternativeThoughtScreenState
                         decoration: BoxDecoration(
                           color:
                               selected
-                                  ? const Color(0xFF47A6FF).withOpacity(0.15)
+                                  ? const Color(0xFF47A6FF).withValues(alpha: 0.15)
                                   : Colors.white,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
