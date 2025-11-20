@@ -130,7 +130,8 @@ class _RelaxationScoreScreenState extends State<RelaxationScoreScreen> {
                     );
                   }
                   return;
-                } else if (args['origin'] == 'solve') {
+                } 
+                if (args['origin'] == 'solve') {
                   Navigator.pushNamed(
                     context,
                     '/alt_yes_or_no',

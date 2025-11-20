@@ -187,7 +187,7 @@ class MyApp extends StatelessWidget {
         "/similar_activation": (context) => const SimilarActivationScreen(),
         "/relax_or_alternative": (context) => const RelaxOrAlternativePage(),
         "/relax_yes_or_no": (context) => const RelaxYesOrNo(),
-        "alt_yes_or_no": (context) => const AltYesOrNo(),
+        "/alt_yes_or_no": (context) => const AltYesOrNo(),
         // "/training": (context) => const TrainingSelect(),
         '/apply_alt_thought':
             (context) => const ApplyAlternativeThoughtScreen(),

@@ -67,11 +67,6 @@ class _ApplyAlternativeThoughtScreenState
             list = await _loadGroupBeliefs(groupId);
           }
         }
-        if (list.isEmpty) list = await _loadAllBeliefs();
-      } else {
-        list = await _loadAllBeliefs();
-        if (list.isEmpty) throw Exception('저장된 일기를 찾을 수 없습니다.');
-        _abcId = await _latestAbcId();
       }
 
       if (!mounted) return;
@@ -103,21 +98,6 @@ class _ApplyAlternativeThoughtScreenState
     return _extractBeliefsFromDiaries(diaries);
   }
 
-  Future<List<String>> _loadAllBeliefs() async {
-    final diaries = await _diariesApi.listDiaries();
-    return _extractBeliefsFromDiaries(diaries);
-  }
-
-  Future<String?> _latestAbcId() async {
-    final diaries = await _diariesApi.listDiaries();
-    if (diaries.isEmpty) return null;
-    diaries.sort(
-      (a, b) => _parseDate(b['createdAt']).compareTo(_parseDate(a['createdAt'])),
-    );
-    final latest = diaries.first;
-    return latest['diaryId']?.toString();
-  }
-
   List<String> _extractBeliefsFromDiaries(List<Map<String, dynamic>> diaries) {
     final seen = <String>{};
     final acc = <String>[];
@@ -128,14 +108,6 @@ class _ApplyAlternativeThoughtScreenState
       }
     }
     return acc;
-  }
-
-  DateTime _parseDate(dynamic raw) {
-    if (raw is DateTime) return raw;
-    if (raw is String) {
-      return DateTime.tryParse(raw) ?? DateTime.fromMillisecondsSinceEpoch(0);
-    }
-    return DateTime.fromMillisecondsSinceEpoch(0);
   }
 
   List<String> _parseBeliefList(dynamic belief) {
@@ -182,25 +154,35 @@ class _ApplyAlternativeThoughtScreenState
     );
   }
 
+  void _skipSelection() {
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final userName = context.read<UserProvider>().userName;
+    final hasBeliefs = _bList.isNotEmpty;
 
     return InnerBtnCardScreen(
       appBarTitle: '도움이 되는 생각 찾기',
       title: '$userName님,\n어떤 생각을 대상으로 찾아볼까요?',
-      primaryText: '도움이 되는 생각을 찾아볼게요!',
-      onPrimary:
-          (_selectedIndex != null && _bList.isNotEmpty)
-              ? () {
-                final b = _bList[_selectedIndex!];
-                _onSelect(b);
-              }
-              : () {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('생각을 선택해주세요.')));
-              },
+      primaryText:
+          hasBeliefs ? '도움이 되는 생각을 찾아볼게요!' : '다음에 진행하기',
+      onPrimary: () {
+        if (!hasBeliefs) {
+          _skipSelection();
+          return;
+        }
+        if (_selectedIndex == null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('생각을 선택해주세요.')));
+          return;
+        }
+        final b = _bList[_selectedIndex!];
+        _onSelect(b);
+      },
       // ✅ 리스트 렌더링 복구 (Flexible + shrinkWrap)
       child:
           _loading
@@ -214,9 +196,10 @@ class _ApplyAlternativeThoughtScreenState
               )
               : _bList.isEmpty
               ? const Padding(
-                padding: EdgeInsets.all(12),
+                padding: EdgeInsets.all(16),
                 child: Text(
-                  '저장된 생각(B)이 없습니다.',
+                  '일기/그룹에서 불러올 생각이 없습니다.',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.black54,
                     fontSize: 15,

@@ -142,6 +142,7 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
           'mp3Asset': 'noti.mp3',
           'riveAsset': 'noti.riv',
           'nextPage': '/relaxation_score',
+          'diary': widget.diary,
         },
       );
       return;
