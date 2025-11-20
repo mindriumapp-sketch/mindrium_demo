@@ -8,6 +8,7 @@ import '../../data/storage/token_storage.dart';
 import '../../data/api/api_client.dart';
 import '../../data/api/worry_groups_api.dart';
 import '../../data/api/diaries_api.dart';
+import '../../data/api/user_data_api.dart';
 import 'abc_group_add_screen.dart';
 
 class AbcGroupAddScreen extends StatefulWidget {
@@ -35,6 +36,7 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
   late final ApiClient _apiClient = ApiClient(tokens: _tokens);
   late final WorryGroupsApi _worryGroupsApi = WorryGroupsApi(_apiClient);
   late final DiariesApi _diariesApi = DiariesApi(_apiClient);
+  late final UserDataApi _userDataApi = UserDataApi(_apiClient);
 
   String? _selectedGroupId;
   List<Map<String, dynamic>> _groups = [];
@@ -68,7 +70,7 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
   Future<Map<String, dynamic>> _loadGroupDetails(String groupId) async {
     // Find group data
     final group = _groups.firstWhere(
-      (g) => g['group_id']?.toString() == groupId,
+          (g) => g['group_id']?.toString() == groupId,
       orElse: () => {},
     );
 
@@ -96,6 +98,44 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
     final avgScore = validCount > 0 ? total / validCount : 0.0;
 
     return {'group': group, 'diaryCount': count, 'avgScore': avgScore};
+  }
+
+  Future<int> _getCurrentWeek() async {
+    try {
+      final progress = await _userDataApi.getProgress();
+      final currentWeek = progress['completed_week'];
+      if (currentWeek is int) return currentWeek;
+      if (currentWeek is num) return currentWeek.toInt();
+    } catch (e) {
+      debugPrint('❌ 현재 치료 주차 조회 실패: $e');
+    }
+    return 1;
+  }
+
+  Future<void> _navigateAfterGroupSelection() async {
+    if (!mounted) return;
+    if (widget.origin == 'apply' && widget.abcId != null) {
+      // final week = await _getCurrentWeek();
+      final week = 8; // TODO: 임시: 항상 8주차로 이동
+      if (!mounted) return;
+      final args = <String, dynamic>{
+        'abcId': widget.abcId,
+        if (widget.beforeSud != null) 'sud': widget.beforeSud,
+        if (widget.diary != null) 'diary': widget.diary,
+      };
+      if (widget.origin != null) {
+        args['origin'] = widget.origin;
+      }
+      final route =
+      week >= 4 ? '/relax_or_alternative' : '/relax_yes_or_no';
+      Navigator.pushReplacementNamed(
+        context,
+        route,
+        arguments: args,
+      );
+    } else {
+      _showStartDialog();
+    }
   }
 
   // 🎨 개선된 편집 다이얼로그
@@ -242,9 +282,9 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
                         try {
                           await _worryGroupsApi
                               .updateWorryGroup(group['group_id'], {
-                                'group_title': titleCtrl.text,
-                                'group_contents': contentsCtrl.text,
-                              });
+                            'group_title': titleCtrl.text,
+                            'group_contents': contentsCtrl.text,
+                          });
                           if (ctx.mounted) {
                             Navigator.pop(ctx);
                             _loadGroups(); // Reload groups to show updated data
@@ -302,27 +342,27 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Colors.white.withOpacity(0.85),
-              Colors.white.withOpacity(0.75),
+              Colors.white.withValues(alpha: 0.85),
+              Colors.white.withValues(alpha: 0.75),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFF5B9FD3).withOpacity(0.4),
+            color: const Color(0xFF5B9FD3).withValues(alpha: 0.4),
             width: 2,
             strokeAlign: BorderSide.strokeAlignInside,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF5B9FD3).withOpacity(0.15),
+              color: const Color(0xFF5B9FD3).withValues(alpha: 0.15),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
             // 상단 하이라이트 (유리 반짝임)
             BoxShadow(
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
               blurRadius: 8,
               spreadRadius: -2,
               offset: const Offset(0, -2),
@@ -335,7 +375,7 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF5B9FD3).withOpacity(0.1),
+                color: const Color(0xFF5B9FD3).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -377,45 +417,45 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           gradient:
-              isSelected
-                  ? const LinearGradient(
-                    colors: [
-                      Color(0xFFE0F2FF), // 더 밝고 맑은 파란색
-                      Color(0xFFF0F9FF),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                  : LinearGradient(
-                    colors: [
-                      Colors.white.withOpacity(0.85), // 더 높은 투명도
-                      Colors.white.withOpacity(0.75),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+          isSelected
+              ? const LinearGradient(
+            colors: [
+              Color(0xFFE0F2FF), // 더 밝고 맑은 파란색
+              Color(0xFFF0F9FF),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          )
+              : LinearGradient(
+            colors: [
+              Colors.white.withValues(alpha: 0.85), // 더 높은 투명도
+              Colors.white.withValues(alpha: 0.75),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(20),
           border:
-              isSelected
-                  ? Border.all(color: const Color(0xFF5B9FD3), width: 2.5)
-                  : Border.all(
-                    color: Colors.white.withOpacity(0.9), // 밝은 테두리
-                    width: 1.5,
-                  ),
+          isSelected
+              ? Border.all(color: const Color(0xFF5B9FD3), width: 2.5)
+              : Border.all(
+            color: Colors.white.withValues(alpha: 0.9), // 밝은 테두리
+            width: 1.5,
+          ),
           boxShadow: [
             // 메인 그림자
             BoxShadow(
               color:
-                  isSelected
-                      ? const Color(0xFF5B9FD3).withOpacity(0.35)
-                      : Colors.black.withOpacity(0.06),
+              isSelected
+                  ? const Color(0xFF5B9FD3).withValues(alpha: 0.35)
+                  : Colors.black.withValues(alpha: 0.06),
               blurRadius: isSelected ? 24 : 16,
               spreadRadius: isSelected ? 2 : 0,
               offset: Offset(0, isSelected ? 10 : 6),
             ),
             // 상단 하이라이트 (유리 반짝임 효과)
             BoxShadow(
-              color: Colors.white.withOpacity(isSelected ? 0.6 : 0.4),
+              color: Colors.white.withValues(alpha: isSelected ? 0.6 : 0.4),
               blurRadius: 8,
               spreadRadius: -2,
               offset: const Offset(0, -2),
@@ -423,7 +463,7 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
             // 선택 시 글로우
             if (isSelected)
               BoxShadow(
-                color: const Color(0xFF5B9FD3).withOpacity(0.2),
+                color: const Color(0xFF5B9FD3).withValues(alpha: 0.2),
                 blurRadius: 16,
                 spreadRadius: -2,
                 offset: const Offset(0, 0),
@@ -442,20 +482,20 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient:
-                          isSelected
-                              ? const LinearGradient(
-                                colors: [Color(0xFFFFFFFF), Color(0xFFF5FAFF)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              )
-                              : null,
-                      color: isSelected ? null : Colors.white.withOpacity(0.7),
+                      isSelected
+                          ? const LinearGradient(
+                        colors: [Color(0xFFFFFFFF), Color(0xFFF5FAFF)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                          : null,
+                      color: isSelected ? null : Colors.white.withValues(alpha: 0.7),
                       boxShadow: [
                         BoxShadow(
                           color:
-                              isSelected
-                                  ? const Color(0xFF5B9FD3).withOpacity(0.3)
-                                  : Colors.black.withOpacity(0.05),
+                          isSelected
+                              ? const Color(0xFF5B9FD3).withValues(alpha: 0.3)
+                              : Colors.black.withValues(alpha: 0.05),
                           blurRadius: isSelected ? 16 : 12,
                           offset: const Offset(0, 4),
                         ),
@@ -468,13 +508,13 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
                       fit: BoxFit.contain,
                       errorBuilder:
                           (context, error, stack) => Icon(
-                            Icons.catching_pokemon,
-                            size: 50,
-                            color:
-                                isSelected
-                                    ? const Color(0xFF5B9FD3)
-                                    : Colors.grey.shade400,
-                          ),
+                        Icons.catching_pokemon,
+                        size: 50,
+                        color:
+                        isSelected
+                            ? const Color(0xFF5B9FD3)
+                            : Colors.grey.shade400,
+                      ),
                     ),
                   ),
                 ),
@@ -490,9 +530,9 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
                 fontWeight: FontWeight.w800,
                 fontSize: isSelected ? 13 : 12.5,
                 color:
-                    isSelected
-                        ? const Color(0xFF0E2C48)
-                        : const Color(0xFF4A5568),
+                isSelected
+                    ? const Color(0xFF0E2C48)
+                    : const Color(0xFF4A5568),
                 height: 1.3,
                 letterSpacing: -0.2,
               ),
@@ -505,10 +545,11 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
         Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
-        return false;
       },
       child: Scaffold(
         extendBody: true,
@@ -554,66 +595,66 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
                     // ─── Grid (스크롤 영역) ───────────────────────────────
                     Expanded(
                       child:
-                          _isLoading
-                              ? const Center(
-                                child: CircularProgressIndicator(
-                                  color: Color(0xFF5B9FD3),
-                                  strokeWidth: 3,
-                                ),
-                              )
-                              : Builder(
-                                builder: (ctx) {
-                                  // 정렬: group_id=1이 먼저, 나머지는 created_at 순
-                                  final sortedGroups = List<
-                                    Map<String, dynamic>
-                                  >.from(_groups)..sort((a, b) {
-                                    final aId = a['group_id']?.toString() ?? '';
-                                    final bId = b['group_id']?.toString() ?? '';
-                                    if (aId == '1' && bId != '1') return -1;
-                                    if (bId == '1' && aId != '1') return 1;
-                                    final aTime = a['created_at'] as String?;
-                                    final bTime = b['created_at'] as String?;
-                                    if (aTime != null && bTime != null) {
-                                      return aTime.compareTo(bTime);
-                                    }
-                                    return 0;
-                                  });
+                      _isLoading
+                          ? const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF5B9FD3),
+                          strokeWidth: 3,
+                        ),
+                      )
+                          : Builder(
+                        builder: (ctx) {
+                          // 정렬: group_id=1이 먼저, 나머지는 created_at 순
+                          final sortedGroups = List<
+                              Map<String, dynamic>
+                          >.from(_groups)..sort((a, b) {
+                            final aId = a['group_id']?.toString() ?? '';
+                            final bId = b['group_id']?.toString() ?? '';
+                            if (aId == '1' && bId != '1') return -1;
+                            if (bId == '1' && aId != '1') return 1;
+                            final aTime = a['created_at'] as String?;
+                            final bTime = b['created_at'] as String?;
+                            if (aTime != null && bTime != null) {
+                              return aTime.compareTo(bTime);
+                            }
+                            return 0;
+                          });
 
-                                  return GridView.count(
-                                    padding: const EdgeInsets.all(16),
-                                    crossAxisCount: 3,
-                                    childAspectRatio: 0.82,
-                                    physics:
-                                        const AlwaysScrollableScrollPhysics(
-                                          parent: ClampingScrollPhysics(),
-                                        ),
-                                    children: [
-                                      _buildAddCard(),
-                                      for (final group in sortedGroups)
-                                        Builder(
-                                          builder: (_) {
-                                            final groupIdStr =
-                                                group['group_id']?.toString() ??
-                                                '';
-                                            final isSelected =
-                                                _selectedGroupId == groupIdStr;
-                                            return _buildGroupCard(
-                                              group: group,
-                                              isSelected: isSelected,
-                                              onTap: () {
-                                                setState(
-                                                  () =>
-                                                      _selectedGroupId =
-                                                          groupIdStr,
-                                                );
-                                              },
-                                            );
-                                          },
-                                        ),
-                                    ],
-                                  );
-                                },
-                              ),
+                          return GridView.count(
+                            padding: const EdgeInsets.all(16),
+                            crossAxisCount: 3,
+                            childAspectRatio: 0.82,
+                            physics:
+                            const AlwaysScrollableScrollPhysics(
+                              parent: ClampingScrollPhysics(),
+                            ),
+                            children: [
+                              _buildAddCard(),
+                              for (final group in sortedGroups)
+                                Builder(
+                                  builder: (_) {
+                                    final groupIdStr =
+                                        group['group_id']?.toString() ??
+                                            '';
+                                    final isSelected =
+                                        _selectedGroupId == groupIdStr;
+                                    return _buildGroupCard(
+                                      group: group,
+                                      isSelected: isSelected,
+                                      onTap: () {
+                                        setState(
+                                              () =>
+                                          _selectedGroupId =
+                                              groupIdStr,
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                            ],
+                          );
+                        },
+                      ),
                     ),
 
                     // ─── 상세 정보 카드 ───────────────────────────────
@@ -642,7 +683,7 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
 
                             final details = snapshot.data!;
                             final data =
-                                details['group'] as Map<String, dynamic>;
+                            details['group'] as Map<String, dynamic>;
                             final count = details['diaryCount'] as int;
                             final avgScore = details['avgScore'] as double;
                             return AnimatedContainer(
@@ -666,7 +707,7 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
                                   BoxShadow(
                                     color: const Color(
                                       0xFF5B9FD3,
-                                    ).withOpacity(0.18),
+                                    ).withValues(alpha: 0.18),
                                     blurRadius: 20,
                                     offset: const Offset(0, 8),
                                   ),
@@ -692,13 +733,13 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
                                       GestureDetector(
                                         onTap:
                                             () =>
-                                                _showEditDialog(context, data),
+                                            _showEditDialog(context, data),
                                         child: Container(
                                           padding: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
                                             color: const Color(
                                               0xFF5B9FD3,
-                                            ).withOpacity(0.1),
+                                            ).withValues(alpha: 0.1),
                                             borderRadius: BorderRadius.circular(
                                               10,
                                             ),
@@ -861,30 +902,28 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
                   );
                   debugPrint('Error message: ${e.message}');
                   debugPrint('Stack trace: $stackTrace');
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          '그룹 할당 실패: ${e.response?.data ?? e.message}',
-                        ),
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '그룹 할당 실패: ${e.response?.data ?? e.message}',
                       ),
-                    );
-                  }
+                    ),
+                  );
                   return;
                 } catch (e, stackTrace) {
                   debugPrint('❌ 일기 그룹 할당 실패: $e');
                   debugPrint('Stack trace: $stackTrace');
-                  if (mounted) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('그룹 할당 실패: $e')));
-                  }
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('그룹 할당 실패: $e')));
                   return;
                 }
 
                 // 이완으로 이동 (알림 설정은 이미 완료된 상태)
                 if (!context.mounted) return;
-                _showStartDialog();
+                await _navigateAfterGroupSelection();
               },
             ),
           ),
