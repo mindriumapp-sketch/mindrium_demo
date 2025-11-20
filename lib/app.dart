@@ -144,7 +144,7 @@ class MyApp extends StatelessWidget {
         '/education5': (context) => const Education5Page(),
         '/education6': (context) => const Education6Page(),
         '/education7': (context) => const Education7Page(),
-        '/relax': (context) => const RelaxationScreen(),
+        '/relaxation': (context) => const RelaxationScreen(),
         '/screen_time': (context) => const ScreenTimePage(),
         '/relaxation_education': (context) {
           final args =

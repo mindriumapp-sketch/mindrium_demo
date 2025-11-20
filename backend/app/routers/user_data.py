@@ -44,7 +44,7 @@ class SurveyResponse(BaseModel):
     completed_at: str
     answers: Optional[Dict[str, Any]] = None
 
-
+#TODO: 주차별 진행도 따로 빼야 됨
 class WeekProgress(BaseModel):
     """주차별 진행도"""
     week_number: int = Field(..., ge=1, le=8, description="주차 (1-8)")
@@ -608,7 +608,7 @@ async def get_archived_worry_groups(
     )
     return groups
 
-
+#TODO: 주차별 진행도 따로 빼야 됨
 @router.get("/progress", response_model=UserDataResponse, summary="전체 진행도 조회")
 async def get_user_progress(
     current_user: dict = Depends(get_current_user),
@@ -650,7 +650,11 @@ async def get_user_progress(
     
     # 다이어리 및 이완 훈련 카운트
     total_diaries = len(user.get("diaries", []))
-    total_relaxations = len(user.get("relaxation_tasks", []))
+    relaxation_tasks = user.get("relaxation_tasks", [])
+    total_relaxations = len([
+        t for t in relaxation_tasks
+        if t.get("endTime") is not None   # ✅ endTime 있는 것만 "완료"로 간주
+    ])
     
     value_goal = user.get("value_goal")
 

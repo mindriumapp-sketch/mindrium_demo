@@ -278,6 +278,7 @@ class _EducationScreenState extends State<EducationScreen> {
                   MaterialPageRoute(
                     builder: (_) =>
                         EducationPage(
+                          title: '1주차 - 불안에 대한 교육',
                           jsonPrefixes: const [
                             'week1_part1_',
                             'week1_part3_',

@@ -200,9 +200,10 @@ class _EducationPageState extends State<EducationPage> {
             context,
             '/relaxation_education',
             arguments: {
-              'taskId': 'edu_0001',
+              'taskId': 'week1_education',
               'weekNumber': 1,
-              'mp4Asset': 'week1.mp4',
+              'mp3Asset': 'week1.mp3',
+              'riveAsset': 'week1.riv',
             },
           );
         },

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:gad_app_team/features/7th_treatment/week7_final_screen.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gad_app_team/widgets/calendar_sheet.dart';
 import 'dart:convert';
-import 'package:gad_app_team/widgets/custom_popup_design.dart';
 import 'package:gad_app_team/widgets/eduhome_bg.dart';
 import 'package:gad_app_team/utils/edu_progress.dart';
 
@@ -107,32 +107,6 @@ class _Week7CalendarSummaryScreenState
 
   String _ymd(DateTime d) => '${d.month}월 ${d.day}일';
 
-  void _showCompletionDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return CustomPopupDesign(
-          title: '계획 완료!',
-          message:
-          '계획 세운 일정을 한번 열심히 실천해보세요!\n'
-              '건강한 생활 습관을 꾸준히 실천하여 \n'
-              '더 나은 나를 만들어가세요.',
-          positiveText: '홈으로 돌아가기',
-          onPositivePressed: () async {
-            //await EduProgress.markWeekDone(7);
-            // 1) 팝업 닫고
-            Navigator.of(context, rootNavigator: true).pop();
-            // 2) 홈으로 이동
-            Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-          },
-          negativeText: null,
-          onNegativePressed: null,
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return EduhomeBg(
@@ -225,7 +199,18 @@ class _Week7CalendarSummaryScreenState
                   leftLabel: '이전',
                   rightLabel: '다음',
                   onBack: () => Navigator.pop(context),
-                  onNext: _showCompletionDialog,
+                  onNext: () async {
+                    //await _saveSession();
+                    if (!mounted) return;
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder: (_, __, ___) => Week7FinalScreen(),
+                        transitionDuration: Duration.zero,
+                        reverseTransitionDuration: Duration.zero,
+                      ),
+                    );
+                  },
                 ),
               ),
             ],

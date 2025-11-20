@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gad_app_team/features/menu/education/education_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:gad_app_team/data/api/api_client.dart';
 import 'package:gad_app_team/data/api/user_data_api.dart';
@@ -40,7 +41,14 @@ class _Week1ValueGoalScreenState extends State<Week1ValueGoalScreen> {
     try {
       await _userDataApi.updateValueGoal(_controller.text.trim());
       if (mounted) {
-        Navigator.pushNamed(context, '/education');
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => const EducationScreen(isRelax:true),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

@@ -1,72 +1,109 @@
-// relaxation_logger.dart
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
 
-// ──────────────────────────────────────────────────────────────
-// [옵션] 위치 추적을 나중에 켤 때만 아래 두 줄 주석 해제
-// import 'package:geolocator/geolocator.dart';
-// import 'package:geocoding/geocoding.dart'; // (선택) 좌표→주소 변환
-// ──────────────────────────────────────────────────────────────
+import 'package:flutter/foundation.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/relaxation_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
-class SessionLogger {
+/// 점진적 이완 세션용 로거
+///
+/// ✅ 유지한 것들
+/// - logEvent(String action)
+/// - logAutosaveTick()  → autosave_* 는 DB 저장 시 필터링
+/// - setFullyCompleted()  → 완주 여부 플래그
+/// - saveLogs()  → 한 세션당 한 도큐먼트 upsert
+///
+/// ✅ 바뀐 것들
+/// - Firestore → FastAPI + Mongo (`RelaxationApi.saveRelaxationTask`)
+/// - endTime / durationTime 은 **완주(_fullyCompleted=true)**일 때만 기록
+/// - 완주 전 saveLogs: realLogs + autosave_checkpoint 1개만 추가
+class RelaxationLogger {
   final String taskId;
-  final int weekNumber;
+  final int? weekNumber;
+  double? _latitude;
+  double? _longitude;
+  String? _addressName;
 
   final DateTime _sessionStart = DateTime.now();
   final List<Map<String, dynamic>> _logEntries = [];
-
-  // 한 세션=한 문서: 자동 생성된 sessionId (화면마다 한 번 생성되어 고정)
-  late final String _sessionId =
-      '${taskId}_${_sessionStart.millisecondsSinceEpoch}';
-
   // 완주 여부(오디오+Rive 모두 끝났을 때만 endTime 기록)
   bool _fullyCompleted = false;
 
-  // ──────────────────────────────────────────────────────────
-  // [옵션] 위치 관련 보관 필드 (지금은 사용 안 함; 주석 상태 유지)
-  // Position? _startPosition;
-  // String? _startAddress; // (선택) 지오코딩 결과 텍스트 주소
-  // ──────────────────────────────────────────────────────────
+  // REST API 클라이언트
+  late final ApiClient _client;
+  late final RelaxationApi _api;
 
-  SessionLogger({
+  // 🔥 이 세션에서 서버가 준 relax_id 저장
+  String? _relaxId;
+
+  RelaxationLogger({
     required this.taskId,
-    required this.weekNumber,
+    this.weekNumber,
+    ApiClient? client,
+    RelaxationApi? api,
   }) {
-    // ────────────────────────────────────────────────────────
-    // [옵션] 위치 캡처를 켜려면 아래 라인 주석 해제
-    // _captureStartLocation();
-    // ────────────────────────────────────────────────────────
+    // ApiClient / RelaxationApi 주입 안 했으면 내부에서 간단 생성
+    _client = client ?? ApiClient(tokens: TokenStorage());
+    _api = api ?? RelaxationApi(_client);
   }
 
   /// 외부(플레이어)에서 오디오+Rive 모두 끝났을 때 호출
+  /// (기존 구현 그대로 유지)
   void setFullyCompleted() {
     _fullyCompleted = true;
   }
 
+  /// 공통 이벤트 로깅
+  ///
+  /// - action 예시:
+  ///   - "start"
+  ///   - "autosave_tick"
+  ///   - "audio_complete"
+  ///   - "pause" / "resume"
+  ///   - "final_save_xxx"
+  ///   - "session_complete"
+  ///   - "rive_state_machine_missing"
+  ///   - "rive_complete"
   void logEvent(String action) {
     final now = DateTime.now();
     final elapsed = now.difference(_sessionStart).inSeconds;
+
     _logEntries.add({
       "action": action,
-      "timestamp": now.toIso8601String(),
+      "timestamp": now.toUtc().toIso8601String(),
       "elapsed_seconds": elapsed,
     });
+
+    // 방어적: session_complete 로그가 들어오면 완주로 간주
+    if (action == "session_complete") {
+      _fullyCompleted = true;
+    }
   }
 
-  /// 주기 자동저장 시 호출해도 됨. (메모리에만 남고 DB 저장시 개별 autosave는 제외)
+  /// 주기 자동저장 시 호출해도 됨.
+  /// (메모리에만 남고 DB 저장시 autosave_* 는 제외 → 기존 동작 유지)
   void logAutosaveTick() {
     logEvent("autosave_tick");
   }
 
+  /// 실제 DB 저장 (기존 saveLogs 이름 유지)
+  ///
+  /// - autosave_* action 은 realLogs에서 제거
+  /// - _fullyCompleted == false:
+  ///     realLogs + 마지막 autosave_checkpoint 1개
+  /// - _fullyCompleted == true:
+  ///     realLogs만 저장 + endTime / durationTime 기록
   Future<void> saveLogs() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (_logEntries.isEmpty) return;
 
-    final docRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('relaxation_tasks')
-        .doc(_sessionId);
+    // 혹시 setFullyCompleted() 안 불렀더라도,
+    // session_complete 이벤트가 있으면 완주로 처리
+    if (!_fullyCompleted &&
+        _logEntries.any((e) => e["action"] == "session_complete")) {
+      _fullyCompleted = true;
+    }
+
+    final now = DateTime.now();
 
     // autosave_* 는 개별 항목으로 DB에 올리지 않음
     final List<Map<String, dynamic>> realLogs = _logEntries.where((e) {
@@ -74,85 +111,72 @@ class SessionLogger {
       return !a.startsWith("autosave");
     }).toList();
 
-    final now = DateTime.now();
-
-    // 완주 전: realLogs + 마지막에 1개의 autosave_checkpoint (endTime 기록 X)
+    // 완주 전: realLogs + 마지막 autosave_checkpoint (endTime 기록 X)
     // 완주 시: autosave 모두 제거(realLogs만) + endTime 기록
-    final List<Map<String, dynamic>> logsForDb = _fullyCompleted
-        ? realLogs
-        : [
-      ...realLogs,
-      {
-        "action": "autosave_checkpoint",
-        "timestamp": now.toIso8601String(),
-        "elapsed_seconds": now.difference(_sessionStart).inSeconds,
-      },
-    ];
-
-    final Map<String, dynamic> data = {
-      "sessionId": _sessionId,        // 편의용
-      "taskId": taskId,
-      "weekNumber": weekNumber,
-      "startTime": _sessionStart,
-      "updatedAt": FieldValue.serverTimestamp(),
-      "logs": logsForDb,
-      // ──────────────────────────────────────────────────────
-      // [옵션] 위치 필드 (나중에 켤 때만 아래 주석 해제)
-      // "startLatitude": _startPosition?.latitude,
-      // "startLongitude": _startPosition?.longitude,
-      // "startAddress": _startAddress, // (선택)
-      // ──────────────────────────────────────────────────────
-    };
-
+    final List<Map<String, dynamic>> logsForDb;
     if (_fullyCompleted) {
-      data["endTime"] = now; // 끝까지 재생됐을 때만 기록
+      logsForDb = realLogs;
+    } else {
+      logsForDb = [
+        ...realLogs,
+        {
+          "action": "autosave_checkpoint",
+          "timestamp": now.toUtc().toIso8601String(),
+          "elapsed_seconds": now
+              .difference(_sessionStart)
+              .inSeconds,
+        },
+      ];
     }
 
-    await docRef.set(data, SetOptions(merge: true)); // 한 문서만 계속 갱신
+    // 완주시에만 endTime / durationTime 채움
+    final DateTime? endTime = _fullyCompleted ? now : null;
+    final int? durationTime =
+    _fullyCompleted ? now
+        .difference(_sessionStart)
+        .inSeconds : null;
+
+    try {
+      // 🔥 서버에 현재 relaxId를 같이 보냄 (처음엔 null → 새로 생성)
+      final res = await _api.saveRelaxationTask(
+        relaxId: _relaxId,
+        taskId: taskId,
+        weekNumber: weekNumber,
+        startTime: _sessionStart,
+        endTime: endTime,
+        logs: logsForDb,
+        latitude: _latitude,
+        longitude: _longitude,
+        addressName: _addressName,
+        durationTime: durationTime,
+      );
+
+      // 🔥 응답에서 relax_id 받아서 내부에 캐싱
+      final dynamic newId = res['relax_id'];
+      if (newId is String && newId.isNotEmpty) {
+        _relaxId = newId;
+      }
+
+      debugPrint(
+        'RelaxationLogger: logs saved (relaxId=$_relaxId, taskId=$taskId, '
+            'count=${_logEntries.length}, fullyCompleted=$_fullyCompleted)',
+      );
+    } catch (e, st) {
+      debugPrint('RelaxationLogger.saveLogs error: $e\n$st');
+      rethrow;
+    }
   }
 
 // ──────────────────────────────────────────────────────────
-// [옵션] 위치 캡처 로직 — 나중에 필요해지면 아래 전부 주석 해제
-//
-// Future<void> _captureStartLocation() async {
-//   try {
-//     // 1) 권한 체크/요청
-//     LocationPermission perm = await Geolocator.checkPermission();
-//     if (perm == LocationPermission.denied) {
-//       perm = await Geolocator.requestPermission();
-//     }
-//     if (perm == LocationPermission.deniedForever ||
-//         perm == LocationPermission.denied) {
-//       return; // 권한 없으면 위치 저장 스킵
-//     }
-//
-//     // 2) 현재 위치 가져오기
-//     final pos = await Geolocator.getCurrentPosition(
-//       desiredAccuracy: LocationAccuracy.high,
-//     );
-//     _startPosition = pos;
-//
-//     // 3) (선택) 지오코딩으로 주소 얻기
-//     try {
-//       final placemarks = await placemarkFromCoordinates(
-//         pos.latitude, pos.longitude,
-//       );
-//       if (placemarks.isNotEmpty) {
-//         final p = placemarks.first;
-//         _startAddress = [
-//           p.country,
-//           p.administrativeArea,
-//           p.locality,
-//           p.street,
-//           p.name,
-//         ].where((e) => (e ?? '').toString().isNotEmpty).join(' ');
-//       }
-//     } catch (_) {
-//       // 지오코딩 실패는 무시 (좌표만 있어도 충분)
-//     }
-//   } catch (e) {
-//     // 위치 획득 실패는 조용히 스킵
-//   }
-// }
+// [옵션] 위치 업데이트 — 나중에 필요해지면 아래 전부 주석 해제
+  void updateLocation({
+    double? latitude,
+    double? longitude,
+    String? addressName,
+  }) {
+    _latitude = latitude;
+    _longitude = longitude;
+    _addressName = addressName;
+  }
 // ──────────────────────────────────────────────────────────
 }
