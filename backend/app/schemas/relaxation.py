@@ -44,7 +44,7 @@ class RelaxationTaskCreate(BaseModel):
 class RelaxationTaskResponse(BaseModel):
     """
     클라이언트로 돌려주는 응답
-    (Mongo에 저장된 구조 그대로 + createdAt / updatedAt)
+    (Mongo에 저장된 구조 그대로)
     """
     relax_id: str
     task_id: str
@@ -52,8 +52,6 @@ class RelaxationTaskResponse(BaseModel):
     start_time: datetime
     end_time: Optional[datetime] = None
     logs: List[RelaxationLogEntry]
-    created_at: datetime
-    updated_at: datetime
 
     # ✅ 같은 필드들 응답에도 포함
     latitude: Optional[float] = None

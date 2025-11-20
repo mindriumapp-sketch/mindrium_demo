@@ -73,10 +73,6 @@ def _serialize_task(doc: dict) -> dict:
             for entry in (doc.get("logs") or [])
             if isinstance(entry, dict)
         ],
-        "created_at": _parse_datetime_value(doc.get("created_at")),
-        "updated_at": _parse_datetime_value(
-            doc.get("updated_at"), fallback=_parse_datetime_value(doc.get("created_at"))
-        ),
 
         # ✅ 새 필드들
         "latitude": doc.get("latitude"),
@@ -109,14 +105,13 @@ async def update_relaxation_task(
     """
     user_id = current_user["_id"]
     user = await _get_user_or_404(db, user_id)
-    now = datetime.now(timezone.utc)
+
     # 기존 relaxation_tasks 배열 가져오기
     tasks = list(user.get("relaxation_tasks", []))
 
     # 1) relaxId가 안 들어오면 → "create 전용" branch
     if payload.relax_id is None:
         new_relax_id = f"relax_{uuid.uuid4().hex[:6]}"
-        created_at = now
         existing_score = None
         existing_idx = -1
     else:
@@ -129,10 +124,6 @@ async def update_relaxation_task(
                 break
 
         if existing_idx >= 0:
-            created_at = _parse_datetime_value(
-                tasks[existing_idx].get("created_at"),
-                fallback=now,
-            )
             existing_score = tasks[existing_idx].get("relaxation_score")
         else:
             # 없는 relaxId로 업데이트 시도 → 404
@@ -155,8 +146,6 @@ async def update_relaxation_task(
             }
             for entry in payload.logs
         ],
-        "created_at": created_at,
-        "updated_at": now,
 
         # ✅ 새 필드들
         "latitude": payload.latitude,
@@ -195,7 +184,7 @@ async def list_relaxation_tasks(
 
     - `week_number` 쿼리 파라미터로 특정 주차만 필터링 가능
     - `task_id` 쿼리 파라미터로 특정 task_id만 필터링 가능 (예: 특정 알람 ID)
-    - created_at 기준 **최신순** 정렬
+    - start_time 기준 **최신순** 정렬
     """
     user_id = current_user["_id"]
     user = await _get_user_or_404(db, user_id)
@@ -217,11 +206,9 @@ async def list_relaxation_tasks(
             if t.get("task_id") == task_id
         ]
 
-    # createdAt 기준 최신순 정렬
+    # start_time 기준 최신순 정렬
     def _key(doc: dict) -> datetime:
-        return _parse_datetime_value(
-            doc.get("created_at") or doc.get("start_time")
-        )
+        return _parse_datetime_value(doc.get("start_time"))
 
     tasks.sort(key=_key, reverse=True)
 
@@ -268,11 +255,9 @@ async def get_latest_relaxation_task(
     if not tasks:
         return None  # front에서 null 체크해서 "아직 안 함"으로 판단
 
-    # createdAt 또는 startTime 기준으로 가장 최근 것
+    # start_time 기준으로 가장 최근 것
     def _key(doc: dict) -> datetime:
-        return _parse_datetime_value(
-            doc.get("created_at") or doc.get("start_time")
-        )
+        return _parse_datetime_value(doc.get("start_time"))
 
     latest = max(tasks, key=_key)
 
@@ -294,7 +279,7 @@ async def update_relaxation_score(
     다른 화면에서 측정한 이완 점수(relaxation_score)를 업데이트한다.
 
     - path param의 `relax_id`와 일치하는 세션을 찾는다.
-    - 찾으면 해당 항목의 `relaxation_score`와 `updated_at`만 변경.
+    - 찾으면 해당 항목의 `relaxation_score`만 변경.
     """
     user_id = current_user["_id"]
     user = await _get_user_or_404(db, user_id)
@@ -312,11 +297,8 @@ async def update_relaxation_score(
             detail="Relaxation session not found",
         )
 
-    now = datetime.now(timezone.utc)
-
     target = tasks[target_idx]
     target["relaxation_score"] = payload.relaxation_score
-    target["updated_at"] = now
 
     tasks[target_idx] = target
 
