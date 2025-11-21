@@ -37,27 +37,38 @@ class ContentScreen extends StatelessWidget {
     ];
 
     /// 📋 TreatmentDesign 형식으로 변환
-    final weekContents = menuItems
-        .map(
-          (e) => {
-        'title': e['title'] as String,
-        'subtitle': e['subtitle'] as String,
-      },
-    )
-        .toList();
+    final weekContents =
+        menuItems
+            .map(
+              (e) => {
+                'title': e['title'] as String,
+                'subtitle': e['subtitle'] as String,
+              },
+            )
+            .toList();
 
     /// 📘 라우팅용 위젯 리스트
-    final weekScreens = menuItems
-        .map((e) => _MenuRouteLauncher(onTap: e['onTap'] as VoidCallback))
-        .toList();
+    final weekScreens =
+        menuItems
+            .map((e) => _MenuRouteLauncher(onTap: e['onTap'] as VoidCallback))
+            .toList();
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: Colors.transparent,
-      body: TreatmentDesign(
-        appBarTitle: '', // AppBar 제목 비워서 UI 최소화
-        weekContents: weekContents,
-        weekScreens: weekScreens,
+    return WillPopScope(
+      onWillPop: () async {
+        // 뒤로가기 버튼 클릭 시 홈으로 이동
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/home', (route) => false);
+        return false;
+      },
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        backgroundColor: Colors.transparent,
+        body: TreatmentDesign(
+          appBarTitle: '', // AppBar 제목 비워서 UI 최소화
+          weekContents: weekContents,
+          weekScreens: weekScreens,
+        ),
       ),
     );
   }

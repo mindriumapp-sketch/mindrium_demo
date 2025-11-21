@@ -493,7 +493,7 @@ class _AbcGroupScreenState extends State<AbcGroupScreen> {
                           Navigator.pushNamed(
                             context,
                             '/diary_directory',
-                            arguments: {'groupId': groupId},
+                            arguments: {'groupId': int.tryParse(groupId)},
                           );
                         },
                         borderRadius: BorderRadius.circular(10),
@@ -527,195 +527,194 @@ class _AbcGroupScreenState extends State<AbcGroupScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // 불안 삭제 버튼 (평균 ≤ 2.0일 때만 활성)
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            hasScore && avg <= 2.0
-                                ? const Color(0xFFF44336)
-                                : Colors.grey.shade300,
-                        foregroundColor:
-                            hasScore && avg <= 2.0
-                                ? Colors.white
-                                : Colors.grey.shade500,
-                        elevation: hasScore && avg <= 2.0 ? 2 : 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  // 불안 삭제 버튼 (기본 그룹(id=1)은 제외, 평균 ≤ 2.0일 때만 활성)
+                  if (groupId != '1')
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              hasScore && avg <= 2.0
+                                  ? const Color(0xFFF44336)
+                                  : Colors.grey.shade300,
+                          foregroundColor:
+                              hasScore && avg <= 2.0
+                                  ? Colors.white
+                                  : Colors.grey.shade500,
+                          elevation: hasScore && avg <= 2.0 ? 2 : 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                      ),
-                      icon: Icon(
-                        hasScore && avg <= 2.0
-                            ? Icons.delete_outline
-                            : Icons.lock_outline,
-                        size: 22,
-                      ),
-                      label: const Text(
-                        '불안 삭제',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      onPressed:
+                        icon: Icon(
                           hasScore && avg <= 2.0
-                              ? () {
-                                showDialog(
-                                  context: context,
-                                  barrierDismissible: false,
-                                  builder:
-                                      (ctx) => Dialog(
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            20,
-                                          ),
-                                        ),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(24),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
+                              ? Icons.delete_outline
+                              : Icons.lock_outline,
+                          size: 22,
+                        ),
+                        label: const Text(
+                          '불안 삭제',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        onPressed:
+                            hasScore && avg <= 2.0
+                                ? () {
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder:
+                                        (ctx) => Dialog(
+                                          shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
                                               20,
                                             ),
                                           ),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                '정말 "$groupTitle" 그룹을\n삭제하시겠습니까?',
-                                                textAlign: TextAlign.center,
-                                                style: const TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: Color(0xFF0E2C48),
-                                                ),
-                                              ),
-                                              const SizedBox(height: 16),
-                                              const Text(
-                                                '삭제된 그룹은 보관함에서 확인 가능합니다.',
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Color(0xFF1B405C),
-                                                  height: 1.5,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 24),
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: OutlinedButton(
-                                                      onPressed:
-                                                          () => Navigator.pop(
-                                                            ctx,
-                                                          ),
-                                                      style: OutlinedButton.styleFrom(
-                                                        padding:
-                                                            const EdgeInsets.symmetric(
-                                                              vertical: 12,
-                                                            ),
-                                                        side: const BorderSide(
-                                                          color: Color(
-                                                            0xFF5B9FD3,
-                                                          ),
-                                                        ),
-                                                        shape: RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                12,
-                                                              ),
-                                                        ),
-                                                      ),
-                                                      child: const Text(
-                                                        '취소',
-                                                        style: TextStyle(
-                                                          color: Color(
-                                                            0xFF5B9FD3,
-                                                          ),
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          fontSize: 15,
-                                                        ),
-                                                      ),
-                                                    ),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(24),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  '정말 "$groupTitle" 그룹을\n삭제하시겠습니까?',
+                                                  textAlign: TextAlign.center,
+                                                  style: const TextStyle(
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: Color(0xFF0E2C48),
                                                   ),
-                                                  const SizedBox(width: 12),
-                                                  Expanded(
-                                                    child: ElevatedButton(
-                                                      onPressed: () {
-                                                        Navigator.pop(ctx);
-                                                        Navigator.push(
-                                                          context,
-                                                          MaterialPageRoute(
-                                                            builder:
-                                                                (
-                                                                  _,
-                                                                ) => PokemonBattleDeletePage(
-                                                                  groupId:
-                                                                      groupId,
-                                                                  onGoArchive: () {
-                                                                    Navigator.pushAndRemoveUntil(
-                                                                      context,
-                                                                      MaterialPageRoute(
-                                                                        builder:
-                                                                            (
-                                                                              _,
-                                                                            ) => const HomeScreen(
-                                                                              initialIndex:
-                                                                                  2,
-                                                                            ),
-                                                                      ),
-                                                                      (_) =>
-                                                                          false,
-                                                                    );
-                                                                  },
+                                                ),
+                                                const SizedBox(height: 16),
+                                                const Text(
+                                                  '삭제된 그룹은 보관함에서 확인 가능합니다.',
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    color: Color(0xFF1B405C),
+                                                    height: 1.5,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 24),
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: OutlinedButton(
+                                                        onPressed:
+                                                            () => Navigator.pop(
+                                                              ctx,
+                                                            ),
+                                                        style: OutlinedButton.styleFrom(
+                                                          padding:
+                                                              const EdgeInsets.symmetric(
+                                                                vertical: 12,
+                                                              ),
+                                                          side:
+                                                              const BorderSide(
+                                                                color: Color(
+                                                                  0xFF5B9FD3,
+                                                                ),
+                                                              ),
+                                                          shape: RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  12,
                                                                 ),
                                                           ),
-                                                        );
-                                                      },
-                                                      style: ElevatedButton.styleFrom(
-                                                        padding:
-                                                            const EdgeInsets.symmetric(
-                                                              vertical: 12,
-                                                            ),
-                                                        backgroundColor:
-                                                            const Color(
-                                                              0xFFF44336,
-                                                            ),
-                                                        foregroundColor:
-                                                            Colors.white,
-                                                        elevation: 0,
-                                                        shape: RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                12,
-                                                              ),
                                                         ),
-                                                      ),
-                                                      child: const Text(
-                                                        '삭제',
-                                                        style: TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          fontSize: 15,
+                                                        child: const Text(
+                                                          '취소',
+                                                          style: TextStyle(
+                                                            color: Color(
+                                                              0xFF5B9FD3,
+                                                            ),
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            fontSize: 15,
+                                                          ),
                                                         ),
                                                       ),
                                                     ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
+                                                    const SizedBox(width: 12),
+                                                    Expanded(
+                                                      child: ElevatedButton(
+                                                        onPressed: () {
+                                                          Navigator.pop(ctx);
+                                                          Navigator.push(
+                                                            context,
+                                                            MaterialPageRoute(
+                                                              builder:
+                                                                  (
+                                                                    _,
+                                                                  ) => PokemonBattleDeletePage(
+                                                                    groupId:
+                                                                        groupId,
+                                                                    onGoArchive: () {
+                                                                      Navigator.pushAndRemoveUntil(
+                                                                        context,
+                                                                        MaterialPageRoute(
+                                                                          builder:
+                                                                              (_) => const HomeScreen(
+                                                                                initialIndex:
+                                                                                    2,
+                                                                              ),
+                                                                        ),
+                                                                        (_) =>
+                                                                            false,
+                                                                      );
+                                                                    },
+                                                                  ),
+                                                            ),
+                                                          );
+                                                        },
+                                                        style: ElevatedButton.styleFrom(
+                                                          padding:
+                                                              const EdgeInsets.symmetric(
+                                                                vertical: 12,
+                                                              ),
+                                                          backgroundColor:
+                                                              const Color(
+                                                                0xFFF44336,
+                                                              ),
+                                                          foregroundColor:
+                                                              Colors.white,
+                                                          elevation: 0,
+                                                          shape: RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  12,
+                                                                ),
+                                                          ),
+                                                        ),
+                                                        child: const Text(
+                                                          '삭제',
+                                                          style: TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            fontSize: 15,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                );
-                              }
-                              : null,
+                                  );
+                                }
+                                : null,
+                      ),
                     ),
-                  ),
                 ],
               );
             },
