@@ -25,10 +25,7 @@ class TreatmentDesign extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.asset(
-                'assets/image/eduhome.png',
-                fit: BoxFit.cover,
-              ),
+              Image.asset('assets/image/eduhome.png', fit: BoxFit.cover),
               Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
@@ -48,7 +45,15 @@ class TreatmentDesign extends StatelessWidget {
             /// 🧭 맨 위 CustomAppBar (SafeArea 포함)
             SafeArea(
               bottom: false,
-              child: CustomAppBar(title: '메뉴', showHome: true),
+              child: CustomAppBar(
+                title: '메뉴',
+                showHome: true,
+                onBack: () {
+                  Navigator.of(
+                    context,
+                  ).pushNamedAndRemoveUntil('/home', (route) => false);
+                },
+              ),
             ),
 
             /// 📖 카드 리스트
@@ -69,9 +74,7 @@ class TreatmentDesign extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => weekScreens[i],
-                            ),
+                            MaterialPageRoute(builder: (_) => weekScreens[i]),
                           );
                         },
                       ),
@@ -89,11 +92,11 @@ class TreatmentDesign extends StatelessWidget {
 
   /// 🪸 주차별 카드 (체크 아이콘 제거)
   Widget _buildWeekCard(
-      BuildContext context, {
-        required String title,
-        required String subtitle,
-        required VoidCallback onTap,
-      }) {
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(

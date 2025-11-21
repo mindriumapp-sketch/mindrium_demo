@@ -37,16 +37,16 @@ class ContentScreen extends StatelessWidget {
     ];
 
     /// 📋 TreatmentDesign 형식으로 변환
-    final weekContents = menuItems
-        .map(
-          (e) => {
-        'title': e['title'] as String,
-        'subtitle': e['subtitle'] as String,
-      },
-    )
-        .toList();
+    final weekContents =
+        menuItems
+            .map(
+              (e) => {
+                'title': e['title'] as String,
+                'subtitle': e['subtitle'] as String,
+              },
+            )
+            .toList();
 
-    /// 📘 라우팅용 위젯 리스트
     final weekScreens = menuItems
         .map(
           (e) => _MenuRouteLauncher(
