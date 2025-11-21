@@ -12,27 +12,27 @@ class ContentScreen extends StatelessWidget {
       {
         'title': '불안에 대한 교육',
         'subtitle': '불안을 이해하고 관리하기',
-        'onTap': () => Navigator.pushNamed(context, '/education'),
+        'route': '/education',
       },
       {
         'title': '이완',
         'subtitle': '긴장을 완화하고 마음을 안정시키기',
-        'onTap': () => Navigator.pushNamed(context, '/relaxation'),
+        'route': '/relaxation',
       },
       {
         'title': '걱정 일기 목록',
         'subtitle': '나의 걱정 기록 살펴보기',
-        'onTap': () => Navigator.pushNamed(context, '/diary_directory'),
+        'route': '/diary_directory',
       },
       {
         'title': '걱정 그룹',
         'subtitle': '비슷한 걱정을 묶어서 정리하기',
-        'onTap': () => Navigator.pushNamed(context, '/diary_group'),
+        'route': '/diary_group',
       },
       {
         'title': '보관함',
         'subtitle': '완료한 일기와 그룹을 모아보기',
-        'onTap': () => Navigator.pushNamed(context, '/archive'),
+        'route': '/archive',
       },
     ];
 
@@ -48,7 +48,12 @@ class ContentScreen extends StatelessWidget {
 
     /// 📘 라우팅용 위젯 리스트
     final weekScreens = menuItems
-        .map((e) => _MenuRouteLauncher(onTap: e['onTap'] as VoidCallback))
+        .map(
+          (e) => _MenuRouteLauncher(
+            routeName: e['route'] as String,
+            arguments: e['arguments'],
+          ),
+        )
         .toList();
 
     return PopScope(
@@ -71,16 +76,33 @@ class ContentScreen extends StatelessWidget {
 }
 
 /// 📘 TreatmentDesign 내부에서 push만 수행하는 위젯
-class _MenuRouteLauncher extends StatelessWidget {
-  final VoidCallback onTap;
+class _MenuRouteLauncher extends StatefulWidget {
+  const _MenuRouteLauncher({required this.routeName, this.arguments});
 
-  const _MenuRouteLauncher({required this.onTap});
+  final String routeName;
+  final Object? arguments;
 
   @override
-  Widget build(BuildContext context) {
+  State<_MenuRouteLauncher> createState() => _MenuRouteLauncherState();
+}
+
+class _MenuRouteLauncherState extends State<_MenuRouteLauncher> {
+  bool _navigated = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_navigated) return;
+    _navigated = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      onTap();
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed(
+        widget.routeName,
+        arguments: widget.arguments,
+      );
     });
-    return const SizedBox.shrink();
   }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

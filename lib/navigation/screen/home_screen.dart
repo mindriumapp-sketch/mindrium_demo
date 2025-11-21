@@ -42,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static const int _kTotalWeeks = 8;
   Future<_ProgressSnapshot>? _progressFuture;
   bool _permissionsChecked = false;
+  Future<void>? _permissionFuture;
   final TokenStorage _tokenStorage = TokenStorage();
   late final ApiClient _apiClient = ApiClient(tokens: _tokenStorage);
   late final UserDataApi _userDataApi = UserDataApi(_apiClient);
@@ -174,7 +175,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _ensureCorePermissions() async {
+  Future<void> _ensureCorePermissions() {
+    return _permissionFuture ??= _requestPermissions();
+  }
+
+  Future<void> _requestPermissions() async {
     if (_permissionsChecked) return;
     final perms = <Permission>[
       Permission.notification,

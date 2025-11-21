@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:rive/rive.dart';
 
-import 'package:gad_app_team/firebase_options.dart';
 import 'package:gad_app_team/data/user_provider.dart';
 import 'package:gad_app_team/data/daycounter.dart';
 import 'package:gad_app_team/data/notification_provider.dart';
@@ -13,9 +11,6 @@ import 'package:gad_app_team/features/screen_time/screen_time_tracker.dart';
 /// 🌊 Mindrium 앱 시작점 (Firebase + Provider 초기화)
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // ✅ Firebase 초기화
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // ✅ Rive 초기화
   await RiveNative.init();

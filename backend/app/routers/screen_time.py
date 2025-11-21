@@ -13,7 +13,8 @@ from schemas.screen_time import ScreenTimeCreate, ScreenTimeEntry, ScreenTimeSum
 
 router = APIRouter(prefix="/users/me/screen-time", tags=["screen-time"])
 
-COLLECTION = "screen_time_entries"
+COLLECTION = "screen_time"
+
 def _get_kst_tz():
     if ZoneInfo is not None:
         try:
