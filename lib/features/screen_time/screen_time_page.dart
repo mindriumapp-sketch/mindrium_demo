@@ -94,9 +94,14 @@ class _SessionTile extends StatelessWidget {
     final end = entry.endTime.toLocal();
     final dateFmt = DateFormat('yyyy.MM.dd HH:mm');
     final duration = entry.durationMinutes;
-    final durationLabel = duration >= 1
-        ? '${duration.toStringAsFixed(duration >= 10 ? 0 : 1)}분'
-        : '${(duration * 60).round()}초';
+    final totalSeconds = (duration * 60).round();
+    final mins = totalSeconds ~/ 60;
+    final secs = totalSeconds % 60;
+    final durationLabel = mins > 0 && secs > 0
+        ? '${mins}분 ${secs}초'
+        : mins > 0
+            ? '${mins}분'
+            : '${secs}초';
 
     return Container(
       padding: const EdgeInsets.all(16),
