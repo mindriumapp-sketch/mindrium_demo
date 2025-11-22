@@ -7,12 +7,14 @@ class TreatmentDesign extends StatelessWidget {
   final String appBarTitle;
   final List<Map<String, String>> weekContents;
   final List<Widget> weekScreens;
+  final bool confirmHome;
 
   const TreatmentDesign({
     super.key,
     required this.appBarTitle,
     required this.weekContents,
     required this.weekScreens,
+    this.confirmHome = true,
   });
 
   @override
@@ -48,6 +50,7 @@ class TreatmentDesign extends StatelessWidget {
               child: CustomAppBar(
                 title: '메뉴',
                 showHome: true,
+                confirmOnHome: confirmHome,
                 onBack: () {
                   Navigator.of(
                     context,

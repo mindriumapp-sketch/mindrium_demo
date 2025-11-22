@@ -69,6 +69,7 @@ class ContentScreen extends StatelessWidget {
           appBarTitle: '', // AppBar 제목 비워서 UI 최소화
           weekContents: weekContents,
           weekScreens: weekScreens,
+          confirmHome: false,
         ),
       ),
     );
