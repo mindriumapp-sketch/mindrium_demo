@@ -966,7 +966,6 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
         backgroundAsset: null,
         iconAsset: null,
         onPositivePressed: () async {
-          // await EduProgress.markWeekDone(1);
           Navigator.pop(context);
           Navigator.pushReplacementNamed(
             context,

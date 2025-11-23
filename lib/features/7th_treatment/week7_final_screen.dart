@@ -125,7 +125,7 @@ class Week7FinalScreen extends StatelessWidget {
         backgroundAsset: null,
         iconAsset: null,
         onPositivePressed: () async {
-          // await EduProgress.markWeekDone(1);
+          // await EduProgress.markWeekDone(7);
           Navigator.pop(context);
           Navigator.pushReplacementNamed(
             context,

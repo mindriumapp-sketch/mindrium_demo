@@ -3,6 +3,7 @@ import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/custom_popup_design.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/widgets/round_card.dart';
+import 'package:gad_app_team/utils/edu_progress.dart';
 
 class Week8FinalScreen extends StatelessWidget {
   const Week8FinalScreen({super.key,});
@@ -125,7 +126,7 @@ class Week8FinalScreen extends StatelessWidget {
         backgroundAsset: null,
         iconAsset: null,
         onPositivePressed: () async {
-          // await EduProgress.markWeekDone(1);
+          await EduProgress.markWeekDone(8);
           Navigator.pop(context);
           Navigator.pushReplacementNamed(
             context,
