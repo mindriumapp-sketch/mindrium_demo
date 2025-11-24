@@ -562,8 +562,7 @@ class _AbcGroupScreenState extends State<AbcGroupScreen> {
                           ),
                         ),
                         onPressed:
-                            hasScore && avg <= 2.0
-                                ? () {
+                            () {
                                   showDialog(
                                     context: context,
                                     barrierDismissible: false,
@@ -712,7 +711,6 @@ class _AbcGroupScreenState extends State<AbcGroupScreen> {
                                         ),
                                   );
                                 }
-                                : null,
                       ),
                     ),
                 ],
@@ -723,7 +721,10 @@ class _AbcGroupScreenState extends State<AbcGroupScreen> {
       ),
     );
   }
-
+  /*
+hasScore && avg <= 2.0
+                                ? :null
+  */                            
   Widget _buildGroupCard(Map<String, dynamic> data, int i) {
     final groupId = (data['group_id'] ?? '').toString();
     final title = (data['group_title'] ?? '제목 없음').toString();
