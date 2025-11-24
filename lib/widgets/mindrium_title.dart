@@ -157,13 +157,13 @@ class _Bubble extends StatelessWidget {
                   ),
                   // 유리 림
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.65),
+                    color: Colors.white.withValues(alpha: 0.65),
                     width: (size / 18).clamp(0.9, 2.2),
                   ),
                   // 외곽 글로우
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.white.withOpacity(0.35),
+                      color: Colors.white.withValues(alpha: 0.35),
                       blurRadius: (size * 0.75).clamp(10.0, 26.0),
                       spreadRadius: (size * 0.06).clamp(0.6, 2.4),
                     ),
@@ -198,7 +198,7 @@ class _Mindrium3DText extends StatelessWidget {
       alignment: Alignment.center,
       children: [
         // 1) 바닥 긴 그림자(부드러운 드롭 섀도)
-        _shadowText(fs, const Offset(0, 12), 18 * s, Colors.black.withOpacity(0.25)),
+        _shadowText(fs, const Offset(0, 12), 18 * s, Colors.black.withValues(alpha: 0.25)),
 
         // 2) 익스트루전(두께감) 레이어 — 살짝 어두운 청록을 여러 겹
         for (int i = 6; i >= 1; i--)
@@ -290,7 +290,7 @@ class _Mindrium3DText extends StatelessWidget {
         letterSpacing: 4 * scale,
         height: 1.0,
         fontSize: fontSize,
-        color: color.withOpacity(opacity),
+        color: color.withValues(alpha: opacity),
       ),
     );
   }

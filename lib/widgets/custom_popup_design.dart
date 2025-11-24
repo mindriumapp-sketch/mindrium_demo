@@ -53,11 +53,11 @@ class _CustomPopupDesignState extends State<CustomPopupDesign> {
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(28, 60, 28, 28),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.92),
+              color: Colors.white.withValues(alpha: 0.92),
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF74D2FF).withOpacity(0.25),
+                  color: const Color(0xFF74D2FF).withValues(alpha: 0.25),
                   blurRadius: 30,
                   offset: const Offset(0, 12),
                 ),
@@ -106,7 +106,8 @@ class _CustomPopupDesignState extends State<CustomPopupDesign> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF74D2FF).withOpacity(0.1),
+                          color: const Color(0xFF74D2FF)
+                              .withValues(alpha: 0.1),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -207,7 +208,7 @@ class _CustomPopupDesignState extends State<CustomPopupDesign> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF74D2FF).withOpacity(0.4),
+                      color: const Color(0xFF74D2FF).withValues(alpha: 0.4),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),

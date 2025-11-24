@@ -41,7 +41,7 @@ class RoundCard extends StatelessWidget { // 💡 클래스 이름을 RoundCard�
         borderRadius: BorderRadius.circular(cornerRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(shadowOpacity),
+            color: Colors.black.withValues(alpha: shadowOpacity),
             blurRadius: 12,
             offset: const Offset(2, 4),
           ),

@@ -71,7 +71,7 @@ class VerticalContentDesign extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF081F5C).withOpacity(0.22),
+            color: const Color(0xFF081F5C).withValues(alpha: 0.22),
             offset: const Offset(4, 12),
             blurRadius: 14,
             spreadRadius: 2,

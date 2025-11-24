@@ -26,7 +26,7 @@ class MindriumQuestionCard extends StatelessWidget {
           fit: BoxFit.cover,
         ),
         Container(
-          color: AppColors.white.withOpacity(0.1), // 살짝 밝게
+          color: AppColors.white.withValues(alpha: 0.1), // 살짝 밝게
         ),
         SafeArea(
           child: Center(
@@ -53,7 +53,7 @@ class MindriumQuestionCard extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.indigo.withOpacity(0.3),
+                          color: AppColors.indigo.withValues(alpha: 0.3),
                           blurRadius: 4,
                           offset: const Offset(1, 2),
                         ),

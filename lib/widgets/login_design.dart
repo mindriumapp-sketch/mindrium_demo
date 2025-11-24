@@ -47,7 +47,7 @@ class LoginDesign extends StatelessWidget {
                     ),
                     padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.95),
+                      color: Colors.white.withValues(alpha: 0.95),
                       borderRadius: BorderRadius.circular(28),
                       border: Border.all(
                         color: const Color(0xFFB2E8FA), // 하늘색 윤곽선
@@ -55,7 +55,7 @@ class LoginDesign extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.blue.withOpacity(0.15),
+                          color: Colors.blue.withValues(alpha: 0.15),
                           blurRadius: 25,
                           offset: const Offset(0, 12),
                         ),

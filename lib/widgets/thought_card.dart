@@ -101,7 +101,7 @@ class ThoughtBubble extends StatelessWidget {
               borderRadius: BorderRadius.circular(style.radius),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(style.shadowOpacity),
+                  color: Colors.black.withValues(alpha: style.shadowOpacity),
                   blurRadius: style.shadowBlur,
                   offset: style.shadowOffset,
                 ),
@@ -131,7 +131,7 @@ class ThoughtBubble extends StatelessWidget {
       height: style.iconBoxSize,
       decoration: BoxDecoration(
         color: ThoughtColors.iconBoxBackground
-            .withOpacity(style.iconBoxOpacity),
+            .withValues(alpha: style.iconBoxOpacity),
         borderRadius: BorderRadius.circular(style.iconBoxSize / 2),
       ),
       alignment: Alignment.center,

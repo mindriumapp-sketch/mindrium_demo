@@ -166,14 +166,14 @@ class _StepADesignState extends State<StepADesign> {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.92),
+            color: Colors.white.withValues(alpha: 0.92),
             borderRadius: const BorderRadius.only(
               bottomLeft: Radius.circular(22),
               bottomRight: Radius.circular(22),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -377,7 +377,7 @@ class _AddChipInline extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border.all(color: const Color(0xFF47A6FF), width: 1.4),
           borderRadius: BorderRadius.circular(50),
-          color: Colors.white.withOpacity(0.85),
+          color: Colors.white.withValues(alpha: 0.85),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,

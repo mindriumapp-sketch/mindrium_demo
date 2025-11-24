@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/features/7th_treatment/week7_reason_input_screen.dart';
 import 'package:gad_app_team/features/7th_treatment/week7_planning_screen.dart';
-import 'package:gad_app_team/widgets/behavior_confirm_dialog.dart';
 import 'package:gad_app_team/widgets/blue_banner.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart';
 import 'package:gad_app_team/widgets/custom_popup_design.dart';
@@ -63,20 +62,12 @@ class _Week7AddDisplayScreenState extends State<Week7AddDisplayScreen>
   static final List<String> _globalNewBehaviors = [];
 
   // 색상 토큰 (통일)
-  static const Color _titleNavy = Color(0xFF263C69);
   static const Color _primaryBlue = Color.fromARGB(255, 112, 193, 243); // 추가하기
   static const Color _stripBlue = Color(0xFF5DADEC);
   static const Color _stripPaleBlue = Color(0xFFD7E8FF);
-  static const Color _pillBlue = Color(0xFF81C8FF);
   static const Color _stripTextGrey = Color(0xFF646464);
   static const Color _removePink = Color.fromARGB(255, 243, 173, 177); // 제거하기
 
-  // 내부 여백/치수
-  static const double _bodySidePad = 20.0; // 본문 좌우
-  static const EdgeInsets _cardPad = EdgeInsets.symmetric(
-    horizontal: 16,
-    vertical: 24,
-  );
   static const EdgeInsets _listInnerPad = EdgeInsets.symmetric(horizontal: 12);
 
   // 행동 텍스트 정렬(세로 중앙 정렬)
@@ -200,7 +191,7 @@ class _Week7AddDisplayScreenState extends State<Week7AddDisplayScreen>
   void _showAddConfirmationDialog(String behavior) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.35),
+      barrierColor: Colors.black.withValues(alpha: 0.35),
       builder: (context) {
         return CustomPopupDesign(
           title: '건강한 생활 습관 추가',
@@ -229,11 +220,11 @@ class _Week7AddDisplayScreenState extends State<Week7AddDisplayScreen>
   void _showRemoveConfirmationDialog(String behavior) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.35),
+      barrierColor: Colors.black.withValues(alpha: 0.35),
       builder: (context) {
         return CustomPopupDesign(
           title: '생활 습관 제거',
-          highlightText: '[${behavior}]',
+          highlightText: '[$behavior]',
           message: '이 행동을 건강한 생활 습관에서 제거하시겠습니까?',
           negativeText: '취소',
           positiveText: '제거',
@@ -262,7 +253,7 @@ class _Week7AddDisplayScreenState extends State<Week7AddDisplayScreen>
   void _showAddToHealthyHabitsDialog(String behavior) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.35),
+      barrierColor: Colors.black.withValues(alpha: 0.35),
       builder: (context) {
         return CustomPopupDesign(
           title: '건강한 생활 습관 추가',
@@ -308,7 +299,7 @@ class _Week7AddDisplayScreenState extends State<Week7AddDisplayScreen>
         child: Text(
           text,
           style: TextStyle(
-            color: Colors.white.withOpacity(enabled ? 1 : 0.7),
+            color: Colors.white.withValues(alpha: enabled ? 1 : 0.7),
             fontWeight: FontWeight.w700,
             fontSize: 14,
           ),

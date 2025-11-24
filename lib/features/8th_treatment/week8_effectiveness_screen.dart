@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/common/constants.dart';
 import 'package:gad_app_team/features/8th_treatment/week8_schedule_screen.dart';
@@ -9,7 +8,6 @@ import 'package:gad_app_team/widgets/blue_banner.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/custom_popup_design.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
-import 'package:gad_app_team/widgets/behavior_confirm_dialog.dart';
 import 'package:gad_app_team/widgets/eduhome_bg.dart';
 import 'package:gad_app_team/widgets/jellyfish_notice.dart';
 import 'package:gad_app_team/widgets/quiz_card.dart';
@@ -63,7 +61,6 @@ class Week8EffectivenessScreen extends StatefulWidget {
 
 class _Week8EffectivenessScreenState extends State<Week8EffectivenessScreen> {
   // 컬러 상수
-  static const bluePrimary = Color(0xFF5DADEC); // 진행바/버튼
   static const chipBorderBlue = Color(0xFF6DBEF2);
   static const checkedChipFill = Color(0xFFDDEEFF);
 
@@ -430,7 +427,7 @@ class _Week8EffectivenessScreenState extends State<Week8EffectivenessScreen> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: 0.15),
                 blurRadius: 10,
                 spreadRadius: 1,
                 offset: const Offset(2, 4),
@@ -456,7 +453,7 @@ class _Week8EffectivenessScreenState extends State<Week8EffectivenessScreen> {
                     border: Border.all(color: chipBorderBlue, width: 1),
                     boxShadow: [
                       BoxShadow(
-                        color: chipBorderBlue.withOpacity(0.20),
+                        color: chipBorderBlue.withValues(alpha: 0.20),
                         blurRadius: 8,
                         offset: const Offset(0, 3),
                       ),

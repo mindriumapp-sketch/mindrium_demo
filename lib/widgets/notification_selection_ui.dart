@@ -109,7 +109,7 @@ class NotificationSelectionUI extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: shadowColor.withOpacity(0.08),
+                            color: shadowColor.withValues(alpha: 0.08),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -163,7 +163,7 @@ class NotificationSelectionUI extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: shadowColor.withOpacity(0.05),
+                          color: shadowColor.withValues(alpha: 0.05),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -249,7 +249,7 @@ class NotificationSelectionUI extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: shadowColor.withOpacity(0.05),
+                          color: shadowColor.withValues(alpha: 0.05),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -295,7 +295,7 @@ class NotificationSelectionUI extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: shadowColor.withOpacity(0.03),
+                          color: shadowColor.withValues(alpha: 0.03),
                           blurRadius: 2,
                           offset: const Offset(0, 1),
                         ),

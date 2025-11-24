@@ -104,7 +104,7 @@ class _AbcGroupAddScreen1State extends State<AbcGroupAddScreen1> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.5),
+        color: Colors.white.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -121,16 +121,17 @@ class _AbcGroupAddScreen1State extends State<AbcGroupAddScreen1> {
               color:
                   isActive ? const Color(0xFF5B9FD3) : const Color(0xFFB0BEC5),
               borderRadius: BorderRadius.circular(4),
-              boxShadow:
-                  isActive
-                      ? [
-                        BoxShadow(
-                          color: const Color(0xFF5B9FD3).withOpacity(0.4),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                      : null,
+                      boxShadow:
+                          isActive
+                              ? [
+                                BoxShadow(
+                                  color: const Color(0xFF5B9FD3)
+                                      .withValues(alpha: 0.4),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                              : null,
             ),
           );
         }),
@@ -208,21 +209,23 @@ class _AbcGroupAddScreen1State extends State<AbcGroupAddScreen1> {
         showHome: false,
         confirmOnBack: false,
         onBack: () async {
+          final navigator = Navigator.of(context);
           final shouldExit = await showDialog<bool>(
             context: context,
             builder:
-                (_) => CustomPopupDesign(
+                (dialogCtx) => CustomPopupDesign(
                   title: '그룹 추가 취소',
                   message: '작성 중인 내용이 저장되지 않습니다.\n정말 나가시겠습니까?',
                   positiveText: '나가기',
                   negativeText: '취소',
-                  onPositivePressed: () => Navigator.pop(context, true),
-                  onNegativePressed: () => Navigator.pop(context, false),
+                  onPositivePressed: () => Navigator.pop(dialogCtx, true),
+                  onNegativePressed: () => Navigator.pop(dialogCtx, false),
                 ),
           );
 
-          if (shouldExit == true && mounted) {
-            Navigator.pop(context);
+          if (!mounted) return;
+          if (shouldExit == true) {
+            navigator.pop();
           }
         },
       ),
@@ -323,10 +326,9 @@ class _AbcGroupAddScreen1State extends State<AbcGroupAddScreen1> {
                                               isSelected
                                                   ? const Color(
                                                     0xFF90CAF9,
-                                                  ).withOpacity(0.25)
-                                                  : Colors.black.withOpacity(
-                                                    0.04,
-                                                  ),
+                                                  ).withValues(alpha: 0.25)
+                                                  : Colors.black
+                                                      .withValues(alpha: 0.04),
                                           blurRadius: isSelected ? 10 : 6,
                                           offset: const Offset(0, 3),
                                         ),
@@ -342,7 +344,7 @@ class _AbcGroupAddScreen1State extends State<AbcGroupAddScreen1> {
                                           decoration: BoxDecoration(
                                             color: const Color(
                                               0xFFE3F2FD,
-                                            ).withOpacity(0.25),
+                                            ).withValues(alpha: 0.25),
                                             borderRadius: BorderRadius.circular(
                                               16,
                                             ),
@@ -491,7 +493,7 @@ class _AbcGroupAddScreen1State extends State<AbcGroupAddScreen1> {
                                 ),
                                 shadowColor: const Color(
                                   0xFF7BB8E8,
-                                ).withOpacity(0.4),
+                                ).withValues(alpha: 0.4),
                               ),
                               onPressed: _addGroupToFirebase,
                               child: const Text(

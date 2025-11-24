@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:gad_app_team/data/user_provider.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart';
 import 'package:gad_app_team/features/6th_treatment/week6_behavior_reflection_screen.dart';
-import 'package:gad_app_team/widgets/blue_banner.dart'; // CustomBanner 들어있다고 가정
 
 /// 🌊 Mindrium 스타일 6주차 행동 분류 결과 화면
 /// 기존 Scaffold/Card 구조 → ApplyDesign 통합 버전
@@ -29,7 +28,6 @@ class Week6BehaviorClassificationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    bool _showBanner = true;
     final userName = Provider.of<UserProvider>(context, listen: false).userName;
 
     // 🔹 분류 로직

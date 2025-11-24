@@ -31,7 +31,7 @@ class JellyfishNotice extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -107,7 +107,7 @@ class _LeftTailPainter extends CustomPainter {
       ..lineTo(size.width, size.height)
       ..close();
 
-    canvas.drawShadow(path, Colors.black.withOpacity(0.08), 2.0, false);
+    canvas.drawShadow(path, Colors.black.withValues(alpha: 0.08), 2.0, false);
     canvas.drawPath(path, paint);
   }
 

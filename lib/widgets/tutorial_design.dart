@@ -123,7 +123,7 @@ Widget buildRelieveResultCard({
         duration: const Duration(milliseconds: 400),
         child: RuledParagraph(
           key: ValueKey(showMainText),
-          text: showMainText ? userName + '님, ' + mainText : subText,
+          text: showMainText ? '$userName님, $mainText' : subText,
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w500,

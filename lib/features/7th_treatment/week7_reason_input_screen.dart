@@ -1,17 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/widgets/custom_appbar.dart';
-import 'package:gad_app_team/widgets/navigation_button.dart';
-import 'package:provider/provider.dart';
-import 'package:gad_app_team/data/user_provider.dart';
 import 'package:gad_app_team/features/7th_treatment/week7_gain_lose_screen.dart';
 
 // ✅ 방금 네가 준 더블카드 UI
 import 'package:gad_app_team/widgets/top_btm_card.dart';
 
 const Color _navy = Color(0xFF263C69);
-const Color _blue = Color(0xFF339DF1);
-const Color _matrixLineBlue = Color(0xFF8ED7FF);
-const Color _matrixGlowBlue = Color(0x338ED7FF);
 
 class Week7ReasonInputScreen extends StatefulWidget {
   final String behavior;

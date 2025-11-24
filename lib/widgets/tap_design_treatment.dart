@@ -130,7 +130,7 @@ class TreatmentDesign extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -155,7 +155,7 @@ class TreatmentDesign extends StatelessWidget {
                           border: Border.all(color: Colors.white, width: 1),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
+                              color: Colors.black.withValues(alpha: 0.15),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -176,7 +176,7 @@ class TreatmentDesign extends StatelessWidget {
                           border: Border.all(color: Colors.white, width: 1),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
+                              color: Colors.black.withValues(alpha: 0.15),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -249,7 +249,7 @@ class TreatmentDesign extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFA0CEF0).withOpacity(0.15),
+            color: const Color(0xFFA0CEF0).withValues(alpha: 0.15),
             blurRadius: 5.5,
             offset: const Offset(0, 2),
           ),

@@ -73,7 +73,7 @@ class _AbcFeedbackPopupState extends State<AbcFeedbackPopup> {
             width: 800,
             height: 1,
             decoration: BoxDecoration(
-              color: Colors.black26.withOpacity(0.2),
+              color: Colors.black26.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(2),
             ),
           ),

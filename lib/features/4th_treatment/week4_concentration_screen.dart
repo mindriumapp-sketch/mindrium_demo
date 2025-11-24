@@ -155,12 +155,13 @@ class _Week4ConcentrationScreenState extends State<Week4ConcentrationScreen> {
 
     if (widget.bListInput.isEmpty) {
       debugPrint('bListInput이 비어있음 - 도움이 되는 생각 작성 여부에 따라 분기');
+      final navigator = Navigator.of(context);
       Future.microtask(() {
+        if (!mounted) return;
         if (widget.existingAlternativeThoughts?.isNotEmpty == true ||
             widget.alternativeThoughts?.isNotEmpty == true) {
           debugPrint('도움이 되는 생각을 작성함 - Week4AfterSudScreen으로 이동');
-          Navigator.pushReplacement(
-            context,
+          navigator.pushReplacement(
             MaterialPageRoute(
               builder: (_) => Week4AfterSudScreen(
                 beforeSud: widget.beforeSud,
@@ -176,8 +177,7 @@ class _Week4ConcentrationScreenState extends State<Week4ConcentrationScreen> {
           );
         } else {
           debugPrint('도움이 되는 생각을 작성하지 않음 - Week4SkipChoiceScreen으로 이동');
-          Navigator.pushReplacement(
-            context,
+          navigator.pushReplacement(
             MaterialPageRoute(
               builder: (_) => Week4SkipChoiceScreen(
                 allBList: widget.allBList,
@@ -195,8 +195,8 @@ class _Week4ConcentrationScreenState extends State<Week4ConcentrationScreen> {
       return const SizedBox.shrink();
     }
 
-    final userName =
-        Provider.of<UserProvider>(context, listen: false).userName ?? 'USER';
+    final provider = Provider.of<UserProvider>(context, listen: false);
+    final userName = provider.userName.isNotEmpty ? provider.userName : 'USER';
     final currentThought =
     widget.bListInput.isNotEmpty ? widget.bListInput[0] : '';
 

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gad_app_team/common/constants.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/features/8th_treatment/week8_matrix_screen.dart';
@@ -87,9 +86,11 @@ class _Week8ScheduleScreenState extends State<Week8ScheduleScreen> {
         }
       });
       await prefs.setStringList('calendar_events', eventsJson);
+      if (!mounted) return;
       setState(() => _savedEvents.removeWhere((e) => e.id == id));
       BlueBanner.show(context, '일정이 삭제되었습니다.');
     } catch (_) {
+      if (!mounted) return;
       BlueBanner.show(context, '일정 삭제 중 오류가 발생했습니다.');
     }
   }
@@ -117,10 +118,12 @@ class _Week8ScheduleScreenState extends State<Week8ScheduleScreen> {
       final eventsJson = prefs.getStringList('calendar_events') ?? [];
       eventsJson.add(jsonEncode(event.toJson()));
       await prefs.setStringList('calendar_events', eventsJson);
+      if (!mounted) return;
       setState(() => _savedEvents.add(event));
 
       BlueBanner.show(context, '일정이 추가되었습니다.');
     } catch (_) {
+      if (!mounted) return;
       BlueBanner.show(context, '일정 추가 중 오류가 발생했습니다.');
     }
   }
@@ -241,7 +244,7 @@ class _Week8ScheduleScreenState extends State<Week8ScheduleScreen> {
                                     ? [
                                   BoxShadow(
                                     color: const Color(0xFF8ED7FF)
-                                        .withOpacity(0.30),
+                                        .withValues(alpha: 0.30),
                                     blurRadius: 10,
                                     offset: const Offset(0, 4),
                                   ),
@@ -443,11 +446,11 @@ class _Week8ScheduleScreenState extends State<Week8ScheduleScreen> {
                 borderRadius: BorderRadius.circular(5),
                 border: Border.all(color: chipBorderBlue, width: 1),
                 boxShadow: [
-                  BoxShadow(
-                    color: chipBorderBlue.withOpacity(0.20),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
+                      BoxShadow(
+                        color: chipBorderBlue.withValues(alpha: 0.20),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
                 ],
               ),
               child: Text(
@@ -525,7 +528,7 @@ class _Week8ScheduleScreenState extends State<Week8ScheduleScreen> {
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.08),
+                                        color: Colors.black.withValues(alpha: 0.08),
                                         blurRadius: 10,
                                         offset: const Offset(0, 4),
                                       ),

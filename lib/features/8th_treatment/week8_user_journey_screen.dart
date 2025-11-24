@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/common/constants.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/widgets/eduhome_bg.dart';
 import 'package:gad_app_team/features/8th_treatment/week8_maintenance_suggestions_screen.dart';
-import 'package:gad_app_team/widgets/tutorial_design.dart';
-import 'package:gad_app_team/utils/edu_progress.dart';
 
 class Week8UserJourneyScreen extends StatefulWidget {
   const Week8UserJourneyScreen({super.key});
@@ -224,7 +221,7 @@ class _Week8UserJourneyScreenState extends State<Week8UserJourneyScreen> {
                                   hintText: '여기에 답변을 작성해주세요...',
                                   hintStyle: TextStyle(
                                     color:
-                                    const Color(0xFF718096).withOpacity(0.6),
+                                    const Color(0xFF718096).withValues(alpha: 0.6),
                                     fontSize: 14,
                                   ),
                                   contentPadding: const EdgeInsets.all(16),

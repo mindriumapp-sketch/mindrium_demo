@@ -44,14 +44,11 @@ class _Week6BehaviorReflectionScreenState
     bool isShortTermHigh = widget.shortTermValue == 10;
     bool isLongTermHigh = widget.longTermValue == 10;
 
-    String actualResult;
-    if (isShortTermHigh && !isLongTermHigh) {
-      actualResult = '불안을 회피하는 행동';
-    } else if (!isShortTermHigh && isLongTermHigh) {
-      actualResult = '불안을 직면하는 행동';
-    } else {
-      actualResult = '중립적인 행동';
-    }
+    final String actualResult = isShortTermHigh && !isLongTermHigh
+        ? '불안을 회피하는 행동'
+        : (!isShortTermHigh && isLongTermHigh
+            ? '불안을 직면하는 행동'
+            : '중립적인 행동');
 
     String userChoice =
         widget.behaviorType == 'face' ? '불안을 직면하는 행동' : '불안을 회피하는 행동';
@@ -110,7 +107,8 @@ class _Week6BehaviorReflectionScreenState
           ' 방금 보셨던 "${widget.selectedBehavior}"(라)는 행동을 불안을 $userChoice이라고 선택하셨네요.';
     }
 
-    String subText = '이 행동이 과연 나에게 도움이 되는지 다시 한번 더 생각해보아요!';
+    final String subText =
+        '실제로는 $actualResult에 가까운 행동이에요.\n이 행동이 과연 나에게 도움이 되는지 다시 한번 더 생각해보아요!';
     String? nextText;
 
     if (!_showMainText) {

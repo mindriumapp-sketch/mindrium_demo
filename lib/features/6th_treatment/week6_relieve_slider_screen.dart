@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:gad_app_team/data/user_provider.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart'; // ✅ ApplyDesign 정의 파일
 import 'package:gad_app_team/widgets/top_btm_card.dart';
-import 'package:gad_app_team/widgets/jellyfish_notice.dart';
 import 'week6_relieve_result_screen.dart';
 
 /// 🌊 6주차 - 불안 직면 VS 회피 (3주차와 동일 디자인 적용)

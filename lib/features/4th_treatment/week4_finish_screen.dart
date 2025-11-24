@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/utils/edu_progress.dart';
-
 // ✅ 튜토리얼 공용 디자인: 배경/카드/네비게이션 포함
 import 'package:gad_app_team/widgets/tutorial_design.dart';
 
@@ -51,6 +49,7 @@ class Week4FinishScreen extends StatelessWidget {
       cardTitle: '불안 완화 결과',
       onBack: () => Navigator.pop(context),
       onNext: () async {
+        final navigator = Navigator.of(context);
         // ⛳ 팝업을 커스텀 디자인으로 교체 (로직 동일: 닫히면 다음 화면으로 이동)
         await showDialog(
           context: context,
@@ -70,8 +69,7 @@ class Week4FinishScreen extends StatelessWidget {
           ),
         );
 
-        Navigator.pushReplacementNamed(
-          context,
+        navigator.pushReplacementNamed(
           '/relaxation_education',
           arguments: {
             'taskId': 'week4_education',

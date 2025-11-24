@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:gad_app_team/features/6th_treatment/week6_final_screen.dart';
 import 'package:gad_app_team/widgets/top_btm_card.dart';        // ✅ ApplyDoubleCard
 import 'package:gad_app_team/widgets/thought_card.dart';        // ✅ ThoughtCard
-import 'package:gad_app_team/utils/edu_progress.dart';
 
 class Week6VisualScreen extends StatefulWidget {
   final List<String> previousChips;     // 불안을 회피하는 행동

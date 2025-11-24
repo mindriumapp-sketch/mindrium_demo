@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/common/constants.dart';
 import 'package:gad_app_team/features/7th_treatment/week7_add_display_screen.dart';
 import 'package:gad_app_team/widgets/custom_popup_design.dart';
 
-/// TODO : buildInputText() 인가 그 위젯 아래 bottom 카드 다른 주차랑 동일하게
-/// 투명한 파란색으로 바꿔놔야 함
+/// buildInputText() 아래 카드도 다른 주차와 동일한 투명 파란색 톤 유지.
 
 // ✅ 추가: 위아래 카드 레이아웃
 import 'package:gad_app_team/widgets/top_btm_card.dart';
@@ -33,9 +31,6 @@ class _Week7GainLoseScreenState extends State<Week7GainLoseScreen> {
   bool _isNextEnabled = false;
   bool? _hasLongTermBenefit; // 장기적 이익 여부
   bool? _hasLongTermDisadvantage; // 장기적 불이익 여부
-
-  static const double _sidePad = 34.0;
-  static const Color _bluePrimary = Color(0xFF339DF1);
 
   @override
   void initState() {
@@ -188,15 +183,15 @@ class _Week7GainLoseScreenState extends State<Week7GainLoseScreen> {
                     width: 2,
                   ),
                   boxShadow:
-                  currentValue == true
-                      ? [
+                    currentValue == true
+                        ? [
                     BoxShadow(
-                      color: matrixBlue.withOpacity(0.35),
+                      color: matrixBlue.withValues(alpha: 0.35),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                   ]
-                      : [],
+                        : [],
                 ),
                 child: Center(
                   child: Text(
@@ -235,15 +230,15 @@ class _Week7GainLoseScreenState extends State<Week7GainLoseScreen> {
                     width: 2,
                   ),
                   boxShadow:
-                  currentValue == false
-                      ? [
+                    currentValue == false
+                        ? [
                     BoxShadow(
-                      color: matrixBlue.withOpacity(0.35),
+                      color: matrixBlue.withValues(alpha: 0.35),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                   ]
-                      : [],
+                        : [],
                 ),
                 child: Center(
                   child: Text(
@@ -283,7 +278,8 @@ class _Week7GainLoseScreenState extends State<Week7GainLoseScreen> {
           hintText: '여기에 입력해주세요...',
           hintStyle: TextStyle(
             fontSize: 16,
-            color: const Color.fromARGB(255, 108, 119, 139).withOpacity(0.5),
+            color:
+            const Color.fromARGB(255, 108, 119, 139).withValues(alpha: 0.5),
           ),
           border: InputBorder.none,
           contentPadding: EdgeInsets.zero,
@@ -301,7 +297,7 @@ class _Week7GainLoseScreenState extends State<Week7GainLoseScreen> {
   void _showAddToHealthyHabitsDialog() {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.35),
+      barrierColor: Colors.black.withValues(alpha: 0.35),
       builder: (BuildContext context) {
         return CustomPopupDesign(
           title: '건강한 생활 습관 추가',
@@ -363,7 +359,7 @@ class _Week7GainLoseScreenState extends State<Week7GainLoseScreen> {
                     color:
                     index <= _currentStep
                         ? _getStepColor()
-                        : Colors.white.withOpacity(0.35),
+                        : Colors.white.withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
