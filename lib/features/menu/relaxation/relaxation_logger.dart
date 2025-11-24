@@ -28,6 +28,7 @@ class RelaxationLogger {
   final List<Map<String, dynamic>> _logEntries = [];
   // 완주 여부(오디오+Rive 모두 끝났을 때만 endTime 기록)
   bool _fullyCompleted = false;
+  int? _netDurationSeconds;
 
   // REST API 클라이언트
   late final ApiClient _client;
@@ -35,6 +36,8 @@ class RelaxationLogger {
 
   // 🔥 이 세션에서 서버가 준 relax_id 저장
   String? _relaxId;
+  // ✅ UI가 서버 확정 ID를 읽어갈 수 있는 Getter
+  String? get relaxId => _relaxId;
 
   RelaxationLogger({
     required this.taskId,
@@ -47,10 +50,18 @@ class RelaxationLogger {
     _api = api ?? RelaxationApi(_client);
   }
 
+  // ✅ 중간에 순수 지속 시간만 업데이트
+  void updateNetDuration({required int netDurationSeconds}) {
+    _netDurationSeconds = netDurationSeconds;
+    // debugPrint('RelaxationLogger: Partial net duration updated to $netDurationSeconds s');
+  }
+
   /// 외부(플레이어)에서 오디오+Rive 모두 끝났을 때 호출
   /// (기존 구현 그대로 유지)
-  void setFullyCompleted() {
+  void setFullyCompleted({required int netDurationSeconds}) {
     _fullyCompleted = true;
+    updateNetDuration(netDurationSeconds: netDurationSeconds);
+    debugPrint('RelaxationLogger: Session fully completed. Net duration: $netDurationSeconds s');
   }
 
   /// 공통 이벤트 로깅
@@ -122,19 +133,20 @@ class RelaxationLogger {
         {
           "action": "autosave_checkpoint",
           "timestamp": now.toUtc().toIso8601String(),
-          "elapsed_seconds": now
-              .difference(_sessionStart)
-              .inSeconds,
+          "elapsed_seconds": now.difference(_sessionStart).inSeconds,
         },
       ];
     }
 
     // 완주시에만 endTime / durationTime 채움
     final DateTime? endTime = _fullyCompleted ? now : null;
-    final int? durationTime =
-    _fullyCompleted ? now
-        .difference(_sessionStart)
-        .inSeconds : null;
+    final int? durationTime = _netDurationSeconds;
+
+    /// TODO: 5초 미만 저장할지 말지 정하기..
+    // if (durationTime != null && durationTime < 5) {
+    //  debugPrint('RelaxationLogger: Session duration is less than 5 seconds ($durationTime s). Skipping save.');
+    //  return;
+    //}
 
     try {
       // 🔥 서버에 현재 relaxId를 같이 보냄 (처음엔 null → 새로 생성)

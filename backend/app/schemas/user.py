@@ -8,12 +8,6 @@ class SudScore(BaseModel):
     updated_at: Optional[datetime] = None
     created_at: datetime
 
-class RelaxationEvaluation(BaseModel):
-    created_at: datetime
-    week_number: int
-    latitude: float
-    longitude: float
-
 class AlternativeThought(BaseModel):
     emotion_tag_id: str
     thought: str
@@ -47,7 +41,6 @@ class DiaryItem(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     sud_score: Optional[SudScore] = None
-    relaxation_evaluation: Optional[RelaxationEvaluation] = None
     alternative_thoughts: List[AlternativeThought] = []
     confront_avoid_logs: List[ConfrontAvoidLog] = []
     tags: List[TagItem] = []
@@ -63,15 +56,6 @@ class WorryGroup(BaseModel):
     average_sud: Optional[int] = None
     created_at: datetime
     diaries: List[DiaryItem] = []
-
-class RelaxationTask(BaseModel):
-    task_id: str
-    start_time: datetime
-    end_time: Optional[datetime] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    week_number: Optional[int] = None
-    alert_time: Optional[str] = None
 
 class SurveyItem(BaseModel):
     type: str
@@ -103,7 +87,6 @@ class UserOut(UserBase):
     survey_completed: bool
     email_verified: bool
     worry_groups: List[WorryGroup]
-    relaxation_tasks: List[RelaxationTask]
     surveys: List[SurveyItem]
     custom_tags: List[CustomTag]
     created_at: datetime

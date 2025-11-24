@@ -650,11 +650,14 @@ async def get_user_progress(
     
     # 다이어리 및 이완 훈련 카운트
     total_diaries = len(user.get("diaries", []))
-    relaxation_tasks = user.get("relaxation_tasks", [])
-    total_relaxations = len([
-        t for t in relaxation_tasks
-        if t.get("endTime") is not None   # ✅ endTime 있는 것만 "완료"로 간주
-    ])
+    relaxation_collection = db["relaxation_tasks"]
+    total_relaxations = await relaxation_collection.count_documents(
+        {
+            "user_id": user_id,
+            # ✅ end_time이 None이 아닌 것만 "완료된 이완 세션"으로 간주
+            "end_time": {"$ne": None},
+        }
+    )
     
     value_goal = user.get("value_goal")
 

@@ -34,7 +34,6 @@ class DiaryOrRelaxOrHome extends StatelessWidget {
           '/relaxation_noti',
           arguments: {
             'taskId': groupId,
-            'weekNumber': 4,
             'mp3Asset': 'noti.mp3',
             'riveAsset': 'noti.riv',
             'nextPage': '/relaxation_score',

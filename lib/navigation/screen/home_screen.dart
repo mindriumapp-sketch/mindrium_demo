@@ -316,7 +316,7 @@ class _HomeScreenState extends State<HomeScreen> {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha:0.1),
                 blurRadius: 5,
                 offset: const Offset(2, 2),
               ),
@@ -387,10 +387,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildTaskSection() {
     final List<_DailyTask> todayTasks = const [
-      _DailyTask(title: '일일 과제 1', isDone: true),
-      _DailyTask(title: '일일 과제 2', isDone: false),
-      _DailyTask(title: '일일 과제 3', isDone: false),
-      _DailyTask(title: '일일 과제 4', isDone: true),
+      _DailyTask(title: '일기 작성', isDone: true),
+      _DailyTask(title: '이완', isDone: false),
+      _DailyTask(title: '교육', isDone: false),
     ];
 
     return _WhiteCard(
@@ -453,7 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         _trainingCard(
           title: '불안 해결하기',
-          description: '오늘 불안하신 상황이 있으셨나요? 지금 눌러서 오늘의 활동을 시작해봐요.',
+          description: '오늘 불안하신 상황이 있으셨나요? 지금 오늘의 활동을 시작해보세요.',
           color: const Color(0xFFFFE2E8),
           imagePath: 'assets/image/pink2.png',
           onTap: () => Navigator.pushNamed(
@@ -528,7 +527,7 @@ class _WhiteCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.07),
+            color: Colors.black.withValues(alpha:0.07),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

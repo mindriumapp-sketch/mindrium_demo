@@ -36,7 +36,6 @@ class RelaxYesOrNo extends StatelessWidget {
           '/relaxation_noti',
           arguments: {
             'taskId': abcId,
-            'weekNumber': 4,
             'mp3Asset': 'noti.mp3',
             'riveAsset': 'noti.riv',
             'nextPage': '/relaxation_score',
