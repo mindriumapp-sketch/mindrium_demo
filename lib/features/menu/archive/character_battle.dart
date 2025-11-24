@@ -56,9 +56,7 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
   // ========== 음성인식 ==========
   late final CharacterBattleAsr _voice;
   bool _listening = false;
-  String _recognized = '';
   DateTime? _listenStartedAt;
-  Timer? _autoStopTimer;
 
   // ========== 말풍선 ==========
   int _currentEmotionIndex = 0;
@@ -81,8 +79,8 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
       lowerBound: -4,
       upperBound: 4,
     )..addStatusListener((s) {
-      if (s == AnimationStatus.completed) _shakeController.reverse();
-    });
+        if (s == AnimationStatus.completed) _shakeController.reverse();
+      });
 
     _scoreController = AnimationController(
       vsync: this,
@@ -101,7 +99,6 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
     _voice.dispose();
     _bubbleTimer?.cancel();
     _userBubbleTimer?.cancel();
-    _autoStopTimer?.cancel();
     _shakeController.dispose();
     _scoreController.dispose();
     super.dispose();
@@ -114,14 +111,22 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
 
     final success = await _voice.initialize(
       onStatus: (s) {
-        if (s == 'notListening' && mounted) {
-          setState(() => _listening = false);
+        // 패키지에서 오는 상태 문자열에 따라 listening 플래그 업데이트
+        if (s == 'listening') {
+          if (mounted) {
+            setState(() => _listening = true);
+          }
+        } else if (s == 'notListening') {
+          if (mounted) {
+            setState(() => _listening = false);
+          }
         }
       },
       onError: (e) {
         if (mounted) {
           setState(() => _listening = false);
         }
+        debugPrint('❌ [음성인식 에러] $e');
       },
     );
 
@@ -219,9 +224,9 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
     }
   }
 
-  // ========== 음성인식 ==========
+  // ========== 공격 로직 ==========
 
-  Future<void> _handleAttackButton() async {
+  Future<void> _handleAttack() async {
     if (_selectedSkill == null || _isAttacking || _isDefeated) return;
 
     debugPrint('⚔️ [공격 버튼] 선택된 스킬: $_selectedSkill');
@@ -238,6 +243,7 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
       _isUserBubbleVisible = true;
     });
 
+    // 타격 준비 시간
     await Future.delayed(const Duration(milliseconds: 1200));
 
     setState(() {
@@ -249,6 +255,7 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
     _shakeController.forward(from: 0);
 
     if (_targetHp <= 0) {
+      // 마무리 연출 후 패배 처리
       await Future.delayed(const Duration(milliseconds: 800));
       setState(() {
         _isDefeated = true;
@@ -262,10 +269,13 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
         Navigator.of(context).pop();
       }
     } else {
+      // 아직 HP 남아있으면 말풍선 닫고 감정 변경
       await Future.delayed(const Duration(milliseconds: 600));
+      if (!mounted) return;
       setState(() => _isUserBubbleVisible = false);
 
       await Future.delayed(const Duration(milliseconds: 400));
+      if (!mounted) return;
       setState(() {
         _currentEmotionIndex =
             (_currentEmotionIndex + 1) % _characterEmotions.length;
@@ -274,16 +284,18 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
     }
   }
 
+  // ========== 음성인식 ==========
+
   Future<void> _onMicPressed() async {
     debugPrint('🎤 [마이크 클릭]');
 
     if (_isAttacking || _isDefeated) {
-      debugPrint('⚠️ [공격 중 또는 패배]');
+      debugPrint('⚠️ [공격 중 또는 패배] 마이크 입력 무시');
       return;
     }
 
     if (!_voice.isReady) {
-      debugPrint('❌ [준비 안됨] 재초기화');
+      debugPrint('❌ [준비 안됨] 재초기화 시도');
       await _initializeVoice();
       if (!_voice.isReady) {
         _showErrorDialog();
@@ -291,54 +303,28 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
       }
     }
 
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    setState(() {
-      _listening = true;
-      _recognized = '';
-    });
+    // 바로 listening 시작
+    setState(() => _listening = true);
 
     _listenStartedAt = DateTime.now();
     debugPrint('🎤 [음성인식 시작] ${_listenStartedAt!.toIso8601String()}');
-
-    _autoStopTimer?.cancel();
-    _autoStopTimer = Timer(const Duration(seconds: 8), () async {
-      debugPrint('⏰ [8초 타이머] 자동 종료');
-      if (_listening && mounted) {
-        await _voice.stop();
-        final result = _recognized.trim();
-        setState(() => _listening = false);
-
-        if (result.isNotEmpty) {
-          _showToast('인식됨: $result');
-          _handleVoiceChoice(result);
-        } else {
-          _showToast('음성이 감지되지 않았습니다');
-        }
-      }
-    });
 
     try {
       final success = await _voice.startListening(
         localeId: 'ko_KR',
         listenFor: const Duration(seconds: 30),
         pauseFor: const Duration(seconds: 5),
-        onPartial: (t) {
-          if (!mounted) return;
-          setState(() => _recognized = t);
-        },
+        onPartial: (_) {},
         onFinal: (t) async {
-          _autoStopTimer?.cancel();
-
           if (!mounted) return;
           setState(() {
-            _recognized = t;
             _listening = false;
           });
 
-          if (t.trim().isNotEmpty) {
-            _showToast('인식 완료: $t');
-            _handleVoiceChoice(t);
+          final trimmed = t.trim();
+          if (trimmed.isNotEmpty) {
+            _showToast('인식 완료: $trimmed');
+            await _handleVoiceChoice(trimmed);
           } else {
             _showToast('음성이 인식되지 않았습니다');
           }
@@ -346,21 +332,20 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
       );
 
       if (!success) {
-        _autoStopTimer?.cancel();
-        setState(() => _listening = false);
+        if (mounted) setState(() => _listening = false);
         _showErrorDialog();
       }
     } catch (e) {
       debugPrint('❌ [예외] $e');
-      _autoStopTimer?.cancel();
-      setState(() => _listening = false);
+      if (mounted) setState(() => _listening = false);
       _showErrorDialog();
     }
   }
 
-  void _handleVoiceChoice(String utter) {
+  Future<void> _handleVoiceChoice(String utter) async {
     final text = utter.trim();
     if (text.isEmpty || _skillsList.isEmpty) return;
+    if (_isAttacking || _isDefeated) return;
 
     final idx = CharacterBattleAsr.chooseBestIndex(_skillsList, text);
     if (idx < 0) return;
@@ -373,6 +358,7 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
 
     if (score < 0.3) {
       debugPrint('❌ [낮은 유사도] $score');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ "$text"와(과) 일치하는 스킬을 찾지 못했습니다'),
@@ -385,36 +371,14 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
 
     debugPrint('✅ [선택] "$text" → "$chosen" ($score)');
 
-    // 사용자 말풍선 표시
-    _userBubbleTimer?.cancel();
-    setState(() {
-      _userBubbleText = chosen;
-      _isUserBubbleVisible = true;
-    });
-
-    _userBubbleTimer = Timer(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      setState(() {
-        _userBubbleText = null;
-        _isUserBubbleVisible = false;
-      });
-    });
-
+    // 스킬만 선택하고, 실제 공격은 공통 플로우 사용
+    if (!mounted) return;
     setState(() {
       _selectedSkill = chosen;
     });
 
-    // 2초 후에 칩 제거 및 HP 감소
-    Timer(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      setState(() {
-        _shrunkChips.add(idx);
-        if (_targetHp > 0) {
-          _targetHp = _targetHp - 1;
-          if (_targetHp == 0) _isDefeated = true;
-        }
-      });
-    });
+    // 음성으로 선택한 경우 자동 공격 실행
+    await _handleAttack();
   }
 
   // ========== UI 헬퍼 ==========
@@ -437,23 +401,22 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
     if (!mounted) return;
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('음성인식 오류'),
-            content: const Text(
-              '음성인식을 사용할 수 없습니다.\n\n'
-              '1. 마이크 권한 확인\n'
-              '2. 네트워크 연결 확인\n'
-              '3. 실기기에서 테스트\n\n'
-              '⚠️ 에뮬레이터는 지원되지 않습니다.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('확인'),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('음성인식 오류'),
+        content: const Text(
+          '음성인식을 사용할 수 없습니다.\n\n'
+          '1. 마이크 권한 확인\n'
+          '2. 네트워크 연결 확인\n'
+          '3. 실기기에서 테스트\n\n'
+          '⚠️ 에뮬레이터는 지원되지 않습니다.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('확인'),
           ),
+        ],
+      ),
     );
   }
 
@@ -492,7 +455,6 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
 
     const bgImage = 'assets/image/battle_scene_bg.png';
     final myChar = 'assets/image/men.png';
-    final target = 'assets/image/character${widget.groupId}.png';
 
     return Scaffold(
       appBar: AppBar(
@@ -509,7 +471,7 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
           Positioned.fill(child: Image.asset(bgImage, fit: BoxFit.cover)),
           _buildTopBanner(),
           _buildHpPanel(),
-          _buildCharacters(myChar, target),
+          _buildCharacters(myChar),
           _buildMicButton(),
           _buildBottomBar(),
           if (_isDefeated)
@@ -573,9 +535,9 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
               ),
             ),
             const SizedBox(height: 2),
-            Text(
+            const Text(
               '불안 캐릭터',
-              style: const TextStyle(color: Colors.white70, fontSize: 10),
+              style: TextStyle(color: Colors.white70, fontSize: 10),
             ),
             const SizedBox(height: 6),
             _buildHpBar(),
@@ -606,75 +568,92 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
     );
   }
 
-  Widget _buildCharacters(String myChar, String targetChar) {
-    final dx = _shakeController.value;
+Widget _buildCharacters(String myChar) {
+  final dx = _shakeController.value;
 
-    return Stack(
-      children: [
-        // 내 캐릭터와 말풍선
-        Positioned(
-          left: 8,
-          bottom: 160,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // 사용자 말풍선 (흰색 배경, 검은색 텍스트)
-              if (_isUserBubbleVisible && _userBubbleText != null)
-                Positioned(
-                  top: -60,
-                  left: 80,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: _buildEmotionBubble(
-                      _userBubbleText!,
-                      key: ValueKey("user_bubble_$_userBubbleText"),
-                      // backgroundColor 제거 = 흰색 배경, 검은색 텍스트
-                    ),
+  return Stack(
+    children: [
+      // 내 캐릭터 + 사용자 말풍선
+      Positioned(
+        left: 8,
+        bottom: 160,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            if (_isUserBubbleVisible && _userBubbleText != null)
+              Positioned(
+                top: -60,
+                left: 80,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: _buildEmotionBubble(
+                    _userBubbleText!,
+                    key: ValueKey("user_bubble_$_userBubbleText"),
                   ),
                 ),
-              // 내 캐릭터 이미지
-              Image.asset(myChar, height: 220, fit: BoxFit.contain),
-            ],
-          ),
-        ),
-        // 타겟 캐릭터와 말풍선
-        Positioned(
-          top: 210,
-          right: 24 + dx,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // 캐릭터 말풍선 (흰색)
-              if (_characterEmotions.isNotEmpty)
-                Positioned(
-                  top: -60,
-                  right: 0,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 600),
-                    child:
-                        _isBubbleVisible
-                            ? _buildEmotionBubble(
-                              _bubbleText ??
-                                  _characterEmotions[_currentEmotionIndex],
-                              key: ValueKey("visible_$_currentEmotionIndex"),
-                            )
-                            : const SizedBox.shrink(key: ValueKey("hidden")),
-                  ),
-                ),
-              Image.asset(
-                targetChar,
-                height: 160,
-                fit: BoxFit.contain,
-                errorBuilder:
-                    (_, __, ___) =>
-                        const Icon(Icons.error, size: 100, color: Colors.white),
               ),
-            ],
-          ),
+            Image.asset(myChar, height: 220, fit: BoxFit.contain),
+          ],
         ),
-      ],
-    );
+      ),
+
+      // 타겟 캐릭터 + 감정 말풍선
+      Positioned(
+        top: 210,
+        right: 24 + dx,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            if (_characterEmotions.isNotEmpty)
+              Positioned(
+                top: -60,
+                right: 0,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 600),
+                  child: _isBubbleVisible
+                      ? _buildEmotionBubble(
+                          _bubbleText ??
+                              _characterEmotions[_currentEmotionIndex],
+                          key: ValueKey("visible_$_currentEmotionIndex"),
+                        )
+                      : const SizedBox.shrink(key: ValueKey("hidden")),
+                ),
+              ),
+
+            // ★ 자동 HP 상태에 맞는 표정 이미지
+            Image.asset(
+              _getCharacterImage(),
+              height: 160,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) =>
+                  const Icon(Icons.error, size: 100, color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+String _getCharacterImage() {
+  final id = widget.groupId;
+
+  if (_maxHp == 0) {
+    return 'assets/image/character$id.png';
   }
+
+  double ratio = _targetHp / _maxHp;
+
+  if (ratio > 2 / 3) {
+    return 'assets/image/character$id.png';          // 기본 표정
+  } else if (ratio > 1 / 3) {
+    return 'assets/image/character${id}_mid.png';      // 중간 데미지
+  } else {
+    return 'assets/image/character${id}_last.png';     // 마지막 데미지
+  }
+}
+
+
 
   Widget _buildEmotionBubble(String text, {Key? key, Color? backgroundColor}) {
     return Container(
@@ -708,7 +687,7 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
 
           if (_listening) {
             await _voice.stop();
-            setState(() => _listening = false);
+            if (mounted) setState(() => _listening = false);
             return;
           }
 
@@ -808,32 +787,6 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
                           backgroundColor: Colors.white,
                         );
                       },
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed:
-                      (_isAttacking || _isDefeated || _selectedSkill == null)
-                          ? null
-                          : () => _handleAttackButton(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF56E0C6),
-                    disabledBackgroundColor: Colors.grey,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    '공격',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),

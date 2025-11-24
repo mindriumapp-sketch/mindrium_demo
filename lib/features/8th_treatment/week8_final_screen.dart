@@ -3,6 +3,7 @@ import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/custom_popup_design.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/widgets/round_card.dart';
+import 'package:gad_app_team/utils/edu_progress.dart';
 
 class Week8FinalScreen extends StatelessWidget {
   const Week8FinalScreen({super.key,});
@@ -116,7 +117,7 @@ class Week8FinalScreen extends StatelessWidget {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => CustomPopupDesign(
+      builder: (dialogContext) => CustomPopupDesign(
         title: '이완 음성 안내 시작',
         message:
         '잠시 후, 이완을 위한 음성 안내가 시작됩니다.\n주변 소리와 음량을 조절해보세요.',
@@ -125,10 +126,11 @@ class Week8FinalScreen extends StatelessWidget {
         backgroundAsset: null,
         iconAsset: null,
         onPositivePressed: () async {
-          // await EduProgress.markWeekDone(1);
-          Navigator.pop(context);
+          await EduProgress.markWeekDone(8);
+          if (!dialogContext.mounted) return;
+          Navigator.pop(dialogContext);
           Navigator.pushReplacementNamed(
-            context,
+            dialogContext,
             '/relaxation_education',
             arguments: {
               'taskId': 'week8_education',
