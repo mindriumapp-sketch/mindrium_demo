@@ -480,7 +480,7 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
           Positioned.fill(child: Image.asset(bgImage, fit: BoxFit.cover)),
           _buildTopBanner(),
           _buildHpPanel(),
-          _buildCharacters(myChar, target),
+          _buildCharacters(myChar),
           _buildMicButton(),
           _buildBottomBar(),
           if (_isDefeated)
@@ -577,72 +577,92 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
     );
   }
 
-  Widget _buildCharacters(String myChar, String targetChar) {
-    final dx = _shakeController.value;
+Widget _buildCharacters(String myChar) {
+  final dx = _shakeController.value;
 
-    return Stack(
-      children: [
-        // 내 캐릭터와 말풍선
-        Positioned(
-          left: 8,
-          bottom: 160,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // 사용자 말풍선 (흰색 배경, 검은색 텍스트)
-              if (_isUserBubbleVisible && _userBubbleText != null)
-                Positioned(
-                  top: -60,
-                  left: 80,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: _buildEmotionBubble(
-                      _userBubbleText!,
-                      key: ValueKey("user_bubble_$_userBubbleText"),
-                    ),
+  return Stack(
+    children: [
+      // 내 캐릭터 + 사용자 말풍선
+      Positioned(
+        left: 8,
+        bottom: 160,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            if (_isUserBubbleVisible && _userBubbleText != null)
+              Positioned(
+                top: -60,
+                left: 80,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: _buildEmotionBubble(
+                    _userBubbleText!,
+                    key: ValueKey("user_bubble_$_userBubbleText"),
                   ),
                 ),
-              // 내 캐릭터 이미지
-              Image.asset(myChar, height: 220, fit: BoxFit.contain),
-            ],
-          ),
-        ),
-        // 타겟 캐릭터와 말풍선
-        Positioned(
-          top: 210,
-          right: 24 + dx,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // 캐릭터 말풍선 (흰색)
-              if (_characterEmotions.isNotEmpty)
-                Positioned(
-                  top: -60,
-                  right: 0,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 600),
-                    child: _isBubbleVisible
-                        ? _buildEmotionBubble(
-                            _bubbleText ??
-                                _characterEmotions[_currentEmotionIndex],
-                            key: ValueKey("visible_$_currentEmotionIndex"),
-                          )
-                        : const SizedBox.shrink(key: ValueKey("hidden")),
-                  ),
-                ),
-              Image.asset(
-                targetChar,
-                height: 160,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.error, size: 100, color: Colors.white),
               ),
-            ],
-          ),
+            Image.asset(myChar, height: 220, fit: BoxFit.contain),
+          ],
         ),
-      ],
-    );
+      ),
+
+      // 타겟 캐릭터 + 감정 말풍선
+      Positioned(
+        top: 210,
+        right: 24 + dx,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            if (_characterEmotions.isNotEmpty)
+              Positioned(
+                top: -60,
+                right: 0,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 600),
+                  child: _isBubbleVisible
+                      ? _buildEmotionBubble(
+                          _bubbleText ??
+                              _characterEmotions[_currentEmotionIndex],
+                          key: ValueKey("visible_$_currentEmotionIndex"),
+                        )
+                      : const SizedBox.shrink(key: ValueKey("hidden")),
+                ),
+              ),
+
+            // ★ 자동 HP 상태에 맞는 표정 이미지
+            Image.asset(
+              _getCharacterImage(),
+              height: 160,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) =>
+                  const Icon(Icons.error, size: 100, color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+String _getCharacterImage() {
+  final id = widget.groupId;
+
+  if (_maxHp == 0) {
+    return 'assets/image/character${id}.png';
   }
+
+  double ratio = _targetHp / _maxHp;
+
+  if (ratio > 2 / 3) {
+    return 'assets/image/character${id}.png';          // 기본 표정
+  } else if (ratio > 1 / 3) {
+    return 'assets/image/character${id}_mid.png';      // 중간 데미지
+  } else {
+    return 'assets/image/character${id}_last.png';     // 마지막 데미지
+  }
+}
+
+
 
   Widget _buildEmotionBubble(String text, {Key? key, Color? backgroundColor}) {
     return Container(
