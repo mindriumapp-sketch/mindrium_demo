@@ -41,19 +41,19 @@ class SimilarActivationScreen extends StatelessWidget {
         }
 
         int completedWeeks = 8; //TODO: 임시 8주차 완료 처리
-        try {
-          final progress = await userDataApi.getProgress();
-          final weekProgress = progress['week_progress'];
-          if (weekProgress is List) {
-            for (final item in weekProgress) {
-              if (item is Map && item['completed'] == true) {
-                completedWeeks++;
-              }
-            }
-          }
-        } catch (e) {
-          debugPrint('❌ 진행도 정보 조회 실패: $e');
-        }
+        // try {
+        //   final progress = await userDataApi.getProgress();
+        //   final weekProgress = progress['week_progress'];
+        //   if (weekProgress is List) {
+        //     for (final item in weekProgress) {
+        //       if (item is Map && item['completed'] == true) {
+        //         completedWeeks++;
+        //       }
+        //     }
+        //   }
+        // } catch (e) {
+        //   debugPrint('❌ 진행도 정보 조회 실패: $e');
+        // }
 
         if (!context.mounted) return;
         final route =
