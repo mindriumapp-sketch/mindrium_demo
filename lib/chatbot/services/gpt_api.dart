@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
+import 'dart:developer' as developer;
 
 /// ⚠️ 개발용 키는 코드에 직접 포함하지 말고,
 /// flutter run --dart-define=OPENAI_API_KEY=sk-... 로 전달하는 것을 권장.
@@ -89,14 +90,23 @@ class GptApi {
         }
         return [];
       } else {
-        print('❌ 임베딩 API 오류: ${response.statusCode} ${response.body}');
+        developer.log(
+          '❌ 임베딩 API 오류: ${response.statusCode} ${response.body}',
+          name: 'GptApi.getEmbedding',
+        );
         return [];
       }
     } on TimeoutException {
-      print('❌ 임베딩 요청 시간 초과');
+      developer.log(
+        '❌ 임베딩 요청 시간 초과',
+        name: 'GptApi.getEmbedding',
+      );
       return [];
     } catch (e) {
-      print('❌ 임베딩 요청 중 오류: $e');
+      developer.log(
+        '❌ 임베딩 요청 중 오류: $e',
+        name: 'GptApi.getEmbedding',
+      );
       return [];
     }
   }

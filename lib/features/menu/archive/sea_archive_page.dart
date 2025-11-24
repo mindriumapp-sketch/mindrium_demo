@@ -50,15 +50,14 @@ class _SeaArchivePageState extends State<SeaArchivePage>
   void _startComfortMessageLoop() async {
     final random = Random();
     while (mounted) {
-      await Future.delayed(const Duration(seconds: 5));
+      final wait = 4 + random.nextInt(3);
+      await Future.delayed(Duration(seconds: wait));
 
       if (_fieldController == null) continue;
 
       final fishCount = _fieldController!.count;
 
       if (fishCount == 0) continue;
-
-      final idx = random.nextInt(fishCount);
 
       await Future.delayed(const Duration(seconds: 3));
 
@@ -159,7 +158,7 @@ class _SeaArchivePageState extends State<SeaArchivePage>
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: const [
                               BoxShadow(
@@ -369,8 +368,8 @@ class _SmoothFishState extends State<_SmoothFish>
           onTap: () => widget.onTap(img, title, desc, createdAt),
           child: Transform(
             alignment: Alignment.center,
-            transform:
-                Matrix4.identity()..scale(_facingRight ? 1.0 : -1.0, 1.0, 1.0),
+            transform: Matrix4.identity()
+              ..scaleByDouble(_facingRight ? 1.0 : -1.0, 1.0, 1.0, 1.0),
             child: Image(image: img, width: fishSize, height: fishSize),
           ),
         ),
@@ -433,7 +432,7 @@ class _FishInfoPopup extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.cyanAccent.withOpacity(0.45),
+                    backgroundColor: Colors.cyanAccent.withValues(alpha: 0.45),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -468,7 +467,7 @@ class _GlassNavigationBar extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
         child: Container(
-          color: Colors.white.withOpacity(0.12),
+          color: Colors.white.withValues(alpha: 0.12),
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 28),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,

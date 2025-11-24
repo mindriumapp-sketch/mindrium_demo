@@ -208,6 +208,7 @@ class _Week4NextThoughtScreenState extends State<Week4NextThoughtScreen> {
         } catch (_) {}
 
         // 2) 다음 화면 이동
+        if (!context.mounted) return;
         Navigator.push(
           context,
           PageRouteBuilder(

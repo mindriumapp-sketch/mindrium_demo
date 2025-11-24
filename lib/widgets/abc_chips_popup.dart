@@ -172,13 +172,13 @@ class _AnimatedSelectableChipState extends State<_AnimatedSelectableChip>
             boxShadow: [
               if (selected)
                 BoxShadow(
-                  color: const Color(0xFF47A6FF).withOpacity(0.35),
+                  color: const Color(0xFF47A6FF).withValues(alpha: .35),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 )
               else
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: .05),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),

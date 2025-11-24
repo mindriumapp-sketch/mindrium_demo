@@ -1,5 +1,7 @@
 // lib/services/daily_context.dart
 /// ✅ 주차별 요약 및 앵커(최근 활동/일기) 생성을 담당하는 유틸 클래스
+library;
+
 
 class DailyContext {
   /// ✅ 주차별 대표 활동명 (fallback 용)
@@ -145,7 +147,7 @@ class DailyContext {
     final weekStart = createdAt.add(Duration(days: (currentWeek - 1) * 7));
     final weekEnd = weekStart.add(const Duration(days: 7));
 
-    bool _inWeek(Map<String, dynamic> x) {
+    bool inWeek(Map<String, dynamic> x) {
       final d = _parseDate(x['updatedAt'] ??
           x['createdAt'] ??
           x['startTime'] ??
@@ -154,15 +156,15 @@ class DailyContext {
       return d != null && !d.isBefore(weekStart) && d.isBefore(weekEnd);
     }
 
-    final diaries = _asList(user['diaries']).where(_inWeek).toList();
-    final relax = _asList(user['relaxationTasks']).where(_inWeek).toList();
-    final worries = _asList(user['worryGroups']).where(_inWeek).toList();
-    final habits = _asList(user['habits']).where(_inWeek).toList();
-    final screens = _asList(user['screenTime']).where(_inWeek).toList();
-    final surveys = _asList(user['surveys']).where(_inWeek).toList();
+    final diaries = _asList(user['diaries']).where(inWeek).toList();
+    final relax = _asList(user['relaxationTasks']).where(inWeek).toList();
+    final worries = _asList(user['worryGroups']).where(inWeek).toList();
+    final habits = _asList(user['habits']).where(inWeek).toList();
+    final screens = _asList(user['screenTime']).where(inWeek).toList();
+    final surveys = _asList(user['surveys']).where(inWeek).toList();
 
     final buffer = StringBuffer();
-    buffer.writeln('이번 주(${currentWeek}주차)는 "${weekActivityMap[currentWeek] ?? '활동'}"을 중심으로 진행되었어요.');
+    buffer.writeln('이번 주($currentWeek주차)는 "${weekActivityMap[currentWeek] ?? '활동'}"을 중심으로 진행되었어요.');
 
     if (relax.isNotEmpty) {
       final scores = relax
@@ -243,11 +245,17 @@ class DailyContext {
         .trim();
 
     String src = '활동';
-    if (latest.containsKey('relaxationScores')) src = '이완 훈련';
-    else if (latest.containsKey('beliefText')) src = '대안적 사고';
-    else if (latest.containsKey('behaviorText')) src = '행동 기록';
-    else if (latest.containsKey('groupName')) src = '걱정 주제';
-    else if (latest.containsKey('title')) src = '설문';
+    if (latest.containsKey('relaxationScores')) {
+      src = '이완 훈련';
+    } else if (latest.containsKey('beliefText')) {
+      src = '대안적 사고';
+    } else if (latest.containsKey('behaviorText')) {
+      src = '행동 기록';
+    } else if (latest.containsKey('groupName')) {
+      src = '걱정 주제';
+    } else if (latest.containsKey('title')) {
+      src = '설문';
+    }
 
     if (text.isEmpty) {
       return '($src, $when)\n최근 기록 내용은 명확하지 않지만, 그 시기의 경험을 함께 돌아볼까요?';

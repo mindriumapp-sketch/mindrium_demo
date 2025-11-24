@@ -108,7 +108,7 @@ class Orchestrator {
     if (history.isEmpty) {
       final contextPrompt = '''
 당신은 따뜻하고 공감적인 CBT 상담사입니다.
-지금은 ${userName}님의 ${week}주차 세션(${topic})을 시작하는 시점이에요.
+지금은 $userName님의 $week주차 세션($topic)을 시작하는 시점이에요.
 
 이번 주 단계:
 $conceptText
@@ -155,8 +155,8 @@ $ragReference
 
     // --- GPT 후속 대화 ---
     final nextPrompt = '''
-당신은 ${week}주차 (${topic}) 단계의 CBT 상담을 진행 중입니다.
-현재 세션 단계(stage)는 ${inferredStage}입니다.
+당신은 $week주차 ($topic) 단계의 CBT 상담을 진행 중입니다.
+현재 세션 단계(stage)는 $inferredStage입니다.
 다음 정보를 모두 참고해 응답을 생성하세요.
 
 최근 활동 요약:

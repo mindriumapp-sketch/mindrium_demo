@@ -122,7 +122,7 @@ class _Week4AnxietyScreenState extends State<Week4AnxietyScreen> {
             ],
           ),
         ),
-        btmcardColor: const Color(0xFF7DD9E8).withOpacity(0.35),
+        btmcardColor: const Color(0xFF7DD9E8).withValues(alpha: 0.35),
         // height: 120,
         // topPadding: 20,
       ),

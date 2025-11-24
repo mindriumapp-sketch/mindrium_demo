@@ -124,7 +124,7 @@ class _Week4AlternativeThoughtsScreenState
 
                 // 저장
                 await _saveAlternativeThoughts();
-                if (!mounted) return;
+                if (!context.mounted) return;
 
                 // 현재 B(생각)
                 final bToShow = widget.previousChips.isNotEmpty
@@ -227,7 +227,7 @@ class _Week4AlternativeThoughtsScreenState
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
+                        color: Colors.black.withValues(alpha: 0.06),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -271,7 +271,7 @@ class _Week4AlternativeThoughtsScreenState
         ),
 
         // 하단 패널 배경 톤
-        btmcardColor: const Color(0xFF7DD9E8).withOpacity(0.35),
+        btmcardColor: const Color(0xFF7DD9E8).withValues(alpha: 0.35),
       ),
     );
   }

@@ -18,7 +18,7 @@ class _TermsScreenState extends State<TermsScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
-            backgroundColor: Colors.white.withOpacity(0.95),
+            backgroundColor: Colors.white.withValues(alpha: .95),
             surfaceTintColor: Colors.transparent,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
@@ -89,11 +89,11 @@ class _TermsScreenState extends State<TermsScreen> {
                   width: 400,
                   padding: const EdgeInsets.all(28),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: .9),
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
+                        color: Colors.black.withValues(alpha: .08),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -185,7 +185,7 @@ class _TermsScreenState extends State<TermsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.8),
+        color: Colors.white.withValues(alpha: .8),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.black12, width: 0.8),
       ),

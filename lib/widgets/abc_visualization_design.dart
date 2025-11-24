@@ -83,7 +83,7 @@ class AbcVisualizationDesign extends StatelessWidget {
               width: 200,
               height: 2,
               decoration: BoxDecoration(
-                color: Colors.black26.withOpacity(0.2),
+                color: Colors.black26.withValues(alpha: .2),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -126,7 +126,7 @@ class AbcVisualizationDesign extends StatelessWidget {
         borderRadius: BorderRadius.circular(40),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.10),
+            color: Colors.black.withValues(alpha: .10),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -250,7 +250,7 @@ class AbcVisualizationDesign extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: accentColors[i].withOpacity(0.35),
+                          color: accentColors[i].withValues(alpha: .35),
                           blurRadius: 6,
                           offset: const Offset(0, 3),
                         ),

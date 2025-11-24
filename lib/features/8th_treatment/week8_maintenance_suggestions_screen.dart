@@ -115,12 +115,12 @@ class _Week8MaintenanceSuggestionsScreenState
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
+        color: Colors.white.withValues(alpha: .95),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFB9EAFD)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF74D2FF).withOpacity(0.15),
+            color: const Color(0xFF74D2FF).withValues(alpha: .15),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

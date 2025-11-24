@@ -210,7 +210,7 @@ class _Week8PlanningCheckScreenState extends State<Week8PlanningCheckScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: .04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -232,11 +232,11 @@ class _Week8PlanningCheckScreenState extends State<Week8PlanningCheckScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0F4FF).withOpacity(0.65),
+              color: const Color(0xFFF0F4FF).withValues(alpha: .65),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color:
-                const Color.fromARGB(255, 102, 146, 234).withOpacity(0.35),
+                const Color.fromARGB(255, 102, 146, 234).withValues(alpha: .35),
               ),
             ),
             child: const Text(
@@ -326,7 +326,7 @@ class _Week8PlanningCheckScreenState extends State<Week8PlanningCheckScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: .04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -348,11 +348,11 @@ class _Week8PlanningCheckScreenState extends State<Week8PlanningCheckScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 230, 245, 255).withOpacity(0.7),
+              color: const Color.fromARGB(255, 230, 245, 255).withValues(alpha: .7),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color:
-                const Color.fromARGB(255, 107, 140, 180).withOpacity(0.35),
+                const Color.fromARGB(255, 107, 140, 180).withValues(alpha: .35),
               ),
             ),
             child: const Text(
@@ -399,7 +399,7 @@ class _Week8PlanningCheckScreenState extends State<Week8PlanningCheckScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: const Color.fromARGB(255, 107, 140, 180)
-                              .withOpacity(0.1),
+                              .withValues(alpha: .1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(

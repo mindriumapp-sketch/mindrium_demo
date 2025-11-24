@@ -184,7 +184,7 @@ class _SelectedChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF47A6FF).withOpacity(0.35),
+              color: const Color(0xFF47A6FF).withValues(alpha: .35),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -211,7 +211,7 @@ class _SelectedChip extends StatelessWidget {
                     width: 22,
                     height: 22,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.16),
+                      color: Colors.white.withValues(alpha: .16),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -255,7 +255,7 @@ class _UnselectedChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: .04),
               blurRadius: 5,
               offset: const Offset(0, 3),
             ),
@@ -282,7 +282,7 @@ class _UnselectedChip extends StatelessWidget {
                     width: 22,
                     height: 22,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF47A6FF).withOpacity(0.08),
+                      color: const Color(0xFF47A6FF).withValues(alpha: .08),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(

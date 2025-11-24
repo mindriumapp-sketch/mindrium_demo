@@ -217,7 +217,7 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
 
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.35),
+      barrierColor: Colors.black.withValues(alpha: 0.35),
       builder: (_) {
         return BehaviorConfirmDialog(
           titleText: '건강한 생활 습관 추가',
@@ -404,7 +404,7 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
                                         ? [
                                       BoxShadow(
                                         color: const Color(0xFF8ED7FF)
-                                            .withOpacity(0.30),
+                                            .withValues(alpha: 0.30),
                                         blurRadius: 10,
                                         offset: const Offset(0, 4),
                                       ),
@@ -560,7 +560,7 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
                 border: Border.all(color: const Color(0xFF8ED7FF)),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF8ED7FF).withOpacity(0.30),
+                    color: const Color(0xFF8ED7FF).withValues(alpha: 0.30),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -614,11 +614,12 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
 
     await _saveEvent(event);
 
+    if (!mounted) return;
     BlueBanner.show(
       context,
       '${behaviors.length}개의 행동이 '
           '${startDate.month}월 ${startDate.day}일부터 ${endDate.month}월 ${endDate.day}일까지 '
-          '(${duration}일간) 캘린더에 추가되었습니다.',
+          '($duration일간) 캘린더에 추가되었습니다.',
       duration: const Duration(seconds: 4),
     );
   }
@@ -679,7 +680,7 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
+                                  color: Colors.black.withValues(alpha: 0.08),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -805,7 +806,7 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFA1CEDF).withOpacity(0.18),
+              color: const Color(0xFFA1CEDF).withValues(alpha: 0.18),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -844,7 +845,7 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
                 border: Border.all(color: const Color(0xFFE2E8F0)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
+                    color: Colors.black.withValues(alpha: 0.06),
                     blurRadius: 12,
                     offset: const Offset(0, 6),
                   ),
@@ -871,7 +872,7 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
                           color: const Color.fromARGB(255, 234, 245, 252),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: const Color(0xFF33A4F0).withOpacity(0.28),
+                            color: const Color(0xFF33A4F0).withValues(alpha: 0.28),
                             width: 1,
                           ),
                         ),
@@ -991,7 +992,7 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
                           color: const Color(0xF0F6FBFF),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: const Color(0xFF2196F3).withOpacity(0.28),
+                            color: const Color(0xFF2196F3).withValues(alpha: 0.28),
                             width: 1,
                           ),
                         ),
@@ -1084,7 +1085,7 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: _chipBorderBlue.withOpacity(0.20),
+                    color: _chipBorderBlue.withValues(alpha: .20),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),

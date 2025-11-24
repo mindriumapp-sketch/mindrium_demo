@@ -7,7 +7,6 @@ import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'relaxation_logger.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:gad_app_team/utils/edu_progress.dart';
 
 // --- 주차 타이틀 ---
 const Map<int, String> kRelaxationWeekTitles = {

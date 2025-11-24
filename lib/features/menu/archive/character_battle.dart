@@ -12,7 +12,7 @@ class PokemonBattleDeletePage extends StatefulWidget {
   final String? characterDescription;
   final VoidCallback? onGoArchive;
 
-  PokemonBattleDeletePage({
+  const PokemonBattleDeletePage({
     super.key,
     required this.groupId,
     this.characterName,
@@ -21,7 +21,7 @@ class PokemonBattleDeletePage extends StatefulWidget {
   });
 
   @override
-  _PokemonBattleDeletePageState createState() =>
+  State<PokemonBattleDeletePage> createState() =>
       _PokemonBattleDeletePageState();
 }
 
@@ -377,7 +377,7 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
         SnackBar(
           content: Text('❌ "$text"와(과) 일치하는 스킬을 찾지 못했습니다'),
           duration: const Duration(seconds: 2),
-          backgroundColor: Colors.redAccent.withOpacity(0.9),
+          backgroundColor: Colors.redAccent.withValues(alpha: .9),
         ),
       );
       return;
@@ -428,7 +428,7 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.only(bottom: 90, left: 16, right: 16),
-        backgroundColor: Colors.black.withOpacity(0.85),
+        backgroundColor: Colors.black.withValues(alpha: .85),
       ),
     );
   }
@@ -515,7 +515,7 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
           if (_isDefeated)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withOpacity(0.92),
+                color: Colors.black.withValues(alpha: .92),
                 child: _buildVictoryScene(),
               ),
             ),
@@ -533,7 +533,7 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 65, 79, 79).withOpacity(0.4),
+          color: const Color.fromARGB(255, 65, 79, 79).withValues(alpha: .4),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
@@ -558,7 +558,7 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
         width: 150,
         padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E).withOpacity(0.85),
+          color: const Color(0xFF1E1E1E).withValues(alpha: .85),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
@@ -590,7 +590,7 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
     return Container(
       height: 12,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.25),
+        color: Colors.white.withValues(alpha: .25),
         borderRadius: BorderRadius.circular(10),
       ),
       child: FractionallySizedBox(
@@ -683,7 +683,7 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
       child: ClipOval(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-          color: (backgroundColor ?? Colors.white).withOpacity(0.95),
+          color: (backgroundColor ?? Colors.white).withValues(alpha: .95),
           child: Text(
             text,
             textAlign: TextAlign.center,
@@ -721,8 +721,8 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
           decoration: BoxDecoration(
             color:
                 _listening
-                    ? const Color(0xFF56E0C6).withOpacity(0.9)
-                    : const Color.fromARGB(255, 65, 79, 79).withOpacity(0.8),
+                    ? const Color(0xFF56E0C6).withValues(alpha: .9)
+                    : const Color.fromARGB(255, 65, 79, 79).withValues(alpha: .8),
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white30),
           ),
@@ -759,7 +759,7 @@ class _PokemonBattleDeletePageState extends State<PokemonBattleDeletePage>
       child: Container(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 65, 79, 79).withOpacity(0.4),
+          color: const Color.fromARGB(255, 65, 79, 79).withValues(alpha: .4),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(

@@ -33,7 +33,7 @@ class AbcGroupAddDesign {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha:  0.08),
               blurRadius: 3,
               offset: const Offset(1.5, 2),
             ),
@@ -79,7 +79,7 @@ class AbcGroupAddDesign {
           border: Border.all(color: Colors.grey.shade300),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha:  0.05),
               blurRadius: 3,
               offset: const Offset(1.5, 2),
             ),
@@ -117,7 +117,7 @@ class AbcGroupAddDesign {
         border: Border.all(color: Colors.grey.shade300),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha:  0.08),
             blurRadius: 5,
             offset: const Offset(1.5, 3),
           ),

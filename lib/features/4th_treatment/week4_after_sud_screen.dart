@@ -196,9 +196,9 @@ class _Week4AfterSudScreenState extends State<Week4AfterSudScreen> {
               activeTickMarkColor: Colors.transparent,
               inactiveTickMarkColor: Colors.transparent,
               activeTrackColor: _trackColor,
-              inactiveTrackColor: _trackColor.withOpacity(0.25),
+              inactiveTrackColor: _trackColor.withValues(alpha: 0.25),
               thumbColor: _trackColor,
-              overlayColor: _trackColor.withOpacity(0.18),
+              overlayColor: _trackColor.withValues(alpha: 0.18),
               showValueIndicator: ShowValueIndicator.never,
             ),
             child: Slider(

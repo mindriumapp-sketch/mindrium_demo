@@ -66,12 +66,6 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
   Widget build(BuildContext context) {
     return MemoFullDesign(
       appBarTitle: '2주차 - ABC 모델',
-      child: Column(
-        children: [
-          if (_showFeedback) _buildFeedbackCard(context),
-          if (!_showFeedback) _buildAbcFlowDiagram(),
-        ],
-      ),
       onBack: () {
         if (!_showFeedback) {
           setState(() => _showFeedback = true);
@@ -96,6 +90,12 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
               ? '저장 중...'
               : '저장',
       memoHeight: MediaQuery.of(context).size.height * 0.67,
+      child: Column(
+        children: [
+          if (_showFeedback) _buildFeedbackCard(context),
+          if (!_showFeedback) _buildAbcFlowDiagram(),
+        ],
+      ),
     );
   }
 
@@ -130,7 +130,7 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
             width: 200,
             height: 2,
             decoration: BoxDecoration(
-              color: Colors.black26.withOpacity(0.2),
+              color: Colors.black26.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -190,6 +190,7 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
       }
 
       // 🗺️ 위치 동의 받기
+      if (!context.mounted) return;
       final bool consent = await _requestLocationConsent(context);
 
       Position? pos;
@@ -235,20 +236,21 @@ class _AbcVisualizationScreenState extends State<AbcVisualizationScreen> {
       final createdDiaryId = diary['diaryId']?.toString();
       debugPrint('FastAPI diary 저장 완료: $createdDiaryId');
 
-      if (!mounted) return;
+      if (!context.mounted) return;
       _showSavedPopup(
         context,
         diaryId: createdDiaryId,
         label: activatingEvents,
       );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("저장 실패: $e")));
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("저장 실패: $e")));
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 

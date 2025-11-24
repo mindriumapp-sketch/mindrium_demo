@@ -9,7 +9,6 @@ class CharacterBattleAsr {
   bool _ready = false;
   bool _listening = false;
   String _recognized = '';
-  DateTime? _startedAt;
 
   bool get isReady => _ready;
   bool get isListening => _listening;
@@ -69,7 +68,6 @@ class CharacterBattleAsr {
 
     _recognized = '';
     _listening = true;
-    _startedAt = DateTime.now();
 
     try {
       debugPrint('🎤 [Battle STT] 리스닝 시작');
@@ -78,9 +76,11 @@ class CharacterBattleAsr {
         localeId: localeId,
         listenFor: listenFor,
         pauseFor: pauseFor,
-        partialResults: true,
-        cancelOnError: false,
-        listenMode: stt.ListenMode.dictation,
+        listenOptions: stt.SpeechListenOptions(
+          partialResults: true,
+          cancelOnError: false,
+          listenMode: stt.ListenMode.dictation,
+        ),
         onResult: (r) {
           _recognized = r.recognizedWords;
           debugPrint('📝 [Partial] ${r.recognizedWords}');

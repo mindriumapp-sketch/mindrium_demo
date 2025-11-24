@@ -147,8 +147,7 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
       return;
     }
 
-    // final week = await _getCurrentWeek();
-    final week = 8; // TODO: 임시: 항상 8주차로 이동
+    final week = await _getCurrentWeek();
     if (!mounted) return;
     final route = week >= 4 ? '/relax_or_alternative' : '/relax_yes_or_no';
     Navigator.pushReplacementNamed(

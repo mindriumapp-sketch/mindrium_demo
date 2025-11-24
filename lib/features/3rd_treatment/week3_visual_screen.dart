@@ -248,7 +248,7 @@ class _Week3VisualScreenState extends State<Week3VisualScreen> {
                             boxShadow: [
                               BoxShadow(
                                 color:
-                                Colors.black.withOpacity(0.08),
+                                Colors.black.withValues(alpha: 0.08),
                                 blurRadius: 12,
                                 offset: const Offset(0, 6),
                               ),
@@ -270,7 +270,7 @@ class _Week3VisualScreenState extends State<Week3VisualScreen> {
                             boxShadow: [
                               BoxShadow(
                                 color:
-                                Colors.black.withOpacity(0.08),
+                                Colors.black.withValues(alpha: 0.08),
                                 blurRadius: 12,
                                 offset: const Offset(0, 6),
                               ),
@@ -302,7 +302,7 @@ class _Week3VisualScreenState extends State<Week3VisualScreen> {
               onBack: () => Navigator.pop(context),
               onNext: () async {
                 await _saveSession();
-                if (!mounted) return;
+                if (!context.mounted) return;
                 Navigator.push(
                   context,
                   PageRouteBuilder(

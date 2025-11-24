@@ -148,7 +148,7 @@ Widget buildRelieveResultCard({
       //   height: 72,
       //   decoration: BoxDecoration(
       //     shape: BoxShape.circle,
-      //     color: const Color(0xFF5B3EFF).withOpacity(0.1),
+      //     color: const Color(0xFF5B3EFF).withValues(alpha: 0.1),
       //   ),
       //   child: const Icon(
       //     Icons.psychology_alt_rounded,

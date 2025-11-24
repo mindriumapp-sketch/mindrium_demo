@@ -201,7 +201,7 @@ $ragReference
 
     final prompt = '''
 당신은 따뜻하고 공감적인 CBT 상담사입니다.
-현재 세션은 ${currentWeek}주차 (${weekConcept})이며 단계는 "$stage"입니다.
+현재 세션은 $currentWeek주차 ($weekConcept)이며 단계는 "$stage"입니다.
 
 [사용자 최근 데이터 요약]
 ${contextItems.isNotEmpty ? contextItems : '(데이터 없음)'}
@@ -248,9 +248,7 @@ $lastAssistantReply
   /// 5️⃣ 감정 판정 (아바타 표정용)
   Future<Map<String, dynamic>> analyzeEmotion(String assistantText) async {
     final sample = assistantText.length > 600
-        ? assistantText.substring(0, 300) +
-            ' … ' +
-            assistantText.substring(assistantText.length - 200)
+        ? '${assistantText.substring(0, 300)} … ${assistantText.substring(assistantText.length - 200)}'
         : assistantText;
 
     final h = [

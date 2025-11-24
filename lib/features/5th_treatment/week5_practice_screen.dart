@@ -27,7 +27,7 @@ class Week5PracticeScreen extends StatelessWidget {
       child: const Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 12,),
+          SizedBox(height: 12,),
           Text(
             '방금 본 여성의 예시 상황에 몰입해 보면서\n'
             '불안을 직면하는 행동(불안을 점차 감소시킬 수 있는 행동)과\n'

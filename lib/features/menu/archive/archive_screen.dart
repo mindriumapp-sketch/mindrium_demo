@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
@@ -147,7 +146,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                           Icon(
                             Icons.inventory_2_outlined,
                             size: 80,
-                            color: const Color(0xFF5B9FD3).withOpacity(0.5),
+                            color: const Color(0xFF5B9FD3).withValues(alpha: .5),
                           ),
                           const SizedBox(height: 16),
                           const Text(
@@ -193,14 +192,14 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                                         vertical: 6,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.25),
+                                        color: Colors.white.withValues(alpha: .25),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
-                                          color: Colors.white.withOpacity(0.35),
+                                          color: Colors.white.withValues(alpha: .35),
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withOpacity(
+                                            color: Colors.black.withValues(alpha: 
                                               0.05,
                                             ),
                                             blurRadius: 8,
@@ -276,12 +275,12 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         // 더 투명한 배경으로 물결 무늬 노출
-        color: Colors.white.withOpacity(0.55),
+        color: Colors.white.withValues(alpha: .55),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.2),
+        border: Border.all(color: Colors.white.withValues(alpha: .4), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: .04),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
@@ -348,8 +347,8 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                   )
                   : LinearGradient(
                     colors: [
-                      Colors.white.withOpacity(0.65),
-                      Colors.white.withOpacity(0.55),
+                      Colors.white.withValues(alpha: .65),
+                      Colors.white.withValues(alpha: .55),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -365,8 +364,8 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
             BoxShadow(
               color:
                   isSelected
-                      ? const Color(0xFF5B9FD3).withOpacity(0.35)
-                      : Colors.black.withOpacity(0.08),
+                      ? const Color(0xFF5B9FD3).withValues(alpha: .35)
+                      : Colors.black.withValues(alpha: .08),
               blurRadius: isSelected ? 24 : 16,
               spreadRadius: isSelected ? 2 : 0,
               offset: Offset(0, isSelected ? 10 : 6),
@@ -374,7 +373,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
             // 선택 시 추가 글로우 효과
             if (isSelected)
               BoxShadow(
-                color: const Color(0xFF5B9FD3).withOpacity(0.2),
+                color: const Color(0xFF5B9FD3).withValues(alpha: .2),
                 blurRadius: 16,
                 spreadRadius: -2,
                 offset: const Offset(0, 0),
@@ -408,13 +407,13 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                                 )
                                 : null,
                         color:
-                            isSelected ? null : Colors.white.withOpacity(0.7),
+                            isSelected ? null : Colors.white.withValues(alpha: .7),
                         boxShadow: [
                           BoxShadow(
                             color:
                                 isSelected
-                                    ? const Color(0xFF5B9FD3).withOpacity(0.3)
-                                    : Colors.black.withOpacity(0.05),
+                                    ? const Color(0xFF5B9FD3).withValues(alpha: .3)
+                                    : Colors.black.withValues(alpha: .05),
                             blurRadius: isSelected ? 16 : 12,
                             offset: const Offset(0, 4),
                           ),
@@ -504,7 +503,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
           border: Border.all(color: const Color(0xFF5B9FD3), width: 2.3),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF5B9FD3).withOpacity(0.18),
+              color: const Color(0xFF5B9FD3).withValues(alpha: .18),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -532,7 +531,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF5B9FD3).withOpacity(0.25),
+                          color: const Color(0xFF5B9FD3).withValues(alpha: .25),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -625,7 +624,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                     width: 3,
                     height: 20,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF5B9FD3).withOpacity(0.85),
+                      color: const Color(0xFF5B9FD3).withValues(alpha: .85),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),

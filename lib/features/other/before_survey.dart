@@ -96,13 +96,9 @@ class _SurveyCard extends StatelessWidget {
 class _OptionTile extends StatelessWidget {
   final String label;
   final int value;
-  final int? groupValue;
-  final ValueChanged<int?> onChanged;
   const _OptionTile({
     required this.label,
     required this.value,
-    required this.groupValue,
-    required this.onChanged,
   });
 
   @override
@@ -110,8 +106,6 @@ class _OptionTile extends StatelessWidget {
     return RadioListTile<int>(
       title: Text(label, style: _SText.label),
       value: value,
-      groupValue: groupValue,
-      onChanged: onChanged,
       activeColor: _SColors.radioAccent,
       contentPadding: EdgeInsets.zero,
     );
@@ -221,20 +215,22 @@ class _BeforeSurveyScreenState extends State<BeforeSurveyScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: _SurveyCard(
                         title: _questions[qIndex],
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: List.generate(kFrequencyOptions.length, (
-                            oIndex,
-                          ) {
-                            return _OptionTile(
-                              label: kFrequencyOptions[oIndex],
-                              value: oIndex,
-                              groupValue: _answers[qIndex],
-                              onChanged:
-                                  (val) =>
-                                      setState(() => _answers[qIndex] = val),
-                            );
-                          }),
+                        child: RadioGroup<int>(
+                          groupValue: _answers[qIndex],
+                          onChanged:
+                              (val) =>
+                                  setState(() => _answers[qIndex] = val),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: List.generate(kFrequencyOptions.length, (
+                              oIndex,
+                            ) {
+                              return _OptionTile(
+                                label: kFrequencyOptions[oIndex],
+                                value: oIndex,
+                              );
+                            }),
+                          ),
                         ),
                       ),
                     );
@@ -365,20 +361,22 @@ class _Gad7SurveyScreenState extends State<Gad7SurveyScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: _SurveyCard(
                         title: _gadQuestions[qIndex],
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: List.generate(kFrequencyOptions.length, (
-                            oIndex,
-                          ) {
-                            return _OptionTile(
-                              label: kFrequencyOptions[oIndex],
-                              value: oIndex,
-                              groupValue: _gadAnswers[qIndex],
-                              onChanged:
-                                  (val) =>
-                                      setState(() => _gadAnswers[qIndex] = val),
-                            );
-                          }),
+                        child: RadioGroup<int>(
+                          groupValue: _gadAnswers[qIndex],
+                          onChanged:
+                              (val) =>
+                                  setState(() => _gadAnswers[qIndex] = val),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: List.generate(kFrequencyOptions.length, (
+                              oIndex,
+                            ) {
+                              return _OptionTile(
+                                label: kFrequencyOptions[oIndex],
+                                value: oIndex,
+                              );
+                            }),
+                          ),
                         ),
                       ),
                     );

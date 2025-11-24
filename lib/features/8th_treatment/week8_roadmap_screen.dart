@@ -98,12 +98,12 @@ class _Week8RoadmapScreenState extends State<Week8RoadmapScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withValues(alpha: .9),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFB9EAFD), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF74D2FF).withOpacity(0.15),
+            color: const Color(0xFF74D2FF).withValues(alpha: .15),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -160,7 +160,7 @@ class _Week8RoadmapScreenState extends State<Week8RoadmapScreen> {
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF74D2FF).withOpacity(0.3),
+            color: const Color(0xFF74D2FF).withValues(alpha: .3),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),

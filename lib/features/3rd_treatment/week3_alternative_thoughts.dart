@@ -136,7 +136,7 @@ class _Week3AlternativeThoughtsScreenState
       onNext: _chips.isNotEmpty ? _goNext : null,
 
       // 3주차 느낌 맞춰서 하단 패널만 살짝 민트
-      btmcardColor: const Color(0xFF7DD9E8).withOpacity(0.25),
+      btmcardColor: const Color(0xFF7DD9E8).withValues(alpha: 0.25),
     );
   }
 }

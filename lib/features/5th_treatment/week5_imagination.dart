@@ -126,8 +126,8 @@ class _Week5ImaginationScreenState extends State<Week5ImaginationScreen> {
         middleNoticeText: '아래 영역을 탭하면 항목이 추가돼요!\n엔터 또는 바깥 터치로 확정됩니다',
 
         // 패널 색상(하단은 살짝 톤을 주어 입력영역 강조)
-        topcardColor: Colors.white.withOpacity(0.96),
-        btmcardColor: const Color(0xFF7DD9E8).withOpacity(0.35),
+        topcardColor: Colors.white.withValues(alpha: 0.96),
+        btmcardColor: const Color(0xFF7DD9E8).withValues(alpha: 0.35),
 
         // 실제 패널들
         topChild: _buildTopPanel(),

@@ -42,7 +42,7 @@ class DetailPopup extends StatelessWidget {
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF74D2FF).withOpacity(0.25),
+                  color: const Color(0xFF74D2FF).withValues(alpha: 0.25),
                   blurRadius: 30,
                   offset: const Offset(0, 12),
                 ),
@@ -135,7 +135,7 @@ class DetailPopup extends StatelessWidget {
           //         ),
           //         boxShadow: [
           //           BoxShadow(
-          //             color: const Color(0xFF74D2FF).withOpacity(0.4),
+          //             color: const Color(0xFF74D2FF).withValues(alpha: 0.4),
           //             blurRadius: 12,
           //             offset: const Offset(0, 4),
           //           ),

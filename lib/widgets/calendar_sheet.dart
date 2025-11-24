@@ -149,7 +149,7 @@ class _BlueStripWithRings extends StatelessWidget {
                             borderRadius: BorderRadius.circular(ringRadius),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.15),
+                                color: Colors.black.withValues(alpha: 0.15),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
@@ -199,7 +199,7 @@ class _WhiteCardContainer extends StatelessWidget {
         boxShadow: [
           // GAD-7 카드 톤과 유사
           BoxShadow(
-            color: Colors.black.withOpacity(0.10),
+            color: Colors.black.withValues(alpha: 0.10),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),

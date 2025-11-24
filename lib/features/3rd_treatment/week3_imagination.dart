@@ -133,7 +133,7 @@ class _Week3ImaginationScreenState extends State<Week3ImaginationScreen> {
       onNext: _chips.isNotEmpty ? _goNext : null,
 
       // 3주차 원래 하단 민트 느낌
-      btmcardColor: const Color(0xFF7DD9E8).withOpacity(0.25),
+      btmcardColor: const Color(0xFF7DD9E8).withValues(alpha: 0.25),
     );
   }
 }

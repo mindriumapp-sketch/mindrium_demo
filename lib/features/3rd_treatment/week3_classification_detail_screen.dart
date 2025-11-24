@@ -33,7 +33,7 @@ class Week3ClassificationDetailScreen extends StatelessWidget {
 
           // 💡 밝은 오버레이 (파스텔 톤 효과)
           Container(
-            color: Colors.white.withOpacity(0.35),
+            color: Colors.white.withValues(alpha: 0.35),
           ),
 
 
@@ -61,7 +61,7 @@ class Week3ClassificationDetailScreen extends StatelessWidget {
                   return Container(
                     decoration: BoxDecoration(
                       // 💡 카드 배경색은 흰색으로 유지하여 내용 가독성을 높임
-                      color: Colors.white.withOpacity(0.99),
+                      color: Colors.white.withValues(alpha: 0.99),
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: const [
                         BoxShadow(

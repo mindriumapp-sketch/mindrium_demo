@@ -22,7 +22,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // 🎨 색상 팔레트 (Mindrium 테마)
   final Color deepSea = const Color(0xFF004C73);
   final Color aquaBlue = const Color(0xFF00B8D9);
-  final Color glassWhite = Colors.white.withOpacity(0.75);
+  final Color glassWhite = Colors.white.withValues(alpha: .75);
 
   void _sendInquiry() {
     final subject = _subjectController.text;
@@ -42,7 +42,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('모든 항목을 입력해주세요.'),
-          backgroundColor: Colors.redAccent.withOpacity(0.8),
+          backgroundColor: Colors.redAccent.withValues(alpha: .8),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -63,7 +63,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             color: Colors.white,
           ),
         ),
-        backgroundColor: deepSea.withOpacity(0.6),
+        backgroundColor: deepSea.withValues(alpha: .6),
         elevation: 0,
         centerTitle: true,
       ),
@@ -135,10 +135,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         color: glassWhite,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
+        border: Border.all(color: Colors.white.withValues(alpha: .5), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black12.withOpacity(0.08),
+            color: Colors.black12.withValues(alpha: .08),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -210,7 +210,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         labelText: label,
         labelStyle: const TextStyle(color: Color(0xFF004C73)),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.85),
+        fillColor: Colors.white.withValues(alpha: .85),
         enabledBorder: OutlineInputBorder(
           borderSide: const BorderSide(color: Color(0xFFBDEAFD), width: 1.2),
           borderRadius: BorderRadius.circular(14),

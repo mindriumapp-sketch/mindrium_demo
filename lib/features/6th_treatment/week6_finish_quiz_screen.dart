@@ -72,6 +72,7 @@ class _Week6FinishQuizScreenState extends State<Week6FinishQuizScreen> {
             .toList();
       }
 
+      if (!mounted) return;
       setState(() {
         _diaryId = latest['diaryId']?.toString();
         _behaviorList = behaviorList;
@@ -79,6 +80,7 @@ class _Week6FinishQuizScreenState extends State<Week6FinishQuizScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = '데이터를 불러오지 못했습니다.';
         _isLoading = false;
@@ -288,7 +290,7 @@ class _Week6FinishQuizScreenState extends State<Week6FinishQuizScreen> {
                           }
                         }
 
-                        if (!mounted) return;
+                        if (!context.mounted) return;
 
                         Navigator.push(
                           context,

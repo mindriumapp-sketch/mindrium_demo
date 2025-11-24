@@ -96,7 +96,7 @@ class _AbcGroupGridScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(24 * scale),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: .1),
                             blurRadius: 10 * scale,
                             offset: const Offset(3, 4),
                           ),
@@ -140,7 +140,7 @@ class _AbcGroupGridScreen extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: .05),
                           blurRadius: 8 * scale,
                           offset: Offset(0, 4 * scale),
                         ),
@@ -210,11 +210,11 @@ class _AbcGroupGridScreen extends StatelessWidget {
                 width: width,
                 padding: EdgeInsets.all(28 * scale),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.25),
+                  color: Colors.white.withValues(alpha: .25),
                   borderRadius: BorderRadius.circular(28 * scale),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.blueAccent.withOpacity(0.2),
+                      color: Colors.blueAccent.withValues(alpha: .2),
                       blurRadius: 24,
                       offset: const Offset(0, 10),
                     ),
@@ -267,7 +267,7 @@ class _AbcGroupGridScreen extends StatelessWidget {
                         width: double.infinity,
                         padding: EdgeInsets.all(16 * scale),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.4),
+                          color: Colors.white.withValues(alpha: .4),
                           borderRadius: BorderRadius.circular(16 * scale),
                         ),
                         child: Text(

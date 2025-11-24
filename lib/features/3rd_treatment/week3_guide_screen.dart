@@ -29,7 +29,7 @@ class _Week3GuideScreenState extends State<Week3GuideScreen> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF2962F6).withOpacity(0.12),
+                  color: const Color(0xFF2962F6).withValues(alpha: 0.12),
                   blurRadius: 10,
                   offset: const Offset(0, 6),
                 ),

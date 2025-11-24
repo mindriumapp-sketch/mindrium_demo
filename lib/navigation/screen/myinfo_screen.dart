@@ -92,11 +92,15 @@ class _MyInfoScreenState extends State<MyInfoScreen> with WidgetsBindingObserver
           e.response?.data is Map
               ? e.response?.data['detail']?.toString()
               : e.message;
+      if (!mounted) return;
       BlueBanner.show(context, message ?? '내 정보를 불러오지 못했어요.');
     } catch (e) {
+      if (!mounted) return;
       BlueBanner.show(context, '내 정보를 불러오지 못했어요.');
     } finally {
-      if (mounted) setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
@@ -154,6 +158,7 @@ class _MyInfoScreenState extends State<MyInfoScreen> with WidgetsBindingObserver
     try {
       if (trimmedName.isNotEmpty) {
         await _usersApi.updateMe({'name': trimmedName});
+        if (!mounted) return;
         final provider = context.read<UserProvider>();
         provider.updateUserName(trimmedName);
       }
@@ -190,11 +195,14 @@ class _MyInfoScreenState extends State<MyInfoScreen> with WidgetsBindingObserver
     } catch (e) {
       _showSnack('업데이트 실패: $e');
     } finally {
-      if (mounted) setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
   void _showSnack(String text) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
@@ -235,7 +243,7 @@ class _MyInfoScreenState extends State<MyInfoScreen> with WidgetsBindingObserver
             fontFamily: 'Noto Sans KR',
           ),
         ),
-        backgroundColor: Colors.white.withOpacity(0.8),
+        backgroundColor: Colors.white.withValues(alpha: .8),
         elevation: 0,
         centerTitle: true,
         iconTheme: const IconThemeData(color: deepNavy),
@@ -530,12 +538,12 @@ class _MyInfoScreenState extends State<MyInfoScreen> with WidgetsBindingObserver
     final mins = totalSeconds ~/ 60;
     final secs = totalSeconds % 60;
     if (mins > 0 && secs > 0) {
-      return '${mins}분 ${secs}초';
+      return '$mins분 $secs초';
     }
     if (mins > 0) {
-      return '${mins}분';
+      return '$mins분';
     }
-    return '${secs}초';
+    return '$secs초';
   }
 
   Widget _buildTextField({

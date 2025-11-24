@@ -182,7 +182,7 @@ class ChipsEditorState extends State<ChipsEditor> {
                 border: Border.all(color: const Color(0xFFD1D9F0)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 6,
                     offset: const Offset(0, 3),
                   ),
@@ -234,7 +234,7 @@ class ChipsEditorState extends State<ChipsEditor> {
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF42A5F5).withOpacity(0.25),
+                    color: const Color(0xFF42A5F5).withValues(alpha: 0.25),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),

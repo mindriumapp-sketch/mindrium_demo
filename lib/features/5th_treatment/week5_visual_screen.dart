@@ -192,7 +192,7 @@ class _Week5VisualScreenState extends State<Week5VisualScreen> {
       onBack: () => Navigator.pop(context),
       onNext: () async {
         await _saveSession();
-        if (!mounted) return;
+        if (!context.mounted) return;
         Navigator.push(
           context,
           PageRouteBuilder(

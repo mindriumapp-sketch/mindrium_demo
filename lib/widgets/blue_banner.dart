@@ -53,7 +53,7 @@ class _ToastBubble extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: .15),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -146,10 +146,10 @@ class JellyfishBanner extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 14),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.95),
+              color: Colors.white.withValues(alpha: .95),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: const Color(0xFF5DADEC).withOpacity(0.5),
+                color: const Color(0xFF5DADEC).withValues(alpha: .5),
                 width: 2,
               ),
               boxShadow: const [

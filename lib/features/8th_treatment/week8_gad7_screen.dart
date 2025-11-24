@@ -87,12 +87,12 @@ class _Week8Gad7ScreenState extends State<Week8Gad7Screen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.92),
+        color: Colors.white.withValues(alpha: .92),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFB9EAFD)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF74D2FF).withOpacity(0.15),
+            color: const Color(0xFF74D2FF).withValues(alpha: .15),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -170,7 +170,7 @@ class _Week8Gad7ScreenState extends State<Week8Gad7Screen> {
               selected
                   ? [
                     BoxShadow(
-                      color: const Color(0xFF74D2FF).withOpacity(0.25),
+                      color: const Color(0xFF74D2FF).withValues(alpha: .25),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
@@ -224,12 +224,12 @@ class _Week8Gad7ScreenState extends State<Week8Gad7Screen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.88),
+        color: Colors.white.withValues(alpha: .88),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+        border: Border.all(color: color.withValues(alpha: .3), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.2),
+            color: color.withValues(alpha: .2),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -266,7 +266,7 @@ class _Week8Gad7ScreenState extends State<Week8Gad7Screen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: color.withOpacity(0.3),
+                      color: color.withValues(alpha: .3),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),

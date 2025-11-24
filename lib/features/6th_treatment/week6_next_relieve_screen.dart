@@ -32,7 +32,7 @@ class _Week6NextRelieveScreenState extends State<Week6NextRelieveScreen> {
   Widget _highlightedText(String text) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF59D).withOpacity(0.8),
+        color: const Color(0xFFFFF59D).withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(6),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
