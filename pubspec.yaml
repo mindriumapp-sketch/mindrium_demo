@@ -84,20 +84,48 @@ flutter:
     - assets/image/character5_mid.png
     - assets/image/character5_last.png
     - assets/image/character6.png
+    - assets/image/character6_mid.png
+    - assets/image/character6_last.png
     - assets/image/character7.png
+    - assets/image/character7_mid.png
+    - assets/image/character7_last.png
     - assets/image/character8.png
+    - assets/image/character8_mid.png
+    - assets/image/character8_last.png
     - assets/image/character9.png
+    - assets/image/character9_mid.png
+    - assets/image/character9_last.png
     - assets/image/character10.png
+    - assets/image/character10_mid.png
+    - assets/image/character11_last.png
     - assets/image/character11.png
+    - assets/image/character12_mid.png
+    - assets/image/character12_last.png
     - assets/image/character12.png
     - assets/image/character13.png
+    - assets/image/character13_mid.png
+    - assets/image/character13_last.png
     - assets/image/character14.png
+    - assets/image/character14_mid.png
+    - assets/image/character14_last.png
     - assets/image/character15.png
+    - assets/image/character15_mid.png
+    - assets/image/character15_last.png
     - assets/image/character16.png
+    - assets/image/character16_mid.png
+    - assets/image/character16_last.png
     - assets/image/character17.png
+    - assets/image/character17_mid.png
+    - assets/image/character17_last.png
     - assets/image/character18.png
+    - assets/image/character18_mid.png
+    - assets/image/character18_last.png
     - assets/image/character19.png
+    - assets/image/character19_mid.png
+    - assets/image/character19_last.png
     - assets/image/character20.png
+    - assets/image/character20_mid.png
+    - assets/image/character20_last.png
     - assets/image/completion.png
     - assets/image/congrats.png
     - assets/image/consequence.png
