@@ -26,6 +26,10 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          // refresh 요청은 인터셉터를 우회
+          if (options.extra['skipAuth'] == true) {
+            return handler.next(options);
+          }
           final access = await tokens.access;
           if (access != null) {
             options.headers['Authorization'] = 'Bearer $access';
@@ -33,6 +37,10 @@ class ApiClient {
           handler.next(options);
         },
         onError: (e, handler) async {
+          // refresh 요청 자체의 에러는 재시도하지 않음
+          if (e.requestOptions.extra['skipAuth'] == true) {
+            return handler.next(e);
+          }
           if (e.response?.statusCode == 401) {
             final ok = await _tryRefresh();
             if (ok) {
@@ -55,7 +63,12 @@ class ApiClient {
     final refresh = await tokens.refresh;
     if (refresh == null) return false;
     try {
-      final res = await dio.post('/auth/refresh', data: {'refresh_token': refresh});
+      // refresh 요청은 인터셉터를 우회하여 무한 루프 방지
+      final res = await dio.post(
+        '/auth/refresh',
+        data: {'refresh_token': refresh},
+        options: Options(extra: {'skipAuth': true}),
+      );
       final data = res.data;
       if (data is Map<String, dynamic>) {
         final access = data['access_token'] as String?;

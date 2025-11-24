@@ -6,7 +6,7 @@
 - 사용자 정보 업데이트
 """
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Literal
 from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 import uuid
@@ -104,17 +104,77 @@ class PracticeSessionCreate(BaseModel):
     negative_items: List[str] = Field(default_factory=list, description="부정적 항목 (3주차: 도움이 되지 않는 생각, 5주차: 회피 행동)")
     positive_items: List[str] = Field(default_factory=list, description="긍정적 항목 (3주차: 도움이 되는 생각, 5주차: 직면 행동)")
     classification_quiz: Optional[ClassificationQuiz] = Field(None, description="분류 퀴즈 결과")
+    classification_items: List["Week7ClassificationItem"] = Field(
+        default_factory=list,
+        description="7주차 건강한 생활 습관 행동 목록",
+    )
+    completed_at: Optional[datetime] = Field(None, description="세션 완료 시각 (선택)")
 
 
 class PracticeSessionResponse(BaseModel):
     """주차별 연습 세션 응답"""
     session_id: str
     week_number: int
-    negative_items: List[str]
-    positive_items: List[str]
+    negative_items: List[str] = Field(default_factory=list)
+    positive_items: List[str] = Field(default_factory=list)
     classification_quiz: Optional[ClassificationQuiz] = None
+    classification_items: List["Week7ClassificationItem"] = Field(default_factory=list)
+    completed_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
+
+
+class Week7BehaviorAnalysis(BaseModel):
+    execution_short_gain: Optional[str] = None
+    execution_long_benefit: Optional[bool] = None
+    non_execution_gain: Optional[str] = None
+    non_execution_short_loss: Optional[str] = None
+    non_execution_long_loss: Optional[bool] = None
+
+
+class Week7ClassificationItem(BaseModel):
+    chip_id: str = Field(..., min_length=1)
+    classification: Literal["confront", "avoid"]
+    added_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    reason: Optional[str] = None
+    analysis: Optional[Week7BehaviorAnalysis] = None
+
+
+class Week7ClassificationUpsert(BaseModel):
+    chip_id: str = Field(..., min_length=1)
+    classification: Literal["confront", "avoid"]
+    reason: Optional[str] = None
+    analysis: Optional[Week7BehaviorAnalysis] = None
+
+
+class Week7CompletionUpdate(BaseModel):
+    completed: bool
+
+
+# ============= Week 8 Schemas =============
+
+class Week8EffectivenessEvaluation(BaseModel):
+    behavior: str = Field(..., min_length=1, description="행동 텍스트 (chip_id가 없을 때 식별용)")
+    chip_id: Optional[str] = Field(None, description="행동의 chip_id (새로 추가한 행동의 경우 null 가능)")
+    was_effective: bool
+    will_continue: bool
+
+
+class Week8UserJourneyResponse(BaseModel):
+    question: str = Field(..., min_length=1)
+    answer: str = Field(..., min_length=1)
+
+
+class Week8EffectivenessUpdate(BaseModel):
+    evaluations: List[Week8EffectivenessEvaluation] = Field(..., min_items=1)
+
+
+class Week8UserJourneyUpdate(BaseModel):
+    responses: List[Week8UserJourneyResponse] = Field(..., min_items=1)
+
+
+class Week8CompletionUpdate(BaseModel):
+    completed: bool
 
 
 # ============= API Endpoints =============
@@ -221,7 +281,16 @@ async def get_surveys(
     # 최신순 정렬 (completed_at 기준, 과거 데이터 호환)
     surveys.sort(key=lambda x: x.get("completed_at") or x.get("date", ""), reverse=True)
     
-    return surveys
+    # survey_id를 type으로 변환 (과거 데이터 호환)
+    normalized_surveys = []
+    for survey in surveys:
+        normalized = dict(survey)
+        # survey_id가 있으면 type으로 변환
+        if "survey_id" in normalized and "type" not in normalized:
+            normalized["type"] = normalized.pop("survey_id")
+        normalized_surveys.append(normalized)
+    
+    return normalized_surveys
 
 
 @router.post("/surveys", response_model=SurveyResponse, status_code=status.HTTP_201_CREATED, summary="설문 추가")
@@ -805,15 +874,32 @@ async def create_practice_session(
     now = datetime.now(timezone.utc)
     session_id = f"session_{uuid.uuid4().hex[:8]}"
     
+    # 주차별로 필요한 필드만 저장
     session_doc = {
         "session_id": session_id,
         "week_number": session.week_number,
-        "negative_items": session.negative_items,
-        "positive_items": session.positive_items,
-        "classification_quiz": session.classification_quiz.dict() if session.classification_quiz else None,
         "created_at": now,
         "updated_at": now,
     }
+    
+    # 3주차, 5주차: negative_items, positive_items
+    if session.week_number in [3, 5]:
+        if session.negative_items:
+            session_doc["negative_items"] = session.negative_items
+        if session.positive_items:
+            session_doc["positive_items"] = session.positive_items
+        if session.classification_quiz:
+            session_doc["classification_quiz"] = session.classification_quiz.dict()
+    
+    # 7주차: classification_items
+    elif session.week_number == 7:
+        if session.classification_items:
+            session_doc["classification_items"] = [item.dict() for item in session.classification_items]
+    
+    # 8주차: effectiveness_evaluations, user_journey_responses (별도 API로 저장)
+    # completed_at은 모든 주차에서 사용 가능
+    if session.completed_at:
+        session_doc["completed_at"] = session.completed_at
     
     user = await db[USER_COLLECTION].find_one({"_id": user_id}, {"practice_sessions": 1})
     if not user:
@@ -875,3 +961,262 @@ async def get_practice_sessions(
     )
     
     return [PracticeSessionResponse(**s) for s in sessions]
+
+
+async def _ensure_week7_session(db, user_id: str):
+    """7주차 연습 세션이 없으면 생성한 뒤 (메모리 상으로) 반환합니다."""
+    user = await db[USER_COLLECTION].find_one({"_id": user_id}, {"practice_sessions": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+
+    sessions = list(user.get("practice_sessions", []))
+    for idx, session in enumerate(sessions):
+        if session.get("week_number") == 7:
+            return sessions, session, idx
+
+    now = datetime.now(timezone.utc)
+    # 7주차는 classification_items만 사용
+    new_session = {
+        "session_id": f"session_{uuid.uuid4().hex[:8]}",
+        "week_number": 7,
+        "classification_items": [],
+        "created_at": now,
+        "updated_at": now,
+    }
+    sessions.append(new_session)
+    return sessions, new_session, len(sessions) - 1
+
+
+async def _persist_practice_sessions(db, user_id: str, sessions: List[dict]):
+    await db[USER_COLLECTION].update_one(
+        {"_id": user_id},
+        {"$set": {"practice_sessions": sessions}},
+    )
+
+
+@router.put(
+    "/practice-sessions/week7/items",
+    response_model=PracticeSessionResponse,
+    summary="7주차 행동 추가/수정",
+)
+async def upsert_week7_classification_item(
+    item: Week7ClassificationUpsert,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db),
+):
+    user_id = current_user["_id"]
+    sessions, session, index = await _ensure_week7_session(db, user_id)
+    items = list(session.get("classification_items", []))
+    now = datetime.now(timezone.utc)
+
+    replaced = False
+    for idx, existing in enumerate(items):
+        if existing.get("chip_id") == item.chip_id:
+            items[idx] = {
+                "chip_id": item.chip_id,
+                "classification": item.classification,
+                "added_at": existing.get("added_at") or now,
+                "reason": item.reason,
+                "analysis": item.analysis.dict() if item.analysis else None,
+            }
+            replaced = True
+            break
+
+    if not replaced:
+        items.append(
+            {
+                "chip_id": item.chip_id,
+                "classification": item.classification,
+                "added_at": now,
+                "reason": item.reason,
+                "analysis": item.analysis.dict() if item.analysis else None,
+            }
+        )
+
+    session["classification_items"] = items
+    session["updated_at"] = now
+    sessions[index] = session
+
+    await _persist_practice_sessions(db, user_id, sessions)
+    return PracticeSessionResponse(**session)
+
+
+@router.delete(
+    "/practice-sessions/week7/items/{chip_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="7주차 행동 삭제",
+)
+async def delete_week7_classification_item(
+    chip_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db),
+):
+    user_id = current_user["_id"]
+    sessions, session, index = await _ensure_week7_session(db, user_id)
+    items = list(session.get("classification_items", []))
+    filtered = [i for i in items if i.get("chip_id") != chip_id]
+
+    if len(filtered) == len(items):
+        raise HTTPException(status_code=404, detail="해당 행동을 찾을 수 없습니다")
+
+    session["classification_items"] = filtered
+    session["updated_at"] = datetime.now(timezone.utc)
+    sessions[index] = session
+
+    await _persist_practice_sessions(db, user_id, sessions)
+    return None
+
+
+@router.patch(
+    "/practice-sessions/week7/completed",
+    response_model=PracticeSessionResponse,
+    summary="7주차 완료 상태 업데이트",
+)
+async def update_week7_completion(
+    payload: Week7CompletionUpdate,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db),
+):
+    user_id = current_user["_id"]
+    sessions, session, index = await _ensure_week7_session(db, user_id)
+    now = datetime.now(timezone.utc)
+    session["completed_at"] = now if payload.completed else None
+    session["updated_at"] = now
+    sessions[index] = session
+
+    await _persist_practice_sessions(db, user_id, sessions)
+    return PracticeSessionResponse(**session)
+
+
+# ============= Week 8 APIs =============
+
+async def _ensure_week8_session(db, user_id: str):
+    """8주차 연습 세션이 없으면 생성한 뒤 (메모리 상으로) 반환합니다."""
+    user = await db[USER_COLLECTION].find_one({"_id": user_id}, {"practice_sessions": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+
+    sessions = list(user.get("practice_sessions", []))
+    for idx, session in enumerate(sessions):
+        if session.get("week_number") == 8:
+            return sessions, session, idx
+
+    now = datetime.now(timezone.utc)
+    # 8주차는 effectiveness_evaluations, user_journey_responses만 사용
+    new_session = {
+        "session_id": f"session_{uuid.uuid4().hex[:8]}",
+        "week_number": 8,
+        "effectiveness_evaluations": [],
+        "user_journey_responses": [],
+        "created_at": now,
+        "updated_at": now,
+    }
+    sessions.append(new_session)
+    return sessions, new_session, len(sessions) - 1
+
+
+@router.put(
+    "/practice-sessions/week8/effectiveness",
+    response_model=PracticeSessionResponse,
+    summary="8주차 효과성 평가 저장",
+)
+async def update_week8_effectiveness(
+    payload: Week8EffectivenessUpdate,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db),
+):
+    """
+    8주차 효과성 평가를 저장합니다.
+    
+    - **evaluations**: 각 행동에 대한 효과성 평가 리스트
+      - **chip_id**: 행동의 chip_id
+      - **was_effective**: 효과가 있었는지 여부
+      - **will_continue**: 앞으로 유지할지 여부
+    """
+    user_id = current_user["_id"]
+    sessions, session, index = await _ensure_week8_session(db, user_id)
+    now = datetime.now(timezone.utc)
+    
+    # evaluations를 딕셔너리 리스트로 변환 (chip_id가 None이면 필드 생략)
+    evaluations = []
+    for eval in payload.evaluations:
+        eval_dict = {
+            "behavior": eval.behavior,
+            "was_effective": eval.was_effective,
+            "will_continue": eval.will_continue,
+        }
+        if eval.chip_id is not None:
+            eval_dict["chip_id"] = eval.chip_id
+        evaluations.append(eval_dict)
+    
+    session["effectiveness_evaluations"] = evaluations
+    session["updated_at"] = now
+    sessions[index] = session
+
+    await _persist_practice_sessions(db, user_id, sessions)
+    return PracticeSessionResponse(**session)
+
+
+@router.put(
+    "/practice-sessions/week8/user-journey",
+    response_model=PracticeSessionResponse,
+    summary="8주차 사용자 여정 답변 저장",
+)
+async def update_week8_user_journey(
+    payload: Week8UserJourneyUpdate,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db),
+):
+    """
+    8주차 사용자 여정 답변을 저장합니다.
+    
+    - **responses**: 질문과 답변 리스트
+      - **question**: 질문 내용
+      - **answer**: 답변 내용
+    """
+    user_id = current_user["_id"]
+    sessions, session, index = await _ensure_week8_session(db, user_id)
+    now = datetime.now(timezone.utc)
+    
+    # responses를 딕셔너리 리스트로 변환
+    responses = [
+        {
+            "question": resp.question,
+            "answer": resp.answer,
+        }
+        for resp in payload.responses
+    ]
+    
+    session["user_journey_responses"] = responses
+    session["updated_at"] = now
+    sessions[index] = session
+
+    await _persist_practice_sessions(db, user_id, sessions)
+    return PracticeSessionResponse(**session)
+
+
+@router.patch(
+    "/practice-sessions/week8/completed",
+    response_model=PracticeSessionResponse,
+    summary="8주차 완료 상태 업데이트",
+)
+async def update_week8_completion(
+    payload: Week8CompletionUpdate,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db),
+):
+    """
+    8주차 완료 상태를 업데이트합니다.
+    
+    - **completed**: 완료 여부 (true면 completed_at에 현재 시각 저장)
+    """
+    user_id = current_user["_id"]
+    sessions, session, index = await _ensure_week8_session(db, user_id)
+    now = datetime.now(timezone.utc)
+    
+    session["completed_at"] = now if payload.completed else None
+    session["updated_at"] = now
+    sessions[index] = session
+
+    await _persist_practice_sessions(db, user_id, sessions)
+    return PracticeSessionResponse(**session)

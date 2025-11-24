@@ -1,7 +1,7 @@
 plugins {
   kotlin("android") version "2.1.0" apply false
   id("com.android.application") version "8.7.0" apply false
-  id("com.google.gms.google-services") version "4.3.15" apply false
+  // Firebase는 사용하지 않으므로 Google Services 플러그인 제거
 }
 
 buildscript {

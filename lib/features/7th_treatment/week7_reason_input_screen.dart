@@ -1,22 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/widgets/custom_appbar.dart';
-import 'package:gad_app_team/widgets/navigation_button.dart';
-import 'package:provider/provider.dart';
-import 'package:gad_app_team/data/user_provider.dart';
 import 'package:gad_app_team/features/7th_treatment/week7_gain_lose_screen.dart';
-
-// ✅ 방금 네가 준 더블카드 UI
 import 'package:gad_app_team/widgets/top_btm_card.dart';
 
 const Color _navy = Color(0xFF263C69);
-const Color _blue = Color(0xFF339DF1);
-const Color _matrixLineBlue = Color(0xFF8ED7FF);
-const Color _matrixGlowBlue = Color(0x338ED7FF);
 
 class Week7ReasonInputScreen extends StatefulWidget {
   final String behavior;
+  final String chipId;
 
-  const Week7ReasonInputScreen({super.key, required this.behavior});
+  const Week7ReasonInputScreen({
+    super.key,
+    required this.behavior,
+    required this.chipId,
+  });
 
   @override
   State<Week7ReasonInputScreen> createState() => _Week7ReasonInputScreenState();
@@ -100,17 +96,20 @@ class _Week7ReasonInputScreenState extends State<Week7ReasonInputScreen> {
         onBack: () => Navigator.pop(context),
         onNext: _isNextEnabled
             ? () {
-          Navigator.push(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (_, __, ___) => Week7GainLoseScreen(
-                behavior: widget.behavior,
-              ),
-              transitionDuration: Duration.zero,
-              reverseTransitionDuration: Duration.zero,
-            ),
-          );
-        }
+                final reason = _reasonController.text.trim();
+                Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (_, __, ___) => Week7GainLoseScreen(
+                      behavior: widget.behavior,
+                      chipId: widget.chipId,
+                      reason: reason,
+                    ),
+                    transitionDuration: Duration.zero,
+                    reverseTransitionDuration: Duration.zero,
+                  ),
+                );
+              }
             : null,
 
         pagePadding: const EdgeInsets.symmetric(horizontal: 34, vertical: 20),

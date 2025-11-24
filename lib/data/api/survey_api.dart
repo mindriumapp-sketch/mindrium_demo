@@ -37,4 +37,20 @@ class SurveyApi {
       message: 'Invalid /users/me update response',
     );
   }
+
+  Future<List<Map<String, dynamic>>> getSurveys() async {
+    final res = await _client.dio.get('/users/me/surveys');
+    final data = res.data;
+    if (data is List) {
+      return data
+          .whereType<Map>()
+          .map((raw) => raw.map((key, value) => MapEntry(key.toString(), value)))
+          .toList()
+          .cast<Map<String, dynamic>>();
+    }
+    throw DioException(
+      requestOptions: res.requestOptions,
+      message: 'Invalid /users/me/surveys response',
+    );
+  }
 }

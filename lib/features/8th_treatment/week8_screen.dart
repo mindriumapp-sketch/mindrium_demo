@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/features/value_start.dart';
-import 'package:gad_app_team/features/8th_treatment/week8_gad7_screen.dart';
+import 'package:gad_app_team/features/8th_treatment/week8_roadmap_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
@@ -56,7 +56,7 @@ class _Week8ScreenState extends State<Week8Screen> {
       weekNumber: 8,
       weekTitle: 'Mindrium 교육 프로그램을\n모두 완료하셨습니다!',
       weekDescription: weekDescription,
-      nextPageBuilder: () => const Week8Gad7Screen(),
+      nextPageBuilder: () => const Week8RoadmapScreen(),
     );
   }
 }

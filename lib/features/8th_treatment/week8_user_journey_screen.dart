@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/common/constants.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/widgets/eduhome_bg.dart';
 import 'package:gad_app_team/features/8th_treatment/week8_maintenance_suggestions_screen.dart';
-import 'package:gad_app_team/widgets/tutorial_design.dart';
-import 'package:gad_app_team/utils/edu_progress.dart';
+import 'package:gad_app_team/widgets/blue_banner.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/week8_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 class Week8UserJourneyScreen extends StatefulWidget {
   const Week8UserJourneyScreen({super.key});
@@ -35,9 +36,16 @@ class _Week8UserJourneyScreenState extends State<Week8UserJourneyScreen> {
   static const double _sidePad = 34.0;
   static const Color _matrixLineBlue = Color(0xFF8ED7FF);
 
+  // API 클라이언트
+  late final ApiClient _apiClient;
+  late final Week8Api _week8Api;
+  bool _isSaving = false;
+
   @override
   void initState() {
     super.initState();
+    _apiClient = ApiClient(tokens: TokenStorage());
+    _week8Api = Week8Api(_apiClient);
     for (var c in _controllers) {
       c.addListener(_onTextChanged);
     }
@@ -64,14 +72,39 @@ class _Week8UserJourneyScreenState extends State<Week8UserJourneyScreen> {
         _isNextEnabled = _controllers[_currentStep].text.trim().isNotEmpty;
       });
     } else {
+      // 마지막 질문 완료 시 답변 저장
+      _saveUserJourney();
+    }
+  }
+
+  Future<void> _saveUserJourney() async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+
+    try {
+      // 모든 질문과 답변을 리스트로 변환
+      final responses = List.generate(_questions.length, (index) {
+        return {
+          'question': _questions[index],
+          'answer': _controllers[index].text.trim(),
+        };
+      });
+
+      await _week8Api.updateUserJourney(responses: responses);
+
+      if (!mounted) return;
       Navigator.push(
         context,
         PageRouteBuilder(
-          pageBuilder: (_, __, ___) => Week8MaintenanceSuggestionsScreen(),
+          pageBuilder: (_, __, ___) => const Week8MaintenanceSuggestionsScreen(),
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
         ),
       );
+    } catch (e) {
+      if (!mounted) return;
+      BlueBanner.show(context, '답변 저장에 실패했습니다: $e');
+      setState(() => _isSaving = false);
     }
   }
 

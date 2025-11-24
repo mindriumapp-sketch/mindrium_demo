@@ -1,18 +1,18 @@
 // File: lib/features/8th_treatment/week8_planning_check_screen.dart
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/features/7th_treatment/week7_add_display_screen.dart';
 import 'package:gad_app_team/features/8th_treatment/week8_effectiveness_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/widgets/blue_banner.dart';
 import 'package:gad_app_team/widgets/eduhome_bg.dart';
-// import 'package:gad_app_team/widgets/jellyfish_banner.dart'; // 실제 경로에 맞게 열어줘
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/week7_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 const Color _postItBlue = Color(0xFF3690D9);
 
-// 캘린더 이벤트 모델 (week7이랑 동일하게)
+// 캘린더 이벤트 모델 (백엔드 ScheduleEvent와 호환)
 class CalendarEvent {
   final String id;
   final DateTime startDate;
@@ -28,21 +28,25 @@ class CalendarEvent {
     required this.createdAt,
   });
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'startDate': startDate.toIso8601String(),
-    'endDate': endDate.toIso8601String(),
-    'behaviors': behaviors,
-    'createdAt': createdAt.toIso8601String(),
-  };
-
-  factory CalendarEvent.fromJson(Map<String, dynamic> json) => CalendarEvent(
-    id: json['id'],
-    startDate: DateTime.parse(json['startDate']),
-    endDate: DateTime.parse(json['endDate']),
-    behaviors: List<String>.from(json['behaviors']),
-    createdAt: DateTime.parse(json['createdAt']),
-  );
+  // 백엔드 ScheduleEventResponse에서 변환
+  factory CalendarEvent.fromApiResponse(Map<String, dynamic> json) {
+    final startDateStr = json['start_date']?.toString() ?? '';
+    final endDateStr = json['end_date']?.toString() ?? '';
+    final tasks = json['tasks'] as List<dynamic>? ?? [];
+    
+    return CalendarEvent(
+      id: json['event_id']?.toString() ?? '',
+      startDate: DateTime.parse(startDateStr),
+      endDate: DateTime.parse(endDateStr),
+      behaviors: tasks
+          .map((task) => task is Map ? task['label']?.toString() : null)
+          .whereType<String>()
+          .toList(),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'].toString())
+          : DateTime.now(),
+    );
+  }
 }
 
 class Week8PlanningCheckScreen extends StatefulWidget {
@@ -69,9 +73,15 @@ class _Week8PlanningCheckScreenState extends State<Week8PlanningCheckScreen> {
   // 이벤트별 행동 체크 상태 (eventId -> {behavior: checked})
   final Map<String, Map<String, bool>> _eventBehaviorCheckStates = {};
 
+  // API 클라이언트
+  late final ApiClient _apiClient;
+  late final Week7Api _week7Api;
+
   @override
   void initState() {
     super.initState();
+    _apiClient = ApiClient(tokens: TokenStorage());
+    _week7Api = Week7Api(_apiClient);
     _loadPlannedBehaviors();
   }
 
@@ -98,19 +108,18 @@ class _Week8PlanningCheckScreenState extends State<Week8PlanningCheckScreen> {
     _loadSavedEvents();
   }
 
-  // 저장된 이벤트 다 불러오기 (깨진 건 건너뛰기) → 원본 로직과 동일
+  // 저장된 이벤트 다 불러오기 (백엔드에서 조회)
   Future<void> _loadSavedEvents() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final eventsJson = prefs.getStringList('calendar_events') ?? [];
+      final events = await _week7Api.listScheduleEvents();
+      if (!mounted) return;
 
       final List<CalendarEvent> parsed = [];
       final Map<String, Map<String, bool>> eventCheckStates = {};
 
-      for (final e in eventsJson) {
+      for (final eventData in events) {
         try {
-          final data = jsonDecode(e);
-          final event = CalendarEvent.fromJson(data);
+          final event = CalendarEvent.fromApiResponse(eventData);
           parsed.add(event);
 
           eventCheckStates[event.id] = {
@@ -297,15 +306,37 @@ class _Week8PlanningCheckScreenState extends State<Week8PlanningCheckScreen> {
                   Expanded(
                     child: Text(
                       behavior,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
-                        color:
-                        isChecked ? _postItBlue : const Color(0xFF2D3748),
-                        decoration:
-                        isChecked ? TextDecoration.lineThrough : null,
+                        color: Color(0xFF2D3748),
                       ),
                     ),
                   ),
+                  if (isChecked) ...[
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _postItBlue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _postItBlue,
+                          width: 1,
+                        ),
+                      ),
+                      child: const Text(
+                        '실천함',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF3690D9),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             );
@@ -463,16 +494,36 @@ class _Week8PlanningCheckScreenState extends State<Week8PlanningCheckScreen> {
                             Expanded(
                               child: Text(
                                 b,
-                                style: TextStyle(
-                                  color: checked
-                                      ? _postItBlue
-                                      : const Color(0xFF718096),
-                                  decoration: checked
-                                      ? TextDecoration.lineThrough
-                                      : null,
+                                style: const TextStyle(
+                                  color: Color(0xFF718096),
                                 ),
                               ),
                             ),
+                            if (checked) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _postItBlue.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: _postItBlue,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: const Text(
+                                  '실천함',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF3690D9),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),

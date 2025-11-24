@@ -63,6 +63,7 @@ import 'package:gad_app_team/navigation/screen/treatment_screen.dart';
 
 import 'features/menu/archive/character_battle.dart';
 import 'features/menu/archive/sea_archive_page.dart';
+import 'features/7th_treatment/week7_add_display_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -74,6 +75,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
+      navigatorObservers: [week7RouteObserver],
       debugShowCheckedModeBanner: false,
       title: 'Mindrium',
 

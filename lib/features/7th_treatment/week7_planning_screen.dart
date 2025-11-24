@@ -4,8 +4,6 @@ import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/features/7th_treatment/week7_add_display_screen.dart';
 import 'package:gad_app_team/features/7th_treatment/week7_calendar_summary_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 import 'package:gad_app_team/widgets/behavior_confirm_dialog.dart';
 import 'package:gad_app_team/widgets/calendar_sheet.dart';
 import 'package:gad_app_team/widgets/blue_banner.dart';
@@ -14,10 +12,11 @@ import 'package:provider/provider.dart';
 import 'package:gad_app_team/data/user_provider.dart';
 import 'package:gad_app_team/data/api/api_client.dart';
 import 'package:gad_app_team/data/api/user_data_api.dart';
+import 'package:gad_app_team/data/api/week7_api.dart';
 import 'package:gad_app_team/data/storage/token_storage.dart';
 
 // ─────────────────────────────────────────────
-// 캘린더 이벤트 모델
+// 캘린더 이벤트 모델 (백엔드 ScheduleEvent와 호환)
 class CalendarEvent {
   final String id;
   final DateTime startDate;
@@ -33,23 +32,23 @@ class CalendarEvent {
     required this.createdAt,
   });
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'startDate': startDate.toIso8601String(),
-      'endDate': endDate.toIso8601String(),
-      'behaviors': behaviors,
-      'createdAt': createdAt.toIso8601String(),
-    };
-  }
-
-  factory CalendarEvent.fromJson(Map<String, dynamic> json) {
+  // 백엔드 ScheduleEventResponse에서 변환
+  factory CalendarEvent.fromApiResponse(Map<String, dynamic> json) {
+    final startDateStr = json['start_date']?.toString() ?? '';
+    final endDateStr = json['end_date']?.toString() ?? '';
+    final tasks = json['tasks'] as List<dynamic>? ?? [];
+    
     return CalendarEvent(
-      id: json['id'],
-      startDate: DateTime.parse(json['startDate']),
-      endDate: DateTime.parse(json['endDate']),
-      behaviors: List<String>.from(json['behaviors']),
-      createdAt: DateTime.parse(json['createdAt']),
+      id: json['event_id']?.toString() ?? '',
+      startDate: DateTime.parse(startDateStr),
+      endDate: DateTime.parse(endDateStr),
+      behaviors: tasks
+          .map((task) => task is Map ? task['label']?.toString() : null)
+          .whereType<String>()
+          .toList(),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'].toString())
+          : DateTime.now(),
     );
   }
 }
@@ -79,6 +78,10 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
   String? _userName;
   String? _userValueGoal;
 
+  // API 클라이언트
+  late final ApiClient _apiClient;
+  late final Week7Api _week7Api;
+
   static const Color _bluePrimary = Color(0xFF5DADEC);
   static const Color _chipBorderBlue = Color(0xFF7EB9FF);
   static const Color _checkedChipFill = Color(0xFFE5F1FF);
@@ -86,6 +89,8 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
   @override
   void initState() {
     super.initState();
+    _apiClient = ApiClient(tokens: TokenStorage());
+    _week7Api = Week7Api(_apiClient);
     _loadAddedBehaviors();
     _loadSavedEvents();
     _loadUserData();
@@ -96,6 +101,7 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
     super.didChangeDependencies();
     // 화면 복귀 시 전역 상태 동기화
     _loadAddedBehaviors();
+    _loadSavedEvents(); // 화면 복귀 시 이벤트도 다시 로드
   }
 
   // ───────────────── 로드/세이브/삭제 로직 ─────────────────
@@ -115,52 +121,38 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
 
   Future<void> _loadSavedEvents() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final eventsJson = prefs.getStringList('calendar_events') ?? [];
+      final events = await _week7Api.listScheduleEvents();
+      if (!mounted) return;
       setState(() {
         _savedEvents.clear();
-        for (final eventJson in eventsJson) {
+        for (final eventData in events) {
           try {
-            final eventData = jsonDecode(eventJson);
-            _savedEvents.add(CalendarEvent.fromJson(eventData));
-          } catch (_) {}
+            _savedEvents.add(CalendarEvent.fromApiResponse(eventData));
+          } catch (e) {
+            debugPrint('이벤트 파싱 오류: $e');
+          }
         }
       });
     } catch (e) {
       debugPrint('캘린더 이벤트 로드 오류: $e');
+      if (mounted) {
+        BlueBanner.show(context, '캘린더 이벤트를 불러오지 못했습니다.');
+      }
     }
   }
 
-  Future<void> _saveEvent(CalendarEvent event) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final eventsJson = prefs.getStringList('calendar_events') ?? [];
-      eventsJson.add(jsonEncode(event.toJson()));
-      await prefs.setStringList('calendar_events', eventsJson);
-      setState(() => _savedEvents.add(event));
-    } catch (e) {
-      debugPrint('캘린더 이벤트 저장 오류: $e');
-    }
-  }
 
   Future<void> _deleteEvent(String eventId) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final eventsJson = prefs.getStringList('calendar_events') ?? [];
-
-      eventsJson.removeWhere((eventJson) {
-        try {
-          final eventData = jsonDecode(eventJson);
-          return eventData['id'] == eventId;
-        } catch (_) {
-          return false;
-        }
-      });
-
-      await prefs.setStringList('calendar_events', eventsJson);
-      setState(() => _savedEvents.removeWhere((e) => e.id == eventId));
+      await _week7Api.deleteScheduleEvent(eventId);
+      if (mounted) {
+        setState(() => _savedEvents.removeWhere((e) => e.id == eventId));
+      }
     } catch (e) {
       debugPrint('캘린더 이벤트 삭제 오류: $e');
+      if (mounted) {
+        BlueBanner.show(context, '이벤트 삭제에 실패했습니다: $e');
+      }
     }
   }
 
@@ -252,15 +244,31 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
     BlueBanner.show(context, '"$behavior"이(가) 추가되었습니다.');
   }
 
-  void _removeAddedBehavior(String behavior) {
-    final newGlobalBehaviors = Set<String>.from(_addedBehaviors)..remove(behavior);
-    Week7AddDisplayScreen.updateGlobalAddedBehaviors(newGlobalBehaviors);
+  Future<void> _removeAddedBehavior(String behavior) async {
+    try {
+      // chip_id 찾기
+      final behaviorToChip = Week7AddDisplayScreen.globalBehaviorToChip;
+      final chipId = behaviorToChip[behavior];
+      
+      if (chipId != null) {
+        // 백엔드에서 삭제
+        await _week7Api.deleteClassificationItem(chipId);
+      }
 
-    setState(() {
-      _addedBehaviors.remove(behavior);
-    });
+      // 전역 상태 업데이트
+      final newGlobalBehaviors = Set<String>.from(_addedBehaviors)..remove(behavior);
+      Week7AddDisplayScreen.updateGlobalAddedBehaviors(newGlobalBehaviors);
 
-    BlueBanner.show(context, '행동이 제거되었습니다.');
+      if (mounted) {
+        setState(() {
+          _addedBehaviors.remove(behavior);
+        });
+        BlueBanner.show(context, '"$behavior"이(가) 건강한 생활 습관에서 제거되었습니다.');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      BlueBanner.show(context, '제거에 실패했습니다: $e');
+    }
   }
 
   void _removeNewBehavior(String behavior) {
@@ -602,25 +610,40 @@ class _Week7PlanningScreenState extends State<Week7PlanningScreen> {
       return;
     }
 
-    final duration = endDate.difference(startDate).inDays + 1;
+    try {
+      final duration = endDate.difference(startDate).inDays + 1;
 
-    final event = CalendarEvent(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      startDate: startDate,
-      endDate: endDate,
-      behaviors: behaviors,
-      createdAt: DateTime.now(),
-    );
+      // 행동 이름을 tasks 형식으로 변환 (chip_id 포함)
+      final behaviorToChip = Week7AddDisplayScreen.globalBehaviorToChip;
+      final tasks = behaviors
+          .map((behavior) => {
+                'label': behavior,
+                'chip_id': behaviorToChip[behavior], // 추가된 행동이면 chip_id 전달
+              })
+          .toList();
 
-    await _saveEvent(event);
+      final response = await _week7Api.createScheduleEvent(
+        startDate: startDate,
+        endDate: endDate,
+        tasks: tasks,
+      );
 
-    BlueBanner.show(
-      context,
-      '${behaviors.length}개의 행동이 '
-          '${startDate.month}월 ${startDate.day}일부터 ${endDate.month}월 ${endDate.day}일까지 '
-          '(${duration}일간) 캘린더에 추가되었습니다.',
-      duration: const Duration(seconds: 4),
-    );
+      // 응답에서 생성된 이벤트로 업데이트
+      final savedEvent = CalendarEvent.fromApiResponse(response);
+      if (mounted) {
+        setState(() => _savedEvents.add(savedEvent));
+        BlueBanner.show(
+          context,
+          '${behaviors.length}개의 행동이 '
+              '${startDate.month}월 ${startDate.day}일부터 ${endDate.month}월 ${endDate.day}일까지 '
+              '(${duration}일간) 캘린더에 추가되었습니다.',
+          duration: const Duration(seconds: 4),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      BlueBanner.show(context, '캘린더에 추가하는데 실패했습니다: $e');
+    }
   }
 
   // ───────────────── UI ─────────────────

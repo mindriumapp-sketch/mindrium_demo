@@ -2,6 +2,7 @@ import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import get_settings
+from db.mongo import get_db
 from routers.auth import router as auth_router
 from routers.users import router as users_router
 from routers.diaries import router as diaries_router
@@ -10,6 +11,7 @@ from routers.user_data import router as user_data_router
 from routers.notifications import router as notifications_router
 from routers.relaxation_tasks import router as relaxation_router
 from routers.screen_time import router as screen_time_router
+from routers.schedule_events import router as schedule_events_router
 
 settings = get_settings()
 
@@ -31,6 +33,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def root():
+    return {
+        "message": "Mindrium API",
+        "version": "0.1.0",
+        "docs": "/docs",
+        "health": "/health"
+    }
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}
@@ -45,3 +56,18 @@ app.include_router(user_data_router)
 app.include_router(notifications_router)
 app.include_router(relaxation_router)
 app.include_router(screen_time_router)
+app.include_router(schedule_events_router)
+
+
+@app.on_event("startup")
+async def create_indexes():
+    """앱 시작 시 MongoDB 인덱스 생성"""
+    db = get_db()
+    
+    # schedule_events 컬렉션 인덱스 생성
+    try:
+        await db["schedule_events"].create_index("user_id")
+        await db["schedule_events"].create_index([("user_id", 1), ("start_date", 1)])
+        print("✅ schedule_events 인덱스 생성 완료")
+    except Exception as e:
+        print(f"⚠️ schedule_events 인덱스 생성 중 오류 (이미 존재할 수 있음): {e}")

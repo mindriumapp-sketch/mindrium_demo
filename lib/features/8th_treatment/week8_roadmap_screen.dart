@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:gad_app_team/data/user_data_storage.dart';
 import 'package:gad_app_team/widgets/blue_banner.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart';
-import 'package:gad_app_team/features/8th_treatment/week8_user_journey_screen.dart';
+import 'package:gad_app_team/features/8th_treatment/week8_planning_check_screen.dart';
 
 class Week8RoadmapScreen extends StatefulWidget {
   const Week8RoadmapScreen({super.key});
@@ -51,7 +51,7 @@ class _Week8RoadmapScreenState extends State<Week8RoadmapScreen> {
           () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const Week8UserJourneyScreen(),
+              builder: (context) => const Week8PlanningCheckScreen(),
             ),
           ),
       child: Column(
@@ -61,7 +61,7 @@ class _Week8RoadmapScreenState extends State<Week8RoadmapScreen> {
           const SizedBox(height: 28),
 
           // 주차별 카드 리스트
-          ...List.generate(7, (i) {
+          ...List.generate(8, (i) {
             final week = i + 1;
             final data = _getWeekData(week);
             return _buildWeekCard(week, data['title']!, data['description']!);
@@ -76,20 +76,20 @@ class _Week8RoadmapScreenState extends State<Week8RoadmapScreen> {
   /// 상단 헤더
   Widget _buildHeaderSection() {
     return Column(
-        children: [
-          Text(
-            _userName.isNotEmpty ? '$_userName님의 8주간 여정' : '8주간의 여정',
-            style: const TextStyle(
-              fontFamily: 'NotoSansKR',
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1B3A57),
-            ),
+      children: [
+        Text(
+          _userName.isNotEmpty ? '$_userName님의 8주간 여정' : '8주간의 여정',
+          style: const TextStyle(
+            fontFamily: 'NotoSansKR',
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1B3A57),
           ),
-          const SizedBox(height: 16),
-          JellyfishBanner(message: '지난 7주간의 Mindrium 훈련을 \n함께 되돌아봅시다 🌊'),
-        ],
-      );
+        ),
+        const SizedBox(height: 16),
+        JellyfishBanner(message: '8주간의 Mindrium 훈련을 \n함께 되돌아봅시다 🌊'),
+      ],
+    );
   }
 
   /// 주차별 카드 디자인 (ApplyDesign 내부에서 쓸 수 있는 수준의 경량 디자인)
@@ -208,6 +208,8 @@ class _Week8RoadmapScreenState extends State<Week8RoadmapScreen> {
         return {'title': '6주차: 실전 구분 연습', 'description': '걱정일기 속 행동을 분석해보기'};
       case 7:
         return {'title': '7주차: 건강한 생활 습관', 'description': '한 주간 실천할 습관 세우기'};
+      case 8:
+        return {'title': '8주차: 인지 재구성', 'description': '인지 재구성 연습하기'};
       default:
         return {'title': '', 'description': ''};
     }

@@ -1,8 +1,11 @@
 // File: features/8th_treatment/week8_gad7_screen.dart
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart';
-import 'package:gad_app_team/features/8th_treatment/week8_planning_check_screen.dart';
+import 'package:gad_app_team/features/8th_treatment/week8_survey_screen.dart';
 import 'package:gad_app_team/widgets/blue_banner.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/survey_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 class Week8Gad7Screen extends StatefulWidget {
   const Week8Gad7Screen({super.key});
@@ -14,6 +17,11 @@ class Week8Gad7Screen extends StatefulWidget {
 class _Week8Gad7ScreenState extends State<Week8Gad7Screen> {
   final List<int> _answers = List.filled(7, -1);
   bool _isCompleted = false;
+  bool _isSubmitting = false;
+
+  // API 클라이언트
+  late final ApiClient _apiClient;
+  late final SurveyApi _surveyApi;
 
   final List<String> _questions = [
     '최근 2주간, 초조하거나 불안하거나 조마조마하게 느낀다.',
@@ -51,26 +59,51 @@ class _Week8Gad7ScreenState extends State<Week8Gad7Screen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _apiClient = ApiClient(tokens: TokenStorage());
+    _surveyApi = SurveyApi(_apiClient);
+  }
+
+  Future<void> _submitAndNavigate() async {
+    if (_isSubmitting || !_isCompleted) return;
+    setState(() => _isSubmitting = true);
+
+    try {
+      final score = _score();
+      await _surveyApi.submitSurvey(
+        surveyType: 'after_survey',
+        answers: {'gad7_answers': _answers, 'gad7_score': score},
+      );
+
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const Week8SurveyScreen()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      BlueBanner.show(context, '설문 제출에 실패했습니다: $e');
+      setState(() => _isSubmitting = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ApplyDesign(
-      appBarTitle: '8주차 - GAD-7 불안 평가',
-      cardTitle: 'Mindrium 불안 자가평가',
+      appBarTitle: '8주차 - 불안 평가',
+      cardTitle: 'Mindrium 사용 후\n불안이 얼마나 줄었나요?',
       onBack: () => Navigator.pop(context),
       onNext:
           _isCompleted
-              ? () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const Week8PlanningCheckScreen(),
-                ),
-              )
+              ? _submitAndNavigate
               : () => ScaffoldMessenger.of(
                 context,
               ).showSnackBar(const SnackBar(content: Text('모든 문항에 답해주세요.'))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          JellyfishBanner(message: '지난 2주 동안의 불안 증상을 \n아래 항목에 따라 평가해주세요.',),
+          JellyfishBanner(message: '지난 2주 동안의 불안 증상을 \n아래 항목에 따라 평가해주세요.'),
           const SizedBox(height: 30),
           ...List.generate(_questions.length, _buildQuestionCard),
           const SizedBox(height: 28),

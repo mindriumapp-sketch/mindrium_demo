@@ -18,8 +18,7 @@ class _SColors {
   static const cardRadius = AppSizes.borderRadius;
   static const cardStrokeW = 2.0;
 
-  // 버튼 & 라디오
-  static const radioAccent = Color(0xFF141F35);
+  // 버튼
   static const btnFill = Color(0xFF5DADEC);
   static const btnText = AppColors.white;
 }
@@ -92,31 +91,6 @@ class _SurveyCard extends StatelessWidget {
   }
 }
 
-/// --------- 라디오 옵션 ---------
-class _OptionTile extends StatelessWidget {
-  final String label;
-  final int value;
-  final int? groupValue;
-  final ValueChanged<int?> onChanged;
-  const _OptionTile({
-    required this.label,
-    required this.value,
-    required this.groupValue,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return RadioListTile<int>(
-      title: Text(label, style: _SText.label),
-      value: value,
-      groupValue: groupValue,
-      onChanged: onChanged,
-      activeColor: _SColors.radioAccent,
-      contentPadding: EdgeInsets.zero,
-    );
-  }
-}
 
 /// --------- 버튼 ---------
 class _PrimaryButton extends StatelessWidget {
@@ -191,6 +165,137 @@ class _BeforeSurveyScreenState extends State<BeforeSurveyScreen> {
     );
   }
 
+  /// 🌊 질문 카드 (8주차 스타일)
+  Widget _buildQuestionCard(int qIndex) {
+    final question = _questions[qIndex];
+    // 질문 텍스트에서 번호 제거 (이미 번호가 포함되어 있음)
+    final questionText = question;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.92),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFB9EAFD)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF74D2FF).withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 질문 헤더
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF74D2FF), Color(0xFF99E0FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(
+                    '${qIndex + 1}',
+                    style: const TextStyle(
+                      fontFamily: 'NotoSansKR',
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  questionText,
+                  style: const TextStyle(
+                    fontFamily: 'NotoSansKR',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1B3A57),
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // 선택지
+          ...List.generate(kFrequencyOptions.length, (opt) => _buildOption(qIndex, opt)),
+        ],
+      ),
+    );
+  }
+
+  /// 🔘 선택지 버튼 (8주차 스타일)
+  Widget _buildOption(int q, int opt) {
+    final selected = _answers[q] == opt;
+    return GestureDetector(
+      onTap: () => setState(() => _answers[q] = opt),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFE6F3FA) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? const Color(0xFF74D2FF) : const Color(0xFFE2E8F0),
+            width: selected ? 1.8 : 1,
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF74D2FF).withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? const Color(0xFF74D2FF) : Colors.transparent,
+                border: Border.all(
+                  color: selected ? const Color(0xFF74D2FF) : const Color(0xFFCBD5E0),
+                  width: 2,
+                ),
+              ),
+              child: selected
+                  ? const Icon(Icons.check, color: Colors.white, size: 12)
+                  : null,
+            ),
+            const SizedBox(width: 14),
+            Text(
+              kFrequencyOptions[opt],
+              style: TextStyle(
+                fontFamily: 'NotoSansKR',
+                fontSize: 15,
+                color: selected ? const Color(0xFF1B3A57) : const Color(0xFF4A5568),
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -217,27 +322,7 @@ class _BeforeSurveyScreenState extends State<BeforeSurveyScreen> {
                   ),
                   const SizedBox(height: 16),
                   ...List.generate(_questions.length, (qIndex) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: _SurveyCard(
-                        title: _questions[qIndex],
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: List.generate(kFrequencyOptions.length, (
-                            oIndex,
-                          ) {
-                            return _OptionTile(
-                              label: kFrequencyOptions[oIndex],
-                              value: oIndex,
-                              groupValue: _answers[qIndex],
-                              onChanged:
-                                  (val) =>
-                                      setState(() => _answers[qIndex] = val),
-                            );
-                          }),
-                        ),
-                      ),
-                    );
+                    return _buildQuestionCard(qIndex);
                   }),
                   const SizedBox(height: 16),
                   _PrimaryButton(text: "다음", onPressed: _next),
@@ -335,6 +420,137 @@ class _Gad7SurveyScreenState extends State<Gad7SurveyScreen> {
     }
   }
 
+  /// 🌊 질문 카드 (8주차 스타일)
+  Widget _buildGadQuestionCard(int qIndex) {
+    final question = _gadQuestions[qIndex];
+    // 질문 텍스트에서 번호 제거 (이미 번호가 포함되어 있음)
+    final questionText = question;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.92),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFB9EAFD)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF74D2FF).withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 질문 헤더
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF74D2FF), Color(0xFF99E0FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(
+                    '${qIndex + 1}',
+                    style: const TextStyle(
+                      fontFamily: 'NotoSansKR',
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  questionText,
+                  style: const TextStyle(
+                    fontFamily: 'NotoSansKR',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1B3A57),
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // 선택지
+          ...List.generate(kFrequencyOptions.length, (opt) => _buildGadOption(qIndex, opt)),
+        ],
+      ),
+    );
+  }
+
+  /// 🔘 선택지 버튼 (8주차 스타일)
+  Widget _buildGadOption(int q, int opt) {
+    final selected = _gadAnswers[q] == opt;
+    return GestureDetector(
+      onTap: () => setState(() => _gadAnswers[q] = opt),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFE6F3FA) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? const Color(0xFF74D2FF) : const Color(0xFFE2E8F0),
+            width: selected ? 1.8 : 1,
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF74D2FF).withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? const Color(0xFF74D2FF) : Colors.transparent,
+                border: Border.all(
+                  color: selected ? const Color(0xFF74D2FF) : const Color(0xFFCBD5E0),
+                  width: 2,
+                ),
+              ),
+              child: selected
+                  ? const Icon(Icons.check, color: Colors.white, size: 12)
+                  : null,
+            ),
+            const SizedBox(width: 14),
+            Text(
+              kFrequencyOptions[opt],
+              style: TextStyle(
+                fontFamily: 'NotoSansKR',
+                fontSize: 15,
+                color: selected ? const Color(0xFF1B3A57) : const Color(0xFF4A5568),
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -361,27 +577,7 @@ class _Gad7SurveyScreenState extends State<Gad7SurveyScreen> {
                   ),
                   const SizedBox(height: 16),
                   ...List.generate(_gadQuestions.length, (qIndex) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: _SurveyCard(
-                        title: _gadQuestions[qIndex],
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: List.generate(kFrequencyOptions.length, (
-                            oIndex,
-                          ) {
-                            return _OptionTile(
-                              label: kFrequencyOptions[oIndex],
-                              value: oIndex,
-                              groupValue: _gadAnswers[qIndex],
-                              onChanged:
-                                  (val) =>
-                                      setState(() => _gadAnswers[qIndex] = val),
-                            );
-                          }),
-                        ),
-                      ),
-                    );
+                    return _buildGadQuestionCard(qIndex);
                   }),
                   const SizedBox(height: 16),
                   _PrimaryButton(text: "완료", onPressed: _submit),

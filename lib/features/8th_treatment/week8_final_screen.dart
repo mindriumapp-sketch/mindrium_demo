@@ -3,9 +3,29 @@ import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/custom_popup_design.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/widgets/round_card.dart';
+import 'package:gad_app_team/widgets/blue_banner.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/week8_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
-class Week8FinalScreen extends StatelessWidget {
-  const Week8FinalScreen({super.key,});
+class Week8FinalScreen extends StatefulWidget {
+  const Week8FinalScreen({super.key});
+
+  @override
+  State<Week8FinalScreen> createState() => _Week8FinalScreenState();
+}
+
+class _Week8FinalScreenState extends State<Week8FinalScreen> {
+  late final ApiClient _apiClient;
+  late final Week8Api _week8Api;
+  bool _isSavingCompletion = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _apiClient = ApiClient(tokens: TokenStorage());
+    _week8Api = Week8Api(_apiClient);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,18 +145,29 @@ class Week8FinalScreen extends StatelessWidget {
         backgroundAsset: null,
         iconAsset: null,
         onPositivePressed: () async {
-          // await EduProgress.markWeekDone(1);
-          Navigator.pop(context);
-          Navigator.pushReplacementNamed(
-            context,
-            '/relaxation_education',
-            arguments: {
-              'taskId': 'week8_education',
-              'weekNumber': 8,
-              'mp3Asset': 'week8.mp3',
-              'riveAsset': 'week8.riv',
-            },
-          );
+          if (_isSavingCompletion) return;
+          setState(() => _isSavingCompletion = true);
+          
+          try {
+            await _week8Api.updateCompletion(true);
+            if (!mounted) return;
+            
+            Navigator.pop(context);
+            Navigator.pushReplacementNamed(
+              context,
+              '/relaxation_education',
+              arguments: {
+                'taskId': 'week8_education',
+                'weekNumber': 8,
+                'mp3Asset': 'week8.mp3',
+                'riveAsset': 'week8.riv',
+              },
+            );
+          } catch (e) {
+            if (!mounted) return;
+            BlueBanner.show(context, '8주차 완료 상태 저장에 실패했습니다: $e');
+            setState(() => _isSavingCompletion = false);
+          }
         },
       ),
     );

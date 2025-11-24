@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/common/constants.dart';
 import 'package:gad_app_team/features/7th_treatment/week7_add_display_screen.dart';
 import 'package:gad_app_team/widgets/custom_popup_design.dart';
-
-/// TODO : buildInputText() 인가 그 위젯 아래 bottom 카드 다른 주차랑 동일하게
-/// 투명한 파란색으로 바꿔놔야 함
-
-// ✅ 추가: 위아래 카드 레이아웃
+import 'package:gad_app_team/widgets/blue_banner.dart';
 import 'package:gad_app_team/widgets/top_btm_card.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/week7_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 class Week7GainLoseScreen extends StatefulWidget {
   final String behavior;
+  final String chipId;
+  final String reason;
 
-  const Week7GainLoseScreen({super.key, required this.behavior});
+  const Week7GainLoseScreen({
+    super.key,
+    required this.behavior,
+    required this.chipId,
+    required this.reason,
+  });
 
   @override
   State<Week7GainLoseScreen> createState() => _Week7GainLoseScreenState();
@@ -20,13 +25,13 @@ class Week7GainLoseScreen extends StatefulWidget {
 
 class _Week7GainLoseScreenState extends State<Week7GainLoseScreen> {
   final TextEditingController _executionGainController =
-  TextEditingController();
+      TextEditingController();
   final TextEditingController _executionLoseController =
-  TextEditingController();
+      TextEditingController();
   final TextEditingController _nonExecutionGainController =
-  TextEditingController();
+      TextEditingController();
   final TextEditingController _nonExecutionLoseController =
-  TextEditingController();
+      TextEditingController();
 
   // 0: 단기적 이익, 1: 장기적 이익(예/아니오), 2: 하지 않았을 때 이익, 3: 단기적 불이익, 4: 장기적 불이익(예/아니오)
   int _currentStep = 0;
@@ -34,12 +39,15 @@ class _Week7GainLoseScreenState extends State<Week7GainLoseScreen> {
   bool? _hasLongTermBenefit; // 장기적 이익 여부
   bool? _hasLongTermDisadvantage; // 장기적 불이익 여부
 
-  static const double _sidePad = 34.0;
-  static const Color _bluePrimary = Color(0xFF339DF1);
+  late final ApiClient _client;
+  late final Week7Api _week7Api;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
+    _client = ApiClient(tokens: TokenStorage());
+    _week7Api = Week7Api(_client);
     _executionGainController.addListener(_onTextChanged);
     _executionLoseController.addListener(_onTextChanged);
     _nonExecutionGainController.addListener(_onTextChanged);
@@ -75,6 +83,51 @@ class _Week7GainLoseScreenState extends State<Week7GainLoseScreen> {
           break;
       }
     });
+  }
+
+  Map<String, dynamic> _buildAnalysisPayload() {
+    final map = <String, dynamic>{
+      'execution_short_gain': _executionGainController.text.trim(),
+      'execution_long_benefit': _hasLongTermBenefit,
+      'non_execution_gain': _nonExecutionGainController.text.trim(),
+      'non_execution_short_loss': _executionLoseController.text.trim(),
+      'non_execution_long_loss': _hasLongTermDisadvantage,
+    };
+
+    map.removeWhere(
+      (key, value) =>
+          value == null || (value is String && value.trim().isEmpty),
+    );
+    return map;
+  }
+
+  Future<void> _persistAvoidBehavior() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      final analysis = _buildAnalysisPayload();
+      await _week7Api.upsertClassificationItem(
+        chipId: widget.chipId,
+        classification: 'avoid',
+        reason: widget.reason,
+        analysis: analysis.isEmpty ? null : analysis,
+      );
+      if (mounted) {
+        BlueBanner.show(
+          context,
+          '"${widget.behavior}"이(가) 건강한 생활 습관에 추가되었습니다.',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        BlueBanner.show(context, '저장에 실패했습니다: $e');
+      }
+      rethrow;
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   void _nextStep() {
@@ -318,26 +371,25 @@ class _Week7GainLoseScreenState extends State<Week7GainLoseScreen> {
               ),
             );
           },
-          onPositivePressed: () {
+          onPositivePressed: () async {
             Navigator.of(context).pop();
-
-            final updated = Set<String>.from(
-              Week7AddDisplayScreen.globalAddedBehaviors,
-            )..add(widget.behavior);
-            Week7AddDisplayScreen.updateGlobalAddedBehaviors(updated);
-
-            Navigator.pushReplacement(
-              context,
-              PageRouteBuilder(
-                pageBuilder:
-                    (_, __, ___) => Week7AddDisplayScreen(
-                  initialBehavior: widget.behavior,
-                  deferInitialMarkAsAdded: false,
+            try {
+              await _persistAvoidBehavior();
+              if (!mounted) return;
+              Navigator.pushReplacement(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (_, __, ___) => Week7AddDisplayScreen(
+                    initialBehavior: widget.behavior,
+                    deferInitialMarkAsAdded: false,
+                  ),
+                  transitionDuration: Duration.zero,
+                  reverseTransitionDuration: Duration.zero,
                 ),
-                transitionDuration: Duration.zero,
-                reverseTransitionDuration: Duration.zero,
-              ),
-            );
+              );
+            } catch (_) {
+              // 오류 메시지는 _persistAvoidBehavior에서 처리
+            }
           },
         );
       },

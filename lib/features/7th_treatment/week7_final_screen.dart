@@ -3,12 +3,35 @@ import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/custom_popup_design.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
 import 'package:gad_app_team/widgets/round_card.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/week7_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
-class Week7FinalScreen extends StatelessWidget {
-  const Week7FinalScreen({super.key,});
+class Week7FinalScreen extends StatefulWidget {
+  const Week7FinalScreen({super.key});
+
+  @override
+  State<Week7FinalScreen> createState() => _Week7FinalScreenState();
+}
+
+class _Week7FinalScreenState extends State<Week7FinalScreen> {
+  late final ApiClient _apiClient;
+  late final Week7Api _week7Api;
+  bool _isCompleting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _apiClient = ApiClient(tokens: TokenStorage());
+    _week7Api = Week7Api(_apiClient);
+  }
 
   @override
   Widget build(BuildContext context) {
+    return _buildContent(context);
+  }
+
+  Widget _buildContent(BuildContext context) {
     return Scaffold(
       // 💡 배경색은 Stack에서 처리
       extendBodyBehindAppBar: true,
@@ -100,7 +123,7 @@ class Week7FinalScreen extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                   child: NavigationButtons(
                     onBack: () => Navigator.pop(context),
-                    onNext: () => _showStartDialog(context),
+                    onNext: _isCompleting ? null : () => _showStartDialog(context),
                   ),
                 ),
               ],
@@ -112,7 +135,24 @@ class Week7FinalScreen extends StatelessWidget {
   }
 
   /// 🧘 이완 교육 다이얼로그 — CustomPopupDesign(확인 단일 버튼)
-  void _showStartDialog(BuildContext context) {
+  void _showStartDialog(BuildContext context) async {
+    // 완료 상태 저장
+    if (!_isCompleting) {
+      setState(() => _isCompleting = true);
+      try {
+        await _week7Api.updateCompletion(true);
+      } catch (e) {
+        debugPrint('7주차 완료 상태 저장 실패: $e');
+        // 에러가 발생해도 다음 화면으로 진행
+      } finally {
+        if (mounted) {
+          setState(() => _isCompleting = false);
+        }
+      }
+    }
+
+    if (!mounted) return;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -124,8 +164,7 @@ class Week7FinalScreen extends StatelessWidget {
         negativeText: null,
         backgroundAsset: null,
         iconAsset: null,
-        onPositivePressed: () async {
-          // await EduProgress.markWeekDone(1);
+        onPositivePressed: () {
           Navigator.pop(context);
           Navigator.pushReplacementNamed(
             context,

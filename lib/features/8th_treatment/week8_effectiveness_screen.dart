@@ -1,19 +1,18 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gad_app_team/common/constants.dart';
 import 'package:gad_app_team/features/8th_treatment/week8_schedule_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gad_app_team/widgets/blue_banner.dart';
-
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/custom_popup_design.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
-import 'package:gad_app_team/widgets/behavior_confirm_dialog.dart';
 import 'package:gad_app_team/widgets/eduhome_bg.dart';
 import 'package:gad_app_team/widgets/jellyfish_notice.dart';
 import 'package:gad_app_team/widgets/quiz_card.dart';
 import 'package:gad_app_team/widgets/choice_card_button.dart';
+import 'package:gad_app_team/features/7th_treatment/week7_add_display_screen.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/week8_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // 모델
@@ -63,7 +62,6 @@ class Week8EffectivenessScreen extends StatefulWidget {
 
 class _Week8EffectivenessScreenState extends State<Week8EffectivenessScreen> {
   // 컬러 상수
-  static const bluePrimary = Color(0xFF5DADEC); // 진행바/버튼
   static const chipBorderBlue = Color(0xFF6DBEF2);
   static const checkedChipFill = Color(0xFFDDEEFF);
 
@@ -87,9 +85,18 @@ class _Week8EffectivenessScreenState extends State<Week8EffectivenessScreen> {
   bool _answered = false; // 이번 질문에 예/아니오를 눌렀는가
   bool _answeredYes = true; // true면 예, false면 아니오
 
+  // 평가 결과 저장 (behavior -> {was_effective, will_continue})
+  final Map<String, Map<String, bool>> _evaluationResults = {};
+
+  // API 클라이언트
+  late final ApiClient _apiClient;
+  late final Week8Api _week8Api;
+
   @override
   void initState() {
     super.initState();
+    _apiClient = ApiClient(tokens: TokenStorage());
+    _week8Api = Week8Api(_apiClient);
     _init();
   }
 
@@ -102,16 +109,14 @@ class _Week8EffectivenessScreenState extends State<Week8EffectivenessScreen> {
   }
 
   Future<void> _loadUser() async {
-    try {
-      final u = FirebaseAuth.instance.currentUser;
-      if (u == null) return;
-      final doc =
-      await FirebaseFirestore.instance.collection('users').doc(u.uid).get();
-      if (!doc.exists) return;
-      final d = doc.data();
-      _userName = d?['name'] as String?;
-      _userValueGoal = d?['value_goal'] as String?;
-    } catch (_) {}
+    // TODO: 사용자 정보는 필요시 UserDataApi에서 가져오기
+    // 현재는 사용하지 않으므로 주석 처리
+    // try {
+    //   final userDataApi = UserDataApi(_apiClient);
+    //   final user = await userDataApi.getUser();
+    //   _userName = user['name'] as String?;
+    //   _userValueGoal = user['value_goal'] as String?;
+    // } catch (_) {}
   }
 
   String get _currentBehavior => _checkedBehaviors[_currentBehaviorIndex];
@@ -143,6 +148,12 @@ class _Week8EffectivenessScreenState extends State<Week8EffectivenessScreen> {
       return;
     }
 
+    // 현재 행동의 평가 결과 저장
+    _evaluationResults[_currentBehavior] = {
+      'was_effective': _wasEffective ?? false,
+      'will_continue': _willContinue ?? false,
+    };
+
     // 유지하기 않음 선택 시 제거 목록에 추가
     if (_willContinue == false) {
       _removedBehaviors.add(_currentBehavior);
@@ -158,7 +169,7 @@ class _Week8EffectivenessScreenState extends State<Week8EffectivenessScreen> {
         _answered = false; // ✅ 새 행동이므로 초기화
       });
     } else {
-      _showDone();
+      _saveEvaluations();
     }
   }
 
@@ -181,6 +192,35 @@ class _Week8EffectivenessScreenState extends State<Week8EffectivenessScreen> {
 
     // 그 외에는 나가기
     Navigator.pop(context);
+  }
+
+  Future<void> _saveEvaluations() async {
+    try {
+      // behavior -> chip_id 매핑 가져오기
+      final behaviorToChip = Week7AddDisplayScreen.globalBehaviorToChip;
+      
+      // 평가 결과를 API 형식으로 변환
+      final evaluations = _evaluationResults.entries.map((entry) {
+        final behavior = entry.key;
+        final result = entry.value;
+        final chipId = behaviorToChip[behavior]; // null일 수 있음 (새로 추가한 행동)
+        
+        return {
+          'behavior': behavior, // 항상 포함 (chip_id가 없을 때 식별용)
+          if (chipId != null) 'chip_id': chipId, // chip_id가 있을 때만 포함
+          'was_effective': result['was_effective'] ?? false,
+          'will_continue': result['will_continue'] ?? false,
+        };
+      }).toList();
+
+      await _week8Api.updateEffectiveness(evaluations: evaluations);
+      
+      if (!mounted) return;
+      _showDone();
+    } catch (e) {
+      if (!mounted) return;
+      BlueBanner.show(context, '평가 저장에 실패했습니다: $e');
+    }
   }
 
   void _showDone() {

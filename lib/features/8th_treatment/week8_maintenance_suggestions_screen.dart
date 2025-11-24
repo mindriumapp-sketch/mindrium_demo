@@ -1,6 +1,6 @@
 // File: features/8th_treatment/week8_maintenance_suggestions_screen.dart
 import 'package:flutter/material.dart';
-import 'package:gad_app_team/features/8th_treatment/week8_final_screen.dart';
+import 'package:gad_app_team/features/8th_treatment/week8_gad7_screen.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart';
 
 class Week8MaintenanceSuggestionsScreen extends StatefulWidget {
@@ -33,7 +33,7 @@ class _Week8MaintenanceSuggestionsScreenState
       Navigator.push(
         context,
         PageRouteBuilder(
-          pageBuilder: (_, __, ___) => Week8FinalScreen(),
+          pageBuilder: (_, __, ___) => const Week8Gad7Screen(),
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
         ),

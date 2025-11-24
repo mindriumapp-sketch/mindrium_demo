@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:gad_app_team/features/7th_treatment/week7_final_screen.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
 import 'package:gad_app_team/widgets/navigation_button.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gad_app_team/widgets/calendar_sheet.dart';
-import 'dart:convert';
 import 'package:gad_app_team/widgets/eduhome_bg.dart';
-import 'package:gad_app_team/utils/edu_progress.dart';
+import 'package:gad_app_team/data/api/api_client.dart';
+import 'package:gad_app_team/data/api/week7_api.dart';
+import 'package:gad_app_team/data/storage/token_storage.dart';
 
-/// 캘린더 이벤트 모델
+/// 캘린더 이벤트 모델 (백엔드 ScheduleEvent와 호환)
 class CalendarEvent {
   final String id;
   final DateTime startDate;
@@ -24,21 +24,25 @@ class CalendarEvent {
     required this.createdAt,
   });
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'startDate': startDate.toIso8601String(),
-    'endDate': endDate.toIso8601String(),
-    'behaviors': behaviors,
-    'createdAt': createdAt.toIso8601String(),
-  };
-
-  factory CalendarEvent.fromJson(Map<String, dynamic> json) => CalendarEvent(
-    id: json['id'],
-    startDate: DateTime.parse(json['startDate']),
-    endDate: DateTime.parse(json['endDate']),
-    behaviors: List<String>.from(json['behaviors']),
-    createdAt: DateTime.parse(json['createdAt']),
-  );
+  // 백엔드 ScheduleEventResponse에서 변환
+  factory CalendarEvent.fromApiResponse(Map<String, dynamic> json) {
+    final startDateStr = json['start_date']?.toString() ?? '';
+    final endDateStr = json['end_date']?.toString() ?? '';
+    final tasks = json['tasks'] as List<dynamic>? ?? [];
+    
+    return CalendarEvent(
+      id: json['event_id']?.toString() ?? '',
+      startDate: DateTime.parse(startDateStr),
+      endDate: DateTime.parse(endDateStr),
+      behaviors: tasks
+          .map((task) => task is Map ? task['label']?.toString() : null)
+          .whereType<String>()
+          .toList(),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'].toString())
+          : DateTime.now(),
+    );
+  }
 }
 
 class Week7CalendarSummaryScreen extends StatefulWidget {
@@ -62,26 +66,29 @@ class _Week7CalendarSummaryScreenState
   // 진한 하늘색
   static const Color _matrixBadgeBlue = Color(0xFF8ED7FF);
 
+  // API 클라이언트
+  late final ApiClient _apiClient;
+  late final Week7Api _week7Api;
+
   @override
   void initState() {
     super.initState();
+    _apiClient = ApiClient(tokens: TokenStorage());
+    _week7Api = Week7Api(_apiClient);
     _loadSavedEvents();
   }
 
   Future<void> _loadSavedEvents() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final eventsJson = prefs.getStringList('calendar_events') ?? [];
-
-      // ✅ 여기만 원본 스타일로 되돌림: 하나씩 파싱하고 실패한 것만 버린다
+      final events = await _week7Api.listScheduleEvents();
+      if (!mounted) return;
+      
       final List<CalendarEvent> parsed = [];
-      for (final eventJson in eventsJson) {
+      for (final eventData in events) {
         try {
-          final data = jsonDecode(eventJson);
-          parsed.add(CalendarEvent.fromJson(data));
+          parsed.add(CalendarEvent.fromApiResponse(eventData));
         } catch (e) {
-          // 파싱 하나 실패해도 전체가 안 죽도록
-          debugPrint('캘린더 이벤트 파싱 실패: $e');
+          debugPrint('이벤트 파싱 실패: $e');
         }
       }
 
@@ -91,7 +98,9 @@ class _Week7CalendarSummaryScreenState
       });
     } catch (e) {
       debugPrint('캘린더 이벤트 로드 실패: $e');
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
