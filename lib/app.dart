@@ -150,7 +150,7 @@ class MyApp extends StatelessWidget {
         '/relaxation_education': (context) {
           final args =
               (ModalRoute.of(context)!.settings.arguments as Map?) ?? {};
-          final taskId = args['taskId'] as String? ?? 'wk01-pmr-breath';
+          final taskId = args['taskId'] as String? ?? 'week1_education';
           final weekNumber = args['weekNumber'] as int? ?? 1;
           final mp3Asset = args['mp3Asset'] as String? ?? 'week1.mp3';
           final riveAsset = args['riveAsset'] as String? ?? 'week1.riv';
@@ -164,8 +164,8 @@ class MyApp extends StatelessWidget {
         '/relaxation_noti': (context) {
           final args =
               (ModalRoute.of(context)!.settings.arguments as Map?) ?? {};
-          final taskId = args['taskId'] as String? ?? 'wk01-pmr-breath';
-          final weekNumber = args['weekNumber'] as int? ?? 1;
+          final taskId = args['taskId'] as String? ?? 'week1_daily';
+          final weekNumber = args['weekNumber'] as int?;
           final mp3Asset = args['mp3Asset'] as String? ?? 'week1.mp3';
           final riveAsset = args['riveAsset'] as String? ?? 'week1.riv';
           final nextPage = args['nextPage'] as String? ?? '/home';

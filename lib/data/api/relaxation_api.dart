@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import 'api_client.dart';
 
 /// 이완(점진적 이완 등) 관련 로그 전용 API 래퍼.
-/// MongoDB + FastAPI의 /users/me/relaxation_tasks 계열 엔드포인트를 감싼다.
+/// MongoDB + FastAPI의 /relaxation_tasks 계열 엔드포인트를 감싼다.
 class RelaxationApi {
   final ApiClient _client;
   RelaxationApi(this._client);
@@ -40,7 +40,7 @@ class RelaxationApi {
     };
 
     final res = await _client.dio.post(
-      '/users/me/relaxation_tasks',
+      '/relaxation_tasks',
       data: payload,
     );
     final data = res.data;
@@ -49,7 +49,7 @@ class RelaxationApi {
     }
     throw DioException(
       requestOptions: res.requestOptions,
-      message: 'Invalid /users/me/relaxation_tasks response',
+      message: 'Invalid /relaxation_tasks response',
     );
   }
 
@@ -69,7 +69,7 @@ class RelaxationApi {
     }
 
     final res = await _client.dio.get(
-      '/users/me/relaxation_tasks',
+      '/relaxation_tasks',
       queryParameters: query.isEmpty ? null : query,
     );
 
@@ -82,7 +82,7 @@ class RelaxationApi {
     }
     throw DioException(
       requestOptions: res.requestOptions,
-      message: 'Invalid /users/me/relaxation_tasks list response',
+      message: 'Invalid /relaxation_tasks list response',
     );
   }
 
@@ -104,7 +104,7 @@ class RelaxationApi {
     }
 
     final res = await _client.dio.get(
-      '/users/me/relaxation_tasks/latest',
+      '/relaxation_tasks/latest',
       queryParameters: query.isEmpty ? null : query,
     );
     final data = res.data;
@@ -114,20 +114,20 @@ class RelaxationApi {
 
     throw DioException(
       requestOptions: res.requestOptions,
-      message: 'Invalid /users/me/relaxation_tasks/latest response',
+      message: 'Invalid /relaxation_tasks/latest response',
     );
   }
 
   /// 이완 점수(relaxation_score)만 업데이트
   ///
   /// - 다른 화면에서 점수 측정 후 호출.
-  /// - 서버 라우터: PATCH /users/me/relaxation_tasks/{relax_id}/score
+  /// - 서버 라우터: PATCH /relaxation_tasks/{relax_id}/score
   Future<Map<String, dynamic>> updateRelaxationScore({
     required String relaxId,
     required double relaxationScore,
   }) async {
     final res = await _client.dio.patch(
-      '/users/me/relaxation_tasks/$relaxId/score',
+      '/relaxation_tasks/$relaxId/score',
       data: {
         'relaxation_score': relaxationScore,
       },
@@ -139,7 +139,7 @@ class RelaxationApi {
     }
     throw DioException(
       requestOptions: res.requestOptions,
-      message: 'Invalid /users/me/relaxation_tasks/{relaxId}/score response',
+      message: 'Invalid /relaxation_tasks/{relaxId}/score response',
     );
   }
 }

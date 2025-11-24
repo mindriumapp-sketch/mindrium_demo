@@ -138,7 +138,6 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
         arguments: {
           ...args,
           'taskId': widget.abcId,
-          'weekNumber': 4,
           'mp3Asset': 'noti.mp3',
           'riveAsset': 'noti.riv',
           'nextPage': '/relaxation_score',
