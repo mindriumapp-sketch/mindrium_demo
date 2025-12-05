@@ -40,12 +40,12 @@ class JellyfishNotice extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.lightbulb_outline, size: 18, color: Color(0xFF666666)),
+                  const Text('💡', style: TextStyle(fontSize: 18)),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
                       feedback ??
-                          '지금은 위 생각에 대해 얼마나 강하게 믿고 계시나요? 아래 슬라이더를 조절하고 [다음]을 눌러주세요.',
+                          '지금은 위 생각에 대해 얼마나 강하게 믿고 계시나요? 아래 슬라이더를 조절하고 [ 다음 ]을 눌러주세요.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: feedback != null

@@ -99,7 +99,7 @@ class _Week4AlternativeThoughtsScreenState
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: ApplyDoubleCard(
-        appBarTitle: '4주차 - 인지 왜곡 찾기',
+        appBarTitle: '인지 왜곡 찾기',
 
         // ◀◀ 뒤로/다음 (기존 로직 유지)
         onBack: () => Navigator.pop(context),

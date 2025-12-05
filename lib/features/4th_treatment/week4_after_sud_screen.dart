@@ -149,7 +149,7 @@ class _Week4AfterSudScreenState extends State<Week4AfterSudScreen> {
   @override
   Widget build(BuildContext context) {
     return ApplyDesign(
-      appBarTitle: '4주차 - SUD 평가 (after)',
+      appBarTitle: '불안 평가',
       cardTitle: '지금 느끼는 불안 정도를\n선택해 주세요',
       onBack: () => Navigator.pop(context),
       onNext: _handleNext,

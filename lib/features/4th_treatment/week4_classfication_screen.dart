@@ -404,7 +404,7 @@ class Week4ClassificationScreenState extends State<Week4ClassificationScreen> {
       topChild: buildTopPanel(),
       bottomChild: buildBottomPanel(),
       middleBannerText:
-          '지금은 위 생각에 대해 얼마나 강하게 믿고 계시나요? 아래 슬라이더를 조정하고 [ 다음 ]을 눌러주세요.',
+          '지금은 위 생각에 대해 얼마나 강하게 믿고 계시나요?\n아래 슬라이더를 조정하고 [ 다음 ]을 눌러주세요.',
       panelsGap: 2,
     );
   }

@@ -78,7 +78,7 @@ class _Week4AfterAgreementScreenState extends State<Week4AfterAgreementScreen> {
       children: [
         SizedBox(height: 35),
         Text(
-          '$userName님께서 걱정일기에 작성하신 생각을 \n보며 진행해주세요.',
+          '$userName님께서 걱정일기에 작성하신 생각을 보며 진행해주세요.',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -311,7 +311,7 @@ class _Week4AfterAgreementScreenState extends State<Week4AfterAgreementScreen> {
   @override
   Widget build(BuildContext context) {
     return ApplyDoubleCard(
-      appBarTitle: '4주차 - 인지 왜곡 찾기',
+      appBarTitle: '인지 왜곡 찾기',
       onBack: () => Navigator.pop(context),
       onNext: _handleNext,
 

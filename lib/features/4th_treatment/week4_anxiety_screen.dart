@@ -36,7 +36,7 @@ class _Week4AnxietyScreenState extends State<Week4AnxietyScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: ApplyDoubleCard(
-        appBarTitle: '4주차 - 인지 왜곡 찾기',
+        appBarTitle: '인지 왜곡 찾기',
         onBack: () => Navigator.pop(context),
         onNext: _confirmed.isNotEmpty
             ? () {

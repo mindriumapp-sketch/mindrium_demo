@@ -171,7 +171,7 @@ class _Week4NextThoughtScreenState extends State<Week4NextThoughtScreen> {
 
     // === ApplyDesign 사용: 배경/앱바/중앙 BlueWhiteCard/하단 네비 버튼 ===
     return ApplyDesign(
-      appBarTitle: '4주차 - 인지 왜곡 찾기',
+      appBarTitle: '인지 왜곡 찾기',
       cardTitle: '그때 상황 다시 떠올리기',
       onBack: () => Navigator.pop(context),
       onNext: _isNextEnabled

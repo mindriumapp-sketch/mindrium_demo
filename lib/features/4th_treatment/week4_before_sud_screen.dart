@@ -56,8 +56,8 @@ class _Week4BeforeSudScreenState extends State<Week4BeforeSudScreen> {
   @override
   Widget build(BuildContext context) {
     return ApplyDesign(
-      appBarTitle: 'SUD 평가 (before)',
-      cardTitle: '지금 느끼는 불안 정도를 선택해 주세요',
+      appBarTitle: '불안 평가',
+      cardTitle: '지금 느끼는 불안 정도를\n선택해 주세요',
       onBack: () => Navigator.pop(context),
       onNext: () async {
         final navigator = Navigator.of(context);

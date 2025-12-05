@@ -94,8 +94,8 @@ class Week4ClassificationResultScreen extends StatelessWidget {
 
     // 보조 문구/세컨 버튼 라벨
     final supportText = isFromApply
-        ? '만약 지금은 좀 부담스러우시다면 다음번에 해도 괜찮아요.'
-        : '만약 지금은 좀 부담스러우시다면 다른 생각들 먼저 보고 다시 돌아와도 괜찮아요.';
+        ? '만약 지금은 좀 부담스러우시다면,\n다음번에 해도 괜찮아요.'
+        : '만약 지금은 좀 부담스러우시다면,\n다른 생각들 먼저 보고 다시 돌아와도 괜찮아요.';
     final secondaryButtonLabel =
     isFromApply ? '다음번에 찾아볼게요.' : '다른 생각으로 진행할게요.';
 
@@ -262,7 +262,7 @@ class Week4ClassificationResultScreen extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.white,
-      appBar: const CustomAppBar(title: '4주차 - 인지 왜곡 찾기'),
+      appBar: const CustomAppBar(title: '인지 왜곡 찾기'),
       body: Stack(
         fit: StackFit.expand,
         children: [

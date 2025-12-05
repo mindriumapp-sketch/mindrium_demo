@@ -38,7 +38,7 @@ class Week4SkipChoiceScreen extends StatelessWidget {
 
     // ===== 안내 문구 =====
     final description = isFromAfterSud
-        ? '아직 불안 점수가 낮아지지 않으셨네요. 또 다른 불안한 생각이 있어서 그럴 수 있어요.\n불안을 만드는 또 다른 생각을 하나 찾아보도록 해요!'
+        ? '아직 불안 점수가 낮아지지 않으셨네요. 또 다른 불안한 생각이 있어서 그럴 수 있어요. 불안을 만드는 또 다른 생각을 하나 찾아보도록 해요!'
         : '아직 도움이 되는 생각을 찾아보지 않은 부분이 있으시네요.\n\n모든 생각에서 꼭 도움이 되는 생각을 찾아봐야 하는 건 아니지만, \n그 중 하나라도 \'조금 덜 불안해지는 방향\'으로 바라보면 어떨까요?';
 
     // ===== 네비게이션 핸들러 (원본 로직 유지) =====
@@ -101,7 +101,7 @@ class Week4SkipChoiceScreen extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.white,
-      appBar: const CustomAppBar(title: '4주차 - 인지 왜곡 찾기'),
+      appBar: const CustomAppBar(title: '인지 왜곡 찾기'),
       body: Stack(
         fit: StackFit.expand,
         children: [
