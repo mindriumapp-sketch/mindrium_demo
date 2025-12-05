@@ -20,6 +20,7 @@ import 'package:gad_app_team/features/5th_treatment/week5_screen.dart';
 import 'package:gad_app_team/features/6th_treatment/week6_screen.dart';
 import 'package:gad_app_team/features/7th_treatment/week7_screen.dart';
 import 'package:gad_app_team/features/8th_treatment/week8_screen.dart';
+import 'package:gad_app_team/data/apply_solve_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, this.initialIndex = 0});
@@ -544,11 +545,20 @@ class _HomeScreenState extends State<HomeScreen> {
           description: '오늘 불안하신 상황이 있으셨나요? 지금 오늘의 활동을 시작해보세요.',
           color: const Color(0xFFFFE2E8),
           imagePath: 'assets/image/pink2.png',
-          onTap: () => Navigator.pushNamed(
-            context,
-            '/before_sud',
-            arguments: const {'origin': 'solve', 'diary': 'new'},
-          ),
+          onTap: () {
+            final flow = context.read<ApplyOrSolveFlow>();
+            // 기존 상태 초기화 후 solve 흐름 세팅
+            flow.clear();
+            flow.setOrigin('solve');
+            Navigator.pushNamed(
+              context,
+              '/before_sud',
+              arguments: {
+                ...flow.toArgs(),
+                'origin': 'solve',
+              },
+            );
+          },
         ),
       ],
     );

@@ -11,6 +11,8 @@ import '../../data/api/api_client.dart';
 import '../../data/api/worry_groups_api.dart';
 import '../../data/api/diaries_api.dart';
 import 'abc_group_character_screen.dart';
+import '../../data/apply_solve_provider.dart';
+import 'package:provider/provider.dart';
 
 class AbcGroupAddScreen extends StatefulWidget {
   final String? label;
@@ -114,7 +116,21 @@ class _AbcGroupAddScreenState extends State<AbcGroupAddScreen> {
       return;
     }
 
+    final flow = context.read<ApplyOrSolveFlow>()
+      ..syncFromArgs({
+        'origin': widget.origin,
+        'abcId': widget.abcId,
+        'beforeSud': widget.beforeSud,
+        'sudId': widget.sudId,
+        'diary': widget.diary,
+      });
+    flow.setOrigin(widget.origin);
+    flow.setDiaryId(widget.abcId);
+    if (widget.beforeSud != null) flow.setBeforeSud(widget.beforeSud);
+    if (widget.sudId != null) flow.setSudId(widget.sudId);
+
     final args = <String, dynamic>{
+      ...flow.toArgs(),
       'abcId': widget.abcId,
       if (widget.beforeSud != null) 'beforeSud': widget.beforeSud,
       if (widget.diary != null) 'diary': widget.diary,

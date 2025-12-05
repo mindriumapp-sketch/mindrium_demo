@@ -14,6 +14,8 @@ import 'dart:math' as math;
 import 'package:gad_app_team/utils/text_line_material.dart';
 import 'package:gad_app_team/utils/text_line_utils.dart';
 import 'package:gad_app_team/widgets/inner_btn_card.dart';
+import 'package:gad_app_team/data/apply_solve_provider.dart';
+import 'package:provider/provider.dart';
 
 class RelaxYesOrNo extends StatelessWidget {
   const RelaxYesOrNo({super.key});
@@ -21,12 +23,13 @@ class RelaxYesOrNo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments as Map? ?? {};
-    final String? abcId = args['abcId'] as String?;
-    final String? sudId = args['sudId'] as String?;
-    final int? beforeSud = args['beforeSud'] as int?;
-    final diary = args['diary'];
+    final flow = context.read<ApplyOrSolveFlow>()..syncFromArgs(args, notify: false);
+    final String? abcId = flow.diaryId ?? args['abcId'] as String?;
+    final String? sudId = flow.sudId ?? args['sudId'] as String?;
+    final int? beforeSud = flow.beforeSud ?? args['beforeSud'] as int?;
+    final diary = args['diary'] ?? flow.diary;
     final dynamic rawOrigin = args['origin'];
-    final String origin = rawOrigin is String ? rawOrigin : 'apply';
+    final String origin = rawOrigin is String ? rawOrigin : flow.origin;
 
     return InnerBtnCardScreen(
       appBarTitle: '이완 활동 진행',
@@ -38,6 +41,7 @@ class RelaxYesOrNo extends StatelessWidget {
           context,
           '/relaxation_noti',
           arguments: {
+            ...flow.toArgs(),
             'taskId': abcId,
             'mp3Asset': 'noti.mp3',
             'riveAsset': 'noti.riv',

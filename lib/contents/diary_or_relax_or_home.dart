@@ -11,6 +11,8 @@
 
 import 'package:gad_app_team/utils/text_line_material.dart';
 import 'package:gad_app_team/widgets/inner_btn_card.dart';
+import 'package:gad_app_team/data/apply_solve_provider.dart';
+import 'package:provider/provider.dart';
 
 class DiaryOrRelaxOrHome extends StatelessWidget {
   const DiaryOrRelaxOrHome({super.key});
@@ -18,9 +20,10 @@ class DiaryOrRelaxOrHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments as Map?;
-    final String? groupId = args?['groupId'] as String?;
-    final int? beforeSud = args?['beforeSud'] as int?;
-    final String? sudId = args?['sudId'] as String?;
+    final flow = context.read<ApplyOrSolveFlow>()..syncFromArgs(args, notify: false);
+    final String? groupId = flow.groupId ?? args?['groupId'] as String?;
+    final int? beforeSud = flow.beforeSud ?? args?['beforeSud'] as int?;
+    final String? sudId = flow.sudId ?? args?['sudId'] as String?;
 
     return InnerBtnCardScreen(
       appBarTitle: '다음 단계 선택',
@@ -34,6 +37,7 @@ class DiaryOrRelaxOrHome extends StatelessWidget {
           context,
           '/relaxation_noti',
           arguments: {
+            ...flow.toArgs(),
             'taskId': groupId,
             'mp3Asset': 'noti.mp3',
             'riveAsset': 'noti.riv',

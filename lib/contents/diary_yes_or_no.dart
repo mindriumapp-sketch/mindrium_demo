@@ -13,13 +13,16 @@ import 'package:gad_app_team/data/api/sud_api.dart';
 import 'package:gad_app_team/data/storage/token_storage.dart';
 import 'package:gad_app_team/features/2nd_treatment/abc_group_add_screen.dart';
 import 'package:gad_app_team/widgets/inner_btn_card.dart';
+import 'package:gad_app_team/data/apply_solve_provider.dart';
+import 'package:provider/provider.dart';
 
 class DiaryYesOrNo extends StatelessWidget {
   const DiaryYesOrNo({super.key});
 
   Future<void> _handleNo(BuildContext context, Map args, dynamic diary) async {
+    final flow = context.read<ApplyOrSolveFlow>()..syncFromArgs(args);
     final rawOrigin = args['origin'];
-    final origin = rawOrigin is String ? rawOrigin : 'apply';
+    final origin = rawOrigin is String ? rawOrigin : flow.origin;
     final tokens = TokenStorage();
     final access = await tokens.access;
     if (access == null) {
@@ -139,6 +142,8 @@ class DiaryYesOrNo extends StatelessWidget {
     } else if (rawSud is String) {
       beforeSud = int.tryParse(rawSud);
     }
+    flow.setBeforeSud(beforeSud);
+    flow.setOrigin(origin);
 
     try {
       // 🔹 FastAPI + MongoDB에 빈 일기 생성
@@ -158,6 +163,7 @@ class DiaryYesOrNo extends StatelessWidget {
       if (abcId == null || abcId.isEmpty) {
         throw Exception('생성된 일기 ID를 확인할 수 없습니다.');
       }
+      flow.setDiaryId(abcId);
 
       Map<String, dynamic>? res;
       String? sudId;
@@ -168,6 +174,7 @@ class DiaryYesOrNo extends StatelessWidget {
             beforeScore: beforeSud,
           );
           sudId = res['sud_id'];
+          flow.setSudId(sudId);
         } on DioException catch (e) {
           debugPrint('⚠️ SUD 저장 실패(Dio): ${e.message}');
         } catch (e) {
@@ -215,9 +222,10 @@ class DiaryYesOrNo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments as Map? ?? {};
-    final dynamic diary = args['diary'];
+    final flow = context.read<ApplyOrSolveFlow>()..syncFromArgs(args, notify: false);
+    final dynamic diary = args['diary'] ?? flow.diary;
     final dynamic rawOrigin = args['origin'];
-    final String origin = rawOrigin is String ? rawOrigin : 'apply';
+    final String origin = rawOrigin is String ? rawOrigin : flow.origin;
 
     return InnerBtnCardScreen(
       appBarTitle: '걱정 일기 진행',
@@ -228,6 +236,7 @@ class DiaryYesOrNo extends StatelessWidget {
           context,
           '/abc',
           arguments: {
+            ...flow.toArgs(),
             'origin': origin,
             'abcId': null,
             if (diary != null) 'diary': diary,

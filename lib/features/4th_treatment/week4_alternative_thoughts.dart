@@ -10,6 +10,8 @@ import 'week4_classfication_result_screen.dart';
 import 'package:gad_app_team/data/api/api_client.dart';
 import 'package:gad_app_team/data/api/diaries_api.dart';
 import 'package:gad_app_team/data/storage/token_storage.dart';
+import 'package:gad_app_team/data/apply_solve_provider.dart';
+import 'package:provider/provider.dart';
 
 class Week4AlternativeThoughtsScreen extends StatefulWidget {
   final List<String> previousChips;
@@ -104,18 +106,19 @@ class _Week4AlternativeThoughtsScreenState
         // ◀◀ 뒤로/다음 (기존 로직 유지)
         onBack: () => Navigator.pop(context),
         onNext: _chips.isNotEmpty
-            ? () async {
+              ? () async {
                 final navigator = Navigator.of(context);
                 final routeArgs =
                     ModalRoute.of(context)?.settings.arguments as Map? ?? {};
-                final String? originArg =
-                    widget.origin ?? routeArgs['origin'] as String?;
+                final flow = context.read<ApplyOrSolveFlow>()..syncFromArgs(routeArgs);
+                final String originArg =
+                    widget.origin ?? routeArgs['origin'] as String? ?? flow.origin;
                 final dynamic diaryArg =
-                    widget.diary ?? routeArgs['diary'];
+                    widget.diary ?? routeArgs['diary'] ?? flow.diary;
                 final String? abcIdArg =
-                    widget.abcId ?? routeArgs['abcId'] as String?;
+                    widget.abcId ?? routeArgs['abcId'] as String? ?? flow.diaryId;
                 final int? beforeSudArg =
-                    widget.beforeSud ?? routeArgs['beforeSud'] as int?;
+                    widget.beforeSud ?? routeArgs['beforeSud'] as int? ?? flow.beforeSud;
 
                 final currentThoughts = _chipsKey.currentState?.values ?? _chips;
                 final combinedThoughts = [
@@ -153,9 +156,10 @@ class _Week4AlternativeThoughtsScreenState
                           ),
                       settings: RouteSettings(
                         arguments: {
+                          ...flow.toArgs(),
                           if ((abcIdArg ?? widget.abcId) != null)
                             'abcId': (abcIdArg ?? widget.abcId)!,
-                          if (originArg != null) 'origin': originArg,
+                          'origin': originArg,
                           if (diaryArg != null) 'diary': diaryArg,
                         },
                       ),

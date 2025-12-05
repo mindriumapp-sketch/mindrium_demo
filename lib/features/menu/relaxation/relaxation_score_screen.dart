@@ -7,6 +7,7 @@ import 'package:gad_app_team/data/storage/token_storage.dart';
 import 'package:gad_app_team/widgets/tutorial_design.dart';
 import 'package:provider/provider.dart';
 import 'package:gad_app_team/data/user_provider.dart';
+import 'package:gad_app_team/data/apply_solve_provider.dart';
 
 /// SUD(0‒10)을 입력받아 저장하고, 점수에 따라 후속 행동을 안내하는 화면
 class RelaxationScoreScreen extends StatefulWidget {
@@ -56,9 +57,11 @@ class _RelaxationScoreScreenState extends State<RelaxationScoreScreen> {
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments as Map? ?? {};
-    final String? abcId = args['taskId'] as String?;
+    final flow = context.read<ApplyOrSolveFlow>()
+      ..syncFromArgs(args, override: true, notify: false);
+    final String? abcId = args['taskId'] as String? ?? flow.diaryId;
     final String? relaxId = args['relaxId'] as String?;
-    final String? origin = args['origin'] as String?;
+    final String origin = args['origin'] as String? ?? flow.origin;
 
     final userProvider = context.watch<UserProvider>();
     final int currentWeek = userProvider.currentWeek;
@@ -88,6 +91,7 @@ class _RelaxationScoreScreenState extends State<RelaxationScoreScreen> {
               context,
               '/apply_alt_thought',
               arguments: {
+                ...flow.toArgs(),
                 'abcId': abcId,
                 'diary': args['diary'],
                 'beforeSud': args['beforeSud'],
@@ -99,6 +103,7 @@ class _RelaxationScoreScreenState extends State<RelaxationScoreScreen> {
               context,
               '/after_sud',
               arguments: {
+                ...flow.toArgs(),
                 'abcId': abcId,
                 'diary': args['diary'],
                 'beforeSud': args['beforeSud'],
@@ -114,6 +119,7 @@ class _RelaxationScoreScreenState extends State<RelaxationScoreScreen> {
             context,
             '/alt_yes_or_no',
             arguments: {
+              ...flow.toArgs(),
               'abcId': abcId,
               'diary': args['diary'],
               'beforeSud': args['beforeSud'],

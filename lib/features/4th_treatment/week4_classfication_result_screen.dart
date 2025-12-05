@@ -7,12 +7,14 @@ import 'week4_alternative_thoughts.dart';
 import 'week4_skip_choice_screen.dart';
 import 'week4_after_sud_screen.dart';
 import 'week4_classfication_screen.dart' as week4;
+import 'package:gad_app_team/data/apply_solve_provider.dart';
 
 // ✅ 동일 UI 컴포넌트 (SkipChoice와 통일)
 import 'package:gad_app_team/widgets/jellyfish_notice.dart';
 import 'package:gad_app_team/widgets/quiz_card.dart';
 import 'package:gad_app_team/widgets/choice_card_button.dart';
 import 'package:gad_app_team/widgets/custom_appbar.dart';
+import 'package:provider/provider.dart';
 
 class Week4ClassificationResultScreen extends StatelessWidget {
   const Week4ClassificationResultScreen({
@@ -68,9 +70,10 @@ class Week4ClassificationResultScreen extends StatelessWidget {
 
     // 경로 기반 카피/플로우
     final args = ModalRoute.of(context)?.settings.arguments as Map? ?? {};
-    final String? abcId_  = args['abcId'] as String?;
-    final String? origin  = args['origin'] as String?;
-    final dynamic diary   = args['diary'];
+    final flow = context.read<ApplyOrSolveFlow>()..syncFromArgs(args, notify: false);
+    final String? abcId_  = args['abcId'] as String? ?? flow.diaryId;
+    final String origin  = args['origin'] as String? ?? flow.origin;
+    final dynamic diary   = args['diary'] ?? flow.diary;
     final bool isFromApply = origin == 'apply';
 
     // final userName = Provider.of<UserProvider>(context, listen: false).userName;
@@ -114,9 +117,10 @@ class Week4ClassificationResultScreen extends StatelessWidget {
           context,
           '/apply_alt_thought',
           arguments: {
+            ...flow.toArgs(),
             'abcId': abcId_,
             'beforeSud': safeBeforeSud,
-            'origin': origin ?? 'apply',
+            'origin': 'apply',
             if (diary != null) 'diary': diary,
           },
         );
@@ -154,6 +158,7 @@ class Week4ClassificationResultScreen extends StatelessWidget {
           context,
           '/after_sud',
           arguments: {
+            ...flow.toArgs(),
             'abcId': abcId_,
             'origin': origin,
             'diary': diary,

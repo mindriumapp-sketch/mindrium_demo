@@ -6,6 +6,8 @@ import 'package:gad_app_team/data/storage/token_storage.dart';
 import 'package:gad_app_team/data/api/api_client.dart';
 import 'package:gad_app_team/data/api/sud_api.dart';
 import 'package:gad_app_team/utils/text_line_utils.dart';
+import 'package:gad_app_team/data/apply_solve_provider.dart';
+import 'package:provider/provider.dart';
 
 class AfterSudRatingScreen extends StatefulWidget {
   const AfterSudRatingScreen({super.key});
@@ -47,9 +49,13 @@ class _AfterSudRatingScreenState extends State<AfterSudRatingScreen> {
     final beforeSud = (res['before_sud'] as num?)?.toInt() ?? _sud;
     final afterSud  = (res['after_sud']  as num?)?.toInt() ?? _sud;
 
-    final abcId = _abcId;
-    final origin = _origin;
-    final diaryArg = _diary;
+    final args = _args();
+    final flow = context.read<ApplyOrSolveFlow>()..syncFromArgs(args);
+    final abcId = _abcId ?? flow.diaryId;
+    final origin = _origin ?? flow.origin;
+    final diaryArg = _diary ?? flow.diary;
+    if (abcId != null) flow.setDiaryId(abcId);
+    flow.setOrigin(origin);
 
     if (origin == 'apply') {
       if (!mounted) return;
@@ -119,12 +125,14 @@ class _AfterSudRatingScreenState extends State<AfterSudRatingScreen> {
   @override
   Widget build(BuildContext context) {
     return ApplyDesign(
-      appBarTitle: 'SUD 평가 (after)',
-      cardTitle: '대체 생각을 한 후,\n지금의 불안 정도를 선택해 주세요',
+      appBarTitle: '불안 평가',
+      cardTitle: '활동을 진행한 후,\n느끼는 불안 정도를 선택해 주세요',
       onBack: () => Navigator.pop(context),
       onNext: () async {
         final res = await _saveSud();
         if (!context.mounted) return;
+        final args = _args();
+        context.read<ApplyOrSolveFlow>().syncFromArgs(args);
 
         // sudId 없거나 저장 실패 등
         if (res == null) {

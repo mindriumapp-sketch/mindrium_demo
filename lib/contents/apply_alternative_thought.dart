@@ -5,6 +5,7 @@ import 'package:gad_app_team/features/4th_treatment/week4_alternative_thoughts.d
 import 'package:provider/provider.dart';
 import 'package:gad_app_team/data/user_provider.dart';
 import 'package:gad_app_team/data/storage/token_storage.dart';
+import 'package:gad_app_team/data/apply_solve_provider.dart';
 import 'package:gad_app_team/data/api/api_client.dart';
 import 'package:gad_app_team/data/api/diaries_api.dart';
 import 'package:gad_app_team/utils/text_line_utils.dart';
@@ -34,8 +35,10 @@ class _ApplyAlternativeThoughtScreenState
   void didChangeDependencies() {
     super.didChangeDependencies();
     final args = ModalRoute.of(context)?.settings.arguments as Map? ?? {};
-    _abcId = args['abcId'] as String?;
-    _beforeSud = (args['beforeSud'] as int?) ?? 0;
+    final flow = context.read<ApplyOrSolveFlow>()..syncFromArgs(args);
+    _abcId = args['abcId'] as String? ?? flow.diaryId;
+    _beforeSud = (args['beforeSud'] as int?) ?? flow.beforeSud ?? 0;
+    if (_abcId != null) flow.setDiaryId(_abcId);
     if (_bList.isEmpty && !_loading) _fetchBeliefs();
   }
 
@@ -112,10 +115,24 @@ class _ApplyAlternativeThoughtScreenState
   }
 
   List<String> _parseBeliefList(dynamic belief) {
+    String chipLabel(dynamic raw) {
+      if (raw == null) return '';
+      if (raw is Map) {
+        return (raw['label'] ??
+                raw['chip_label'] ??
+                raw['chipId'] ??
+                raw['chip_id'] ??
+                '')
+            .toString()
+            .trim();
+      }
+      return raw.toString().trim();
+    }
+
     if (belief == null) return const [];
     if (belief is List) {
       return belief
-          .map((e) => e?.toString() ?? '')
+          .map(chipLabel)
           .where((s) => s.trim().isNotEmpty)
           .toList();
     }
@@ -135,12 +152,20 @@ class _ApplyAlternativeThoughtScreenState
     final all = _bList;
     final remaining = List<String>.from(all)..remove(b);
     final args = ModalRoute.of(context)?.settings.arguments as Map? ?? {};
-    final diary = args['diary'];
-    final sudId = args['sudId'];
+    final flow = context.read<ApplyOrSolveFlow>()..syncFromArgs(args);
+    final diary = args['diary'] ?? flow.diary;
+    final sudId = args['sudId'] ?? flow.sudId;
     Navigator.push(
       context,
       MaterialPageRoute(
-        settings: RouteSettings(arguments: {'origin': 'apply', 'diary': diary, 'sudId': sudId}),
+        settings: RouteSettings(
+          arguments: {
+            ...flow.toArgs(),
+            'origin': 'apply',
+            if (diary != null) 'diary': diary,
+            if (sudId != null) 'sudId': sudId,
+          },
+        ),
         builder:
             (_) => Week4AlternativeThoughtsScreen(
               previousChips: [b],

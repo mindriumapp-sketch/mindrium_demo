@@ -5,6 +5,8 @@ import 'package:gad_app_team/widgets/inner_btn_card.dart';
 import 'package:gad_app_team/data/storage/token_storage.dart';
 import 'package:gad_app_team/data/api/api_client.dart';
 import 'package:gad_app_team/data/api/diaries_api.dart';
+import 'package:gad_app_team/data/apply_solve_provider.dart';
+import 'package:provider/provider.dart';
 // import 'package:provider/provider.dart';
 // import 'package:gad_app_team/data/user_provider.dart';
 
@@ -14,20 +16,36 @@ import 'package:gad_app_team/data/api/diaries_api.dart';
 /// 내부는 상황-생각-결과 3단을 부드러운 블루·민트 톤 카드로 시각화.
 class SimilarActivationScreen extends StatelessWidget {
   const SimilarActivationScreen({super.key});
-
+ 
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments as Map? ?? {};
-    final String? abcId = args['abcId'] as String?;
-    final String? groupId = args['groupId'] as String?;
-    final int? sud = args['beforeSud'] as int?;
-    final String? sudId = args['sudId'] as String?;
+    final flow = context.read<ApplyOrSolveFlow>()..syncFromArgs(args, notify: false);
+    String? asString(dynamic v) => v?.toString();
+    String? abcId = asString(args['abcId']) ?? asString(args['diaryId']) ?? flow.diaryId;
+    final String? groupId = asString(args['groupId']) ?? flow.groupId;
+    final int? sud = (args['beforeSud'] as int?) ?? flow.beforeSud;
+    final String? sudId = asString(args['sudId']) ?? flow.sudId;
     debugPrint('[SimilarActivation] abcId=$abcId, groupId=$groupId');
 
     final tokens = TokenStorage();
     final apiClient = ApiClient(tokens: tokens);
     final diariesApi = DiariesApi(apiClient);
     final sudApi = SudApi(apiClient);
+
+    String chipLabel(dynamic raw) {
+      if (raw == null) return '';
+      if (raw is Map) {
+        return (raw['label'] ??
+                raw['chip_label'] ??
+                raw['chipId'] ??
+                raw['chip_id'] ??
+                '')
+            .toString()
+            .trim();
+      }
+      return raw.toString().trim();
+    }
 
     return InnerBtnCardScreen(
       appBarTitle: '비슷한 상황 확인',
@@ -56,15 +74,25 @@ class SimilarActivationScreen extends StatelessWidget {
         Navigator.pushNamed(
           context,
           route,
-          arguments: {'abcId': abcId, 'beforeSud': sud, 'sudId': sudId},
+          arguments: {
+            ...flow.toArgs(),
+            'abcId': abcId,
+            'beforeSud': sud,
+            'sudId': sudId,
+          },
         );
       },
       onSecondary: () {
-        sudApi.deleteSudScore(diaryId: abcId!, sudId: sudId!);
+        if (abcId != null && sudId != null) {
+          sudApi.deleteSudScore(diaryId: abcId, sudId: sudId);
+        }
         Navigator.pushNamed(
           context,
           '/diary_yes_or_no',
-          arguments: {'origin': 'apply'},
+          arguments: {
+            ...flow.toArgs(),
+            'origin': 'apply',
+          },
         );
       },
       child: abcId == null || abcId.isEmpty
@@ -88,18 +116,18 @@ class SimilarActivationScreen extends StatelessWidget {
             return const Center(child: Text('일기 데이터를 찾을 수 없습니다.'));
           }
 
-          final activatingEvent =
-              (data['activation'] ?? data['activation'] ?? '')
-                  .toString()
-                  .trim();
+          final activatingEvent = chipLabel(
+            data['activation'] ??
+                data['activating_events'] ??
+                data['activatingEvent'],
+          );
           final beliefValue = data['belief'];
-          final belief =
-              beliefValue is List
-                  ? beliefValue
-                      .whereType<String>()
-                      .where((e) => e.trim().isNotEmpty)
-                      .join(', ')
-                  : (beliefValue ?? '').toString().trim();
+          final belief = beliefValue is List
+              ? beliefValue
+                  .map(chipLabel)
+                  .where((e) => e.isNotEmpty)
+                  .join(', ')
+              : chipLabel(beliefValue);
           final consequences = [
             data['consequence_physical'],
             data['consequence_emotion'],
@@ -107,12 +135,12 @@ class SimilarActivationScreen extends StatelessWidget {
           ]
               .whereType<List>()
               .expand((list) => list)
-              .whereType<String>()
+              .map(chipLabel)
+              .where((e) => e.isNotEmpty)
               .toList();
-          final consequence =
-              consequences.isNotEmpty
-                  ? consequences.join(', ')
-                  : (data['consequence'] ?? '').toString().trim();
+          final consequence = consequences.isNotEmpty
+              ? consequences.join(', ')
+              : chipLabel(data['consequence']);
 
           return SimilarActivationVisualizer(
             activatingEvent: activatingEvent,

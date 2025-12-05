@@ -209,7 +209,7 @@ class _Week4AbcScreenState extends State<Week4AbcScreen> {
       );
     }
 
-    String _safe(String text) {
+    String safe(String text) {
       try {
         // replaces ill-formed UTF-16 sequences with � to avoid TextSpan crashes
         return String.fromCharCodes(text.runes);
@@ -218,20 +218,20 @@ class _Week4AbcScreenState extends State<Week4AbcScreen> {
       }
     }
 
-    final a = _safe(_chipText(
+    final a = safe(_chipText(
       _abcModel?['activation'] ??
           _abcModel?['activating_events'] ??
           _abcModel?['activatingEvent'],
     ));
     // belief는 리스트일 수 있음 → 표시용으로 쉼표 연결
-    final b = _safe(_chipText(_abcModel?['belief']));
-    final cPhysical = _safe(_chipText(
+    final b = safe(_chipText(_abcModel?['belief']));
+    final cPhysical = safe(_chipText(
       _abcModel?['consequence_physical'] ?? _abcModel?['consequence_p'],
     ));
-    final cEmotion = _safe(_chipText(
+    final cEmotion = safe(_chipText(
       _abcModel?['consequence_emotion'] ?? _abcModel?['consequence_e'],
     ));
-    final cBehavior = _safe(_chipText(
+    final cBehavior = safe(_chipText(
       _abcModel?['consequence_action'] ??
           _abcModel?['consequence_behavior'] ??
           _abcModel?['consequence_b'],

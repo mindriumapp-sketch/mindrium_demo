@@ -7,10 +7,12 @@ import 'package:gad_app_team/utils/text_line_material.dart';
 
 // ────────────────────────  PACKAGES  ────────────────────────
 import 'package:dio/dio.dart';
+import 'package:provider/provider.dart';
 
 // ───────────────────────────  LOCAL  ────────────────────────
 import 'package:gad_app_team/widgets/tutorial_design.dart'; // ★ ApplyDesign 가져오기
 import 'package:gad_app_team/data/storage/token_storage.dart';
+import 'package:gad_app_team/data/apply_solve_provider.dart';
 import 'package:gad_app_team/data/api/api_client.dart';
 import 'package:gad_app_team/data/api/diaries_api.dart';
 import 'package:gad_app_team/data/api/sud_api.dart';
@@ -113,15 +115,17 @@ class _BeforeSudRatingScreenState extends State<BeforeSudRatingScreen> {
     final Map<String, dynamic> args =
         rawArgs is Map ? rawArgs.cast<String, dynamic>() : <String, dynamic>{};
 
-    final String? origin = args['origin'] as String?;
-    final dynamic diary = args['diary'];
+    final flow = context.read<ApplyOrSolveFlow>();
+    flow.syncFromArgs(args, notify: false);
+
+    final String origin = (args['origin'] as String?) ?? flow.origin;
     final String? routeAbcId = args['abcId'] as String?;
-    final String? abcId = widget.abcId ?? routeAbcId;
+    final String? abcId = widget.abcId ?? flow.diaryId ?? routeAbcId;
     final bool hasAbcId = abcId?.isNotEmpty ?? false;
 
     // ApplyDesign로 상단/본문/하단을 모두 구성 (eduhome.png 배경 포함)
     return ApplyDesign(
-      appBarTitle: 'SUD 평가 (before)',
+      appBarTitle: '불안 평가',
       cardTitle: '지금 느끼는 불안 정도를\n선택해 주세요',
       onBack: () => Navigator.pop(context),
       onNext: () async {
@@ -135,14 +139,15 @@ class _BeforeSudRatingScreenState extends State<BeforeSudRatingScreen> {
           }
 
           if (!context.mounted) return;
+          flow.setBeforeSud(_sud);
 
           if (!hasAbcId && (origin == 'apply' || origin == 'solve')) {
             Navigator.pushReplacementNamed(
               context,
               '/diary_yes_or_no',
               arguments: {
+                ...flow.toArgs(),
                 'origin': origin,
-                if (diary != null) 'diary': diary,
                 'beforeSud': _sud,
               },
             );
@@ -163,14 +168,19 @@ class _BeforeSudRatingScreenState extends State<BeforeSudRatingScreen> {
           final ensuredAbcId = abcId!;
           final groupId = await _loadGroupId(ensuredAbcId);
           if (!context.mounted) return;
+          flow
+            ..setDiaryId(ensuredAbcId)
+            ..setGroupId(groupId);
 
           final sudId = res?['sud_id']?.toString() ?? '';
+          if (sudId.isNotEmpty) flow.setSudId(sudId);
 
           if (_sud > 2) {
             Navigator.pushReplacementNamed(
               context,
               '/similar_activation',
               arguments: {
+                ...flow.toArgs(),
                 'abcId': ensuredAbcId,
                 'groupId': groupId,
                 'beforeSud': _sud,
@@ -182,6 +192,7 @@ class _BeforeSudRatingScreenState extends State<BeforeSudRatingScreen> {
               context,
               '/diary_relax_home',
               arguments: {
+                ...flow.toArgs(),
                 'abcId': ensuredAbcId,
                 'groupId': groupId,
                 'origin': origin,
