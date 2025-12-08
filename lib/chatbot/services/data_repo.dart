@@ -4,7 +4,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/foundation.dart';
 
 /// ✅ 기본 사용자 ID (dummy.json의 patient_id 중 하나)
-const String defaultUserId = "OCZQALVZ";
+const String defaultUserId = "JNSE2100";
 
 class DataRepo {
   Map<String, Map<String, dynamic>>? _cache;

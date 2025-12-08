@@ -21996,5 +21996,589 @@
         }
       ]
     }
+  },
+  {
+    "patient_id": "JNSE2100",
+    "user": {
+      "email": "junsuh21@example.com",
+      "name": "이준서",
+      "gender": "male",
+      "surveyCompleted": "pre",
+      "completedWeek": 8,
+      "createdAt": "2025-03-02T09:00:00",
+      "updatedAt": "2025-04-27T22:00:00",
+
+      "worryGroups": [
+        {
+          "_id": 1,
+          "groupName": "학교/성과 압박",
+          "description": "발표, 성적, 장학금 등 과도한 성과 기준에서 오는 극심한 불안",
+          "averageSud": 6.42,
+          "archived": false,
+          "archivedAt": null,
+          "createdAt": "2025-03-10T14:22:15.100000"
+        }
+      ],
+
+      "customTags": [
+        {
+          "type": "A",
+          "name": "발표 일정 공지",
+          "tagId": "a001",
+          "createdAt": "2025-03-10T14:30:00",
+          "updatedAt": "2025-03-11T09:00:00"
+        },
+        {
+          "type": "A",
+          "name": "중앙도서관 4층 방문",
+          "tagId": "a002",
+          "createdAt": "2025-03-12T13:15:00",
+          "updatedAt": "2025-03-14T11:15:00"
+        },
+        {
+          "type": "A",
+          "name": "SNS 타임라인 확인",
+          "tagId": "a003",
+          "createdAt": "2025-03-18T18:40:00",
+          "updatedAt": "2025-03-19T10:00:00"
+        },
+
+        {
+          "type": "B",
+          "name": "약 없이는 망신당한다",
+          "tagId": "b001",
+          "createdAt": "2025-03-10T15:50:00",
+          "updatedAt": "2025-03-11T17:50:00"
+        },
+        {
+          "type": "B",
+          "name": "나는 재미없고 무능하다",
+          "tagId": "b002",
+          "createdAt": "2025-03-18T20:10:00",
+          "updatedAt": "2025-03-19T00:10:00"
+        },
+        {
+          "type": "B",
+          "name": "나는 가족의 기대를 망치고 있다",
+          "tagId": "b003",
+          "createdAt": "2025-03-24T21:05:00",
+          "updatedAt": "2025-03-25T09:05:00"
+        },
+
+        {
+          "type": "C-physical",
+          "name": "심장이 빠르게 뛰었다",
+          "tagId": "cp001",
+          "createdAt": "2025-03-10T16:10:00",
+          "updatedAt": "2025-03-10T20:10:00"
+        },
+        {
+          "type": "C-physical",
+          "name": "위경련이 왔다",
+          "tagId": "cp002",
+          "createdAt": "2025-03-10T16:12:00",
+          "updatedAt": "2025-03-11T11:12:00"
+        },
+        {
+          "type": "C-physical",
+          "name": "얼굴이 화끈거렸다",
+          "tagId": "cp003",
+          "createdAt": "2025-03-18T19:20:00",
+          "updatedAt": "2025-03-19T06:20:00"
+        },
+
+        {
+          "type": "C-emotion",
+          "name": "극심하게 불안했다",
+          "tagId": "ce001",
+          "createdAt": "2025-03-10T16:30:00",
+          "updatedAt": "2025-03-10T21:30:00"
+        },
+        {
+          "type": "C-emotion",
+          "name": "소외감을 느꼈다",
+          "tagId": "ce002",
+          "createdAt": "2025-03-18T18:50:00",
+          "updatedAt": "2025-03-19T00:50:00"
+        },
+        {
+          "type": "C-emotion",
+          "name": "죄책감이 들었다",
+          "tagId": "ce003",
+          "createdAt": "2025-03-24T20:40:00",
+          "updatedAt": "2025-03-24T23:40:00"
+        },
+
+        {
+          "type": "C-behavior",
+          "name": "발표 준비를 회피했다",
+          "tagId": "cb001",
+          "createdAt": "2025-03-10T17:50:00",
+          "updatedAt": "2025-03-11T08:00:00"
+        },
+        {
+          "type": "C-behavior",
+          "name": "과다 복용 후 기절했다",
+          "tagId": "cb002",
+          "createdAt": "2025-03-18T21:00:00",
+          "updatedAt": "2025-03-19T02:00:00"
+        },
+        {
+          "type": "C-behavior",
+          "name": "전화를 끊고 벽을 쳤다",
+          "tagId": "cb003",
+          "createdAt": "2025-03-24T21:30:00",
+          "updatedAt": "2025-03-24T23:30:00"
+        }
+      ],
+
+      "diaries": [
+        {
+          "externalId": "DIARY00001",
+          "groupId": 1,
+
+          "activatingEvents": [
+            {
+              "type": "A",
+              "name": "발표 일정 공지",
+              "tagId": "a001",
+              "createdAt": "2025-03-10T14:30:00",
+              "updatedAt": "2025-03-11T09:00:00"
+            }
+          ],
+
+          "beliefs": [
+            {
+              "type": "B",
+              "name": "약 없이는 망신당한다",
+              "tagId": "b001",
+              "createdAt": "2025-03-10T15:50:00",
+              "updatedAt": "2025-03-11T17:50:00"
+            },
+            {
+              "type": "B",
+              "name": "나는 가족의 기대를 망치고 있다",
+              "tagId": "b003",
+              "createdAt": "2025-03-24T21:05:00",
+              "updatedAt": "2025-03-25T09:05:00"
+            }
+          ],
+
+          "consequenceP": [
+            {
+              "type": "C-physical",
+              "name": "심장이 빠르게 뛰었다",
+              "tagId": "cp001",
+              "createdAt": "2025-03-10T16:10:00",
+              "updatedAt": "2025-03-10T20:10:00"
+            }
+          ],
+
+          "consequenceE": [
+            {
+              "type": "C-emotion",
+              "name": "극심하게 불안했다",
+              "tagId": "ce001",
+              "createdAt": "2025-03-10T16:30:00",
+              "updatedAt": "2025-03-10T21:30:00"
+            },
+            {
+              "type": "C-emotion",
+              "name": "죄책감이 들었다",
+              "tagId": "ce003",
+              "createdAt": "2025-03-24T20:40:00",
+              "updatedAt": "2025-03-24T23:40:00"
+            }
+          ],
+
+          "consequenceB": [
+            {
+              "type": "C-behavior",
+              "name": "발표 준비를 회피했다",
+              "tagId": "cb001",
+              "createdAt": "2025-03-10T17:50:00",
+              "updatedAt": "2025-03-11T08:00:00"
+            }
+          ],
+
+          "sudScores": [
+            {
+              "beforeSud": 9,
+              "afterSud": 6,
+              "createdAt": "2025-03-11T19:20:00",
+              "updatedAt": "2025-03-11T22:20:00"
+            }
+          ],
+
+          "alternativeThoughts": [
+            {
+              "beliefId": "b001",
+              "beliefText": "약 없이는 망신당한다",
+              "thought": "불안해도 준비하면 할 수 있다. 약이 아니라 연습이 나를 도와준다.",
+              "createdAt": "2025-03-11T19:20:00",
+              "updatedAt": "2025-03-11T22:20:00"
+            }
+          ],
+
+          "alarms": [
+            {
+              "time": "08:00",
+              "locationDesc": "서울특별시 ○○구 중앙도서관 4층",
+              "repeatOption": "daily",
+              "weekDays": ["Mon", "Wed"],
+              "reminderMinutes": 10,
+              "latitude": 37.5651,
+              "longitude": 126.98955,
+              "createdAt": "2025-03-11T19:20:00",
+              "enter": true,
+              "exit": false
+            }
+          ],
+
+          "latitude": 37.5644,
+          "longitude": 126.9901,
+          "addressName": "서울특별시 ○○구 중앙도서관",
+          "createdAt": "2025-03-11T19:20:00",
+          "updatedAt": "2025-03-11T22:20:00"
+        },
+
+        {
+          "externalId": "DIARY00002",
+          "groupId": 1,
+
+          "activatingEvents": [
+            {
+              "type": "A",
+              "name": "SNS 타임라인 확인",
+              "tagId": "a003",
+              "createdAt": "2025-03-18T18:40:00",
+              "updatedAt": "2025-03-19T10:00:00"
+            }
+          ],
+
+          "beliefs": [
+            {
+              "type": "B",
+              "name": "나는 재미없고 무능하다",
+              "tagId": "b002",
+              "createdAt": "2025-03-18T20:10:00",
+              "updatedAt": "2025-03-19T00:10:00"
+            },
+            {
+              "type": "B",
+              "name": "나는 가족의 기대를 망치고 있다",
+              "tagId": "b003",
+              "createdAt": "2025-03-24T21:05:00",
+              "updatedAt": "2025-03-25T09:05:00"
+            }
+          ],
+
+          "consequenceP": [
+            {
+              "type": "C-physical",
+              "name": "얼굴이 화끈거렸다",
+              "tagId": "cp003",
+              "createdAt": "2025-03-18T19:20:00",
+              "updatedAt": "2025-03-19T06:20:00"
+            }
+          ],
+
+          "consequenceE": [
+            {
+              "type": "C-emotion",
+              "name": "소외감을 느꼈다",
+              "tagId": "ce002",
+              "createdAt": "2025-03-18T18:50:00",
+              "updatedAt": "2025-03-19T00:50:00"
+            }
+          ],
+
+          "consequenceB": [
+            {
+              "type": "C-behavior",
+              "name": "과다 복용 후 기절했다",
+              "tagId": "cb002",
+              "createdAt": "2025-03-18T21:00:00",
+              "updatedAt": "2025-03-19T02:00:00"
+            },
+            {
+              "type": "C-behavior",
+              "name": "전화를 끊고 벽을 쳤다",
+              "tagId": "cb003",
+              "createdAt": "2025-03-24T21:30:00",
+              "updatedAt": "2025-03-24T23:30:00"
+            }
+          ],
+
+          "sudScores": [
+            {
+              "beforeSud": 8,
+              "afterSud": 8,
+              "createdAt": "2025-03-19T18:10:00",
+              "updatedAt": "2025-03-19T22:10:00"
+            }
+          ],
+
+          "alternativeThoughts": [
+            {
+              "beliefId": "b002",
+              "beliefText": "나는 재미없고 무능하다",
+              "thought": "나는 불편한 상황을 피하고 싶어서 그런 것이지, 가치가 없는 사람이 아니다.",
+              "createdAt": "2025-03-19T18:10:00",
+              "updatedAt": "2025-03-19T22:10:00"
+            }
+          ],
+
+          "alarms": [
+            {
+              "time": "18:00",
+              "locationDesc": "서울특별시 ○○구 자취방",
+              "repeatOption": "weekly",
+              "weekDays": ["Fri"],
+              "reminderMinutes": 10,
+              "latitude": 37.56171,
+              "longitude": 126.98732,
+              "createdAt": "2025-03-19T18:10:00",
+              "enter": true,
+              "exit": false
+            }
+          ],
+
+          "latitude": 37.5613,
+          "longitude": 126.9880,
+          "addressName": "서울특별시 ○○구 ○○동",
+          "createdAt": "2025-03-19T18:10:00",
+          "updatedAt": "2025-03-19T22:10:00"
+        },
+
+        {
+          "externalId": "DIARY00003",
+          "groupId": 1,
+
+          "activatingEvents": [
+            {
+              "type": "A",
+              "name": "중앙도서관 4층 방문",
+              "tagId": "a002",
+              "createdAt": "2025-03-12T13:15:00",
+              "updatedAt": "2025-03-14T11:15:00"
+            }
+          ],
+
+          "beliefs": [
+            {
+              "type": "B",
+              "name": "약 없이는 망신당한다",
+              "tagId": "b001",
+              "createdAt": "2025-03-10T15:50:00",
+              "updatedAt": "2025-03-11T17:50:00"
+            },
+            {
+              "type": "B",
+              "name": "나는 재미없고 무능하다",
+              "tagId": "b002",
+              "createdAt": "2025-03-18T20:10:00",
+              "updatedAt": "2025-03-19T00:10:00"
+            }
+          ],
+
+          "consequenceP": [
+            {
+              "type": "C-physical",
+              "name": "심장이 빠르게 뛰었다",
+              "tagId": "cp001",
+              "createdAt": "2025-04-14T15:40:00",
+              "updatedAt": "2025-04-14T19:40:00"
+            }
+          ],
+
+          "consequenceE": [
+            {
+              "type": "C-emotion",
+              "name": "극심하게 불안했다",
+              "tagId": "ce001",
+              "createdAt": "2025-04-14T15:42:00",
+              "updatedAt": "2025-04-14T19:42:00"
+            },
+            {
+              "type": "C-emotion",
+              "name": "죄책감이 들었다",
+              "tagId": "ce003",
+              "createdAt": "2025-03-24T20:40:00",
+              "updatedAt": "2025-03-24T23:40:00"
+            }
+          ],
+
+          "consequenceB": [
+            {
+              "type": "C-behavior",
+              "name": "발표 준비를 회피했다",
+              "tagId": "cb001",
+              "createdAt": "2025-03-10T17:50:00",
+              "updatedAt": "2025-03-11T08:00:00"
+            }
+          ],
+
+          "sudScores": [
+            {
+              "beforeSud": 9,
+              "afterSud": 4,
+              "createdAt": "2025-04-14T15:50:00",
+              "updatedAt": "2025-04-14T18:50:00"
+            }
+          ],
+
+          "alternativeThoughts": [
+            {
+              "beliefId": "b001",
+              "beliefText": "약 없이는 망신당한다",
+              "thought": "약물이 아니라, 숨 고르기와 작은 행동도 나를 도와준다.",
+              "createdAt": "2025-04-14T15:50:00",
+              "updatedAt": "2025-04-14T18:50:00"
+            }
+          ],
+
+          "alarms": [
+            {
+              "time": "08:00",
+              "locationDesc": "서울특별시 ○○구 중앙도서관 4층",
+              "repeatOption": "daily",
+              "weekDays": ["Mon", "Wed"],
+              "reminderMinutes": 10,
+              "latitude": 37.5651,
+              "longitude": 126.98955,
+              "createdAt": "2025-04-14T15:50:00",
+              "enter": true,
+              "exit": false
+            }
+          ],
+
+          "latitude": 37.5651,
+          "longitude": 126.9895,
+          "addressName": "서울특별시 ○○구 중앙도서관",
+          "createdAt": "2025-04-14T15:50:00",
+          "updatedAt": "2025-04-14T18:50:00"
+        }
+      ],
+
+      "relaxationTasks": [
+        {
+          "externalId": "TASK00001",
+          "diaryId": "DIARY00001",
+          "weekNumber": 8,
+          "alertTime": "08:00",
+          "startTime": "2025-04-22T10:12:00",
+          "endTime": "2025-04-24T03:12:00",
+          "createdAt": "2025-04-22T10:12:00",
+          "updatedAt": "2025-04-24T03:12:00",
+          "relaxationScores": 6
+        },
+        {
+          "externalId": "TASK00002",
+          "diaryId": "DIARY00002",
+          "weekNumber": 8,
+          "alertTime": "08:00",
+          "startTime": "2025-04-23T09:18:30",
+          "endTime": "2025-04-23T15:18:30",
+          "createdAt": "2025-04-23T09:18:30",
+          "updatedAt": "2025-04-23T15:18:30",
+          "relaxationScores": 7
+        },
+        {
+          "externalId": "TASK00003",
+          "diaryId": "DIARY00003",
+          "weekNumber": 8,
+          "alertTime": "08:00",
+          "startTime": "2025-04-24T08:30:00",
+          "endTime": "2025-04-26T07:30:00",
+          "createdAt": "2025-04-24T08:30:00",
+          "updatedAt": "2025-04-26T07:30:00",
+          "relaxationScores": 9
+        }
+      ],
+
+      "surveys": [
+        {
+          "externalId": "survey_pre",
+          "title": "사전 설문",
+          "description": "시작 전 설문",
+          "date": "2025-03-03T09:00:00",
+          "createdAt": "2025-03-03T09:00:00"
+        },
+        {
+          "externalId": "survey_mid",
+          "title": "중간 설문",
+          "description": "중간 점검",
+          "date": "2025-04-07T21:30:00",
+          "createdAt": "2025-04-07T21:30:00"
+        },
+        {
+          "externalId": "survey_post",
+          "title": "사후 설문",
+          "description": "종료 후 설문",
+          "date": "2025-04-27T10:15:00",
+          "createdAt": "2025-04-27T10:15:00"
+        }
+      ],
+
+      "screenTime": [
+        {
+          "startTime": "2025-03-10T14:20:24",
+          "endTime": "2025-03-10T14:27:24",
+          "durationMinutes": 7
+        }
+      ],
+
+      "habits": [
+        {
+          "externalId": "HABIT00001",
+          "diaryId": "DIARY00001",
+          "tagId": "cb001",
+          "behaviorText": "발표 준비를 회피했다",
+          "classification": "avoid",
+          "userChoice": "no",
+          "prosIfDo": "당장의 불안을 피할 수 있다",
+          "consIfDo": "장기적으로 더 큰 압박이 온다",
+          "prosIfNotDo": "약 없이 작은 준비를 시도해볼 수 있다",
+          "consIfNotDo": "불안이 올라올 수 있다",
+          "finalAdded": true,
+          "calendarLinked": false,
+          "createdAt": "2025-03-12T19:21:56",
+          "updatedAt": "2025-03-13T18:21:56"
+        },
+        {
+          "externalId": "HABIT00002",
+          "diaryId": "DIARY00002",
+          "tagId": "cb002",
+          "behaviorText": "과다 복용 후 기절했다",
+          "classification": "avoid",
+          "userChoice": "yes",
+          "prosIfDo": "극심한 불안을 즉시 무력화한다",
+          "consIfDo": "내성 증가와 건강 악화, 학업 중단 위험",
+          "prosIfNotDo": "건강을 유지하며 회복 경험을 쌓는다",
+          "consIfNotDo": "초기 불편감이 있을 수 있다",
+          "finalAdded": true,
+          "calendarLinked": false,
+          "createdAt": "2025-03-20T05:25:46",
+          "updatedAt": "2025-03-20T07:25:46"
+        },
+        {
+          "externalId": "HABIT00003",
+          "diaryId": "DIARY00003",
+          "tagId": "cb001",
+          "behaviorText": "발표 준비를 회피했다",
+          "classification": "face",
+          "userChoice": "no",
+          "prosIfDo": "불안을 피할 수 있다",
+          "consIfDo": "문제 해결 경험이 줄어든다",
+          "prosIfNotDo": "약물 없이 도전하는 연습이 된다",
+          "consIfNotDo": "스트레스 반응이 올라올 수 있다",
+          "finalAdded": false,
+          "calendarLinked": false,
+          "createdAt": "2025-04-15T18:59:42",
+          "updatedAt": "2025-04-16T00:59:42"
+        }
+      ]
+    }
   }
 ]
