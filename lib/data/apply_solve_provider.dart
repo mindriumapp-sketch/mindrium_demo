@@ -20,7 +20,6 @@ class ApplyOrSolveFlow extends ChangeNotifier {
   int? _beforeSud;
   String? _sudId;
   dynamic _diary; // 'new' or diary summary map
-  AbcDiaryLocation? _diaryLocation;
 
   // ───── getters ─────
   String get origin => _origin ?? 'apply';
@@ -30,7 +29,6 @@ class ApplyOrSolveFlow extends ChangeNotifier {
   int? get beforeSud => _beforeSud;
   String? get sudId => _sudId;
   dynamic get diary => _diary;
-  AbcDiaryLocation? get diaryLocation => _diaryLocation;
 
   // ───── 초기화 / 병합 ─────
   /// 전달된 args에서 필요한 값만 채워 넣는다. null이면 무시.
