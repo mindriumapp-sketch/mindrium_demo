@@ -1,0 +1,43 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: mindrium_mongo
+    volumes:
+      - mindrium_mongo:/data/db
+    restart: unless-stopped
+    networks:
+      - mindrium_net
+
+  mindrium-backend:
+    build:
+      context: ./backend/app
+    container_name: mindrium_backend
+    depends_on:
+      - mongo
+    environment:
+      - TZ=Asia/Seoul
+      - ENV=dev
+      - MONGO_URI=mongodb://mongo:27017/
+      - DB_NAME=flutter_test
+      - JWT_SECRET=dev-secret-change-in-production
+      - JWT_REFRESH_SECRET=dev-refresh-secret-change-in-production
+      - PLATFORM_BASE_URL=http://host.docker.internal:8061
+    networks:
+      - mindrium_net
+      - platform_public_app_ext
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+volumes:
+  mindrium_mongo:
+
+networks:
+  mindrium_net:
+    driver: bridge
+
+  platform_public_app_ext:
+    external: true
+    name: platform_platform_public_app

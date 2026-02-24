@@ -20,6 +20,7 @@ from routers.schedule_events import router as schedule_events_router
 from routers.edu_sessions import router as edu_sessions_router
 from routers.worry_groups import router as worry_groups_router
 from routers.ai import router as ai_router
+from routers.integrations_platform import router as integrations_platform_router
 
 settings = get_settings()
 
@@ -58,6 +59,20 @@ async def lifespan(app: FastAPI):
         await users.create_index(
             "created_at",
             name="idx_created_at",
+        )
+
+
+    # ✅ patient_id는 "있을 때만" 유니크 (null 여러개 허용)
+        await users.create_index(
+            "patient_id",
+            unique=True,
+            sparse=True,
+            name="unique_patient_id_sparse",
+        )
+
+        await users.create_index(
+            [("identities.provider", 1), ("identities.sub", 1)],
+            name="idx_identities_provider_sub",
         )
 
         print("✅ users 인덱스 생성/확인 완료")
@@ -296,3 +311,4 @@ app.include_router(edu_sessions_router)
 app.include_router(custom_tags_router)
 app.include_router(worry_groups_router)
 app.include_router(ai_router)
+app.include_router(integrations_platform_router)

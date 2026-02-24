@@ -6,6 +6,7 @@ import uuid
 import os
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from pymongo.errors import DuplicateKeyError
 import httpx
 
@@ -30,6 +31,7 @@ from core.security import (
     verify_password,
     create_access_token,
     create_refresh_token,
+    create_password_reset_token,
     decode_token,
     hash_token,
     hash_refresh_token,
@@ -59,11 +61,12 @@ def digits_to_platform_format(digits: str) -> str:
     # 그 외: 일단 digits 그대로 (플랫폼 DB 저장 포맷이 다르면 여기서 정책 변경)
     return d
 
-
+"""
 # =========================================================
 # 플랫폼 Claim API 호출
 # - 성공: patient_id 반환
 # - 실패: 플랫폼 detail을 가능한 그대로 전달
+# 플랫폼에서 Claim API 삭제로 인한 주석처
 # =========================================================
 async def claim_patient_id_from_platform(mindrium_code: str, phone_digits: str) -> str:
     base_url = os.getenv("PLATFORM_BASE_URL", "http://localhost:8061").rstrip("/")
@@ -108,44 +111,65 @@ async def claim_patient_id_from_platform(mindrium_code: str, phone_digits: str) 
         raise HTTPException(status_code=resp.status_code, detail=detail or "플랫폼 Claim 실패")
 
     raise HTTPException(status_code=502, detail=f"플랫폼 Claim API 오류({resp.status_code}): {detail}")
+"""
+
+# =========================================================
+# 플랫폼 Resolve API 호출
+# =========================================================
+async def resolve_patient_id_from_platform(mindrium_code: str) -> str:
+    base_url = os.getenv("PLATFORM_BASE_URL", "http://platform_public_python:8061").rstrip("/")
+    url = f"{base_url}/integrations/mindrium/resolve-patient-id"
+
+    code = (mindrium_code or "").strip()
+    if not code.isdigit() or len(code) != 6:
+        raise HTTPException(status_code=400, detail="mindrium_code는 숫자 6자리여야 합니다.")
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.post(
+                url,
+                json={"code": code},
+                headers={"Content-Type": "application/json"},
+            )
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=502, detail=f"플랫폼 Resolve API 연결 실패: {e}")
+
+    if resp.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"플랫폼 Resolve API 오류({resp.status_code})")
+
+    data = resp.json()
+    if not data.get("exists"):
+        raise HTTPException(status_code=400, detail="유효하지 않은 mindrium code 입니다.")
+
+    return data.get("patient_id")
 
 
 @router.post("/signup", response_model=TokenPair)
 async def signup(payload: SignupRequest, db=Depends(get_db)):
-    """
-    ✅ 추천 최종 흐름 (코드 소진 사고 방지)
-    1) Mongo에서 이메일 중복 체크
-    2) 입력값 검증
-    3) Mongo에 유저를 먼저 생성 (patient_id는 None)
-    4) 플랫폼 Claim 호출 → patient_id 확보
-    5) Mongo 유저에 patient_id 업데이트
-    6) 중간 실패 시: 방금 만든 유저 롤백(삭제)
-    """
+    # 1) 이메일 중복
+    if await db["users"].find_one({"email": payload.email}):
+        raise HTTPException(status_code=409, detail="Email already registered")
 
-    # -------------------------
-    # 1) 이메일 중복 체크 (claim 전에!)
-    # -------------------------
-    existing = await db["users"].find_one({"email": payload.email})
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    # -------------------------
     # 2) 입력 검증
-    # -------------------------
     phone_digits = phone_to_digits(payload.phone)
-    if not phone_digits:
-        raise HTTPException(status_code=400, detail="phone은 필수입니다.")
-    # 원하면 10~11자리 제한 등 추가 가능
-    if len(phone_digits) < 9:
+    if not phone_digits or len(phone_digits) < 9:
         raise HTTPException(status_code=400, detail="phone 형식이 올바르지 않습니다.")
 
     code = (payload.code or "").strip()
     if not code.isdigit() or len(code) != 6:
         raise HTTPException(status_code=400, detail="mindrium_code(code)는 숫자 6자리여야 합니다.")
 
-    # -------------------------
-    # 3) Mongo 유저 먼저 생성 (patient_id=None)
-    # -------------------------
+    # 3) resolve (side-effect 없음)
+    patient_id = await resolve_patient_id_from_platform(code)
+
+    # 4) 이미 patient_id가 있으면 차단 (로직 레벨)
+    if await db["users"].find_one({"patient_id": patient_id}):
+        raise HTTPException(
+            status_code=409,
+            detail="이미 해당 코드(=patient_id)로 가입된 계정이 있습니다. 기존 계정으로 로그인 후 SNS 연동을 진행하세요."
+        )
+
+    # 5) insert (DB 유니크가 최종 방어)
     obj_id = ObjectId()
     user_id = f"user_{uuid.uuid4().hex[:8]}"
     now = datetime.now(timezone.utc)
@@ -156,18 +180,10 @@ async def signup(payload: SignupRequest, db=Depends(get_db)):
         "email": payload.email,
         "name": payload.name,
         "gender": payload.gender,
-
-        # code는 이제 "마인드리움 코드(플랫폼 mindrium_code)" 의미로 고정
         "code": code,
-
-        # Mongo에 저장되는 phone은 digits로 통일
         "phone": phone_digits,
-
         "password_hash": hash_password(payload.password),
-
-        # ✅ 플랫폼 patient_id는 claim 성공 후 채움
-        "patient_id": None,
-
+        "patient_id": patient_id,
         "survey_completed": False,
         "surveys": [],
         "email_verified": False,
@@ -177,57 +193,126 @@ async def signup(payload: SignupRequest, db=Depends(get_db)):
     try:
         await db["users"].insert_one(doc)
     except DuplicateKeyError:
-        # 동시 가입 등으로 유니크 인덱스에 걸릴 수 있음
-        raise HTTPException(status_code=400, detail="Email already registered")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"회원가입 저장 실패: {e}")
+        # email 또는 patient_id unique 충돌
+        raise HTTPException(status_code=409, detail="이미 가입된 사용자입니다.")
 
-    # 이후 단계 실패 시 롤백 대상
-    created_obj_id = obj_id
+    # 기본 시딩/토큰
+    await ensure_default_custom_tags(db, user_id)
+    await ensure_default_worry_group(db, user_id)
 
-    try:
-        # -------------------------
-        # 4) 플랫폼 claim 호출 (여기서 코드 소진이 일어남)
-        # -------------------------
-        patient_id = await claim_patient_id_from_platform(code, phone_digits)
+    sub = str(obj_id)
+    refresh_raw = create_refresh_token(sub)
+    await db["users"].update_one(
+        {"_id": obj_id},
+        {"$set": {"refresh_hash": hash_refresh_token(refresh_raw), "refresh_issued_at": now}},
+    )
 
-        # -------------------------
-        # 5) patient_id 업데이트
-        # -------------------------
-        await db["users"].update_one(
-            {"_id": created_obj_id},
-            {"$set": {"patient_id": patient_id}},
-        )
+    return TokenPair(
+        access_token=create_access_token(sub),
+        refresh_token=refresh_raw,
+    )
 
-        # -------------------------
-        # 6) 기본 시딩 (기존 유지)
-        # -------------------------
-        await ensure_default_custom_tags(db, user_id)
-        await ensure_default_worry_group(db, user_id)
 
-        # Refresh token 저장 (기존 유지)
-        sub = str(created_obj_id)
-        refresh_raw = create_refresh_token(sub)
-        await db["users"].update_one(
-            {"_id": created_obj_id},
-            {"$set": {"refresh_hash": hash_refresh_token(refresh_raw), "refresh_issued_at": now}},
-        )
 
-        return TokenPair(
-            access_token=create_access_token(sub),
-            refresh_token=refresh_raw,
-        )
 
-    except HTTPException as he:
-        # ❗claim 실패/검증 실패 등: 방금 만든 유저 롤백(삭제)
-        await db["users"].delete_one({"_id": created_obj_id})
-        raise he
+# ===========================
+# OAuth (MVP) - provider_sub 기반
+# ===========================
 
-    except Exception as e:
-        # 예외: 유저 롤백
-        await db["users"].delete_one({"_id": created_obj_id})
-        raise HTTPException(status_code=500, detail=f"회원가입 처리 중 오류: {e}")
+class OAuthLoginRequest(BaseModel):
+    provider_sub: str
 
+class OAuthLinkRequest(BaseModel):
+    provider_sub: str
+    code: str
+
+
+def normalize_provider(provider: str) -> str:
+    p = (provider or "").strip().lower()
+    if p not in ("kakao", "google", "naver"):
+        raise HTTPException(status_code=400, detail="Unsupported provider")
+    return p
+
+
+@router.post("/oauth/{provider}/login")
+async def oauth_login(provider: str, payload: OAuthLoginRequest, db=Depends(get_db)):
+    provider = normalize_provider(provider)
+    sub = (payload.provider_sub or "").strip()
+    if not sub:
+        raise HTTPException(status_code=400, detail="provider_sub is required")
+
+    user = await db["users"].find_one({
+        "identities": {"$elemMatch": {"provider": provider, "sub": sub}}
+    })
+
+    if not user:
+        return {"needs_link": True}
+
+    sub_claim = str(user["_id"])
+    now = datetime.now(timezone.utc)
+    refresh_raw = create_refresh_token(sub_claim)
+    await db["users"].update_one(
+        {"_id": user["_id"]},
+        {"$set": {"refresh_hash": hash_refresh_token(refresh_raw), "refresh_issued_at": now}},
+    )
+    return TokenPair(access_token=create_access_token(sub_claim), refresh_token=refresh_raw)
+
+
+@router.post("/oauth/{provider}/link", response_model=TokenPair)
+async def oauth_link(provider: str, payload: OAuthLinkRequest, db=Depends(get_db)):
+    provider = normalize_provider(provider)
+    sub = (payload.provider_sub or "").strip()
+    if not sub:
+        raise HTTPException(status_code=400, detail="provider_sub is required")
+
+    code = (payload.code or "").strip()
+    if not code.isdigit() or len(code) != 6:
+        raise HTTPException(status_code=400, detail="mindrium_code(code)는 숫자 6자리여야 합니다.")
+
+    # 1) code -> patient_id (side-effect 없음)
+    patient_id = await resolve_patient_id_from_platform(code)
+
+    # 2) patient_id로 기존 계정 찾기
+    user = await db["users"].find_one({"patient_id": patient_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="해당 코드로 가입된 계정을 찾을 수 없습니다.")
+
+    # 3) 동일 (provider, sub)가 이미 다른 계정에 붙어있으면 차단
+    other = await db["users"].find_one({
+        "identities": {"$elemMatch": {"provider": provider, "sub": sub}},
+        "_id": {"$ne": user["_id"]},
+    })
+    if other:
+        raise HTTPException(status_code=409, detail="이미 다른 계정에 연결된 소셜 계정입니다.")
+
+    # 4) 이미 이 계정에 provider가 연결돼 있으면 그대로 로그인 처리(정책)
+    identities = user.get("identities") or []
+    for it in identities:
+        if it.get("provider") == provider:
+            sub_claim = str(user["_id"])
+            now = datetime.now(timezone.utc)
+            refresh_raw = create_refresh_token(sub_claim)
+            await db["users"].update_one(
+                {"_id": user["_id"]},
+                {"$set": {"refresh_hash": hash_refresh_token(refresh_raw), "refresh_issued_at": now}},
+            )
+            return TokenPair(access_token=create_access_token(sub_claim), refresh_token=refresh_raw)
+
+    # 5) identities에 추가
+    now = datetime.now(timezone.utc)
+    await db["users"].update_one(
+        {"_id": user["_id"]},
+        {"$push": {"identities": {"provider": provider, "sub": sub, "linked_at": now}}},
+    )
+
+    # 6) 토큰 발급
+    sub_claim = str(user["_id"])
+    refresh_raw = create_refresh_token(sub_claim)
+    await db["users"].update_one(
+        {"_id": user["_id"]},
+        {"$set": {"refresh_hash": hash_refresh_token(refresh_raw), "refresh_issued_at": now}},
+    )
+    return TokenPair(access_token=create_access_token(sub_claim), refresh_token=refresh_raw)
 
 @router.post("/login", response_model=TokenPair)
 async def login(payload: LoginRequest, db=Depends(get_db)):
@@ -321,12 +406,19 @@ async def password_reset_finish(payload: PasswordResetFinishRequest, db=Depends(
     if not stored_hash or stored_hash != incoming_hash:
         raise HTTPException(status_code=400, detail="Reset token mismatch or already used")
 
+
     requested_at = user.get("password_reset_requested_at")
     if not requested_at:
         raise HTTPException(status_code=400, detail="Reset token state invalid")
 
+    # Mongo에 naive datetime으로 들어온 경우(타임존 정보 없음) -> UTC로 간주
+    if isinstance(requested_at, datetime) and requested_at.tzinfo is None:
+        requested_at = requested_at.replace(tzinfo=timezone.utc)
+
     now = datetime.now(timezone.utc)
     elapsed_sec = (now - requested_at).total_seconds()
+
+
     if elapsed_sec > settings.reset_token_expire_minutes * 60:
         raise HTTPException(status_code=400, detail="Reset token has expired")
 
